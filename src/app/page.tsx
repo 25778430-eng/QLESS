@@ -18,6 +18,9 @@ export default async function Home() {
       </p>
       <Link className="btn" href="/signin">Get started</Link>
       <Link className="btn alt" href="/signin?next=/vendor/register">I&apos;m a vendor</Link>
+      <p className="small muted" style={{ textAlign: "center" }}>
+        <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a>
+      </p>
     </main>
   );
 }

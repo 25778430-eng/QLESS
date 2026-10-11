@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "Qless",
   description: "Book your spot in the queue. Arrive when it's your turn.",
   manifest: "/manifest.webmanifest",
-  icons: { icon: "/icon.svg" },
+  icons: { icon: "/icons/icon-192.png", apple: "/icons/apple-touch-icon.png" },
 };
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0b0b0b" };
