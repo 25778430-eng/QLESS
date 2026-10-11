@@ -16,9 +16,9 @@ export function amountDue(b: { depositCents: number; feeCents: number }): number
   return b.depositCents + b.feeCents;
 }
 
-/** Parses the admin's rand amount (e.g. "5" or "7.50") into cents. Null if out of range. */
-export function parseFeeRand(input: string): number | null {
+/** Parses an admin rand amount (e.g. "5" or "7.50") into cents. Null if out of range. */
+export function parseFeeRand(input: string, maxCents = MAX_FEE_CENTS): number | null {
   if (!/^\d+(\.\d{1,2})?$/.test(input.trim())) return null;
   const cents = Math.round(Number(input) * 100);
-  return cents >= 0 && cents <= MAX_FEE_CENTS ? cents : null;
+  return cents >= 0 && cents <= maxCents ? cents : null;
 }

@@ -71,16 +71,15 @@ export async function verifyItn(raw: string): Promise<{ ok: boolean; data: Recor
   return { ok: text === "VALID", data };
 }
 
-/** Requests a refund through the PayFast API. Returns false if it could not be done automatically. */
-export async function refund(pfPaymentId: string, amountCents: number, reason: string): Promise<boolean> {
-  if (!payfastConfigured() || !pfPaymentId) return false;
+/** Signed call to the PayFast API. Returns false if it could not be made or was refused. */
+async function pfApi(method: "POST" | "PUT", path: string, body: Record<string, string>): Promise<boolean> {
+  if (!payfastConfigured()) return false;
   const timestamp = new Date().toISOString().slice(0, 19);
   const headers: Record<string, string> = {
     "merchant-id": process.env.PAYFAST_MERCHANT_ID!,
     version: "v1",
     timestamp,
   };
-  const body = { amount: String(amountCents), reason, notify_buyer: "1" };
   const all: Record<string, string> = { ...headers, ...body };
   if (process.env.PAYFAST_PASSPHRASE) all.passphrase = process.env.PAYFAST_PASSPHRASE;
   const sorted = Object.keys(all)
@@ -90,15 +89,62 @@ export async function refund(pfPaymentId: string, amountCents: number, reason: s
   const signature = createHash("md5").update(sorted).digest("hex");
   const testing = process.env.PAYFAST_SANDBOX === "false" ? "" : "?testing=true";
   try {
-    const res = await fetch(`https://api.payfast.co.za/refunds/${pfPaymentId}${testing}`, {
-      method: "POST",
+    const res = await fetch(`https://api.payfast.co.za${path}${testing}`, {
+      method,
       headers: { ...headers, signature, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: Object.keys(body).length ? JSON.stringify(body) : undefined,
     });
-    if (!res.ok) console.error("[payfast] refund failed", res.status, await res.text());
+    if (!res.ok) console.error("[payfast]", method, path, "failed", res.status, await res.text());
     return res.ok;
   } catch (err) {
-    console.error("[payfast] refund error", err);
+    console.error("[payfast]", method, path, "error", err);
     return false;
   }
+}
+
+/** Requests a refund through the PayFast API. Returns false if it could not be done automatically. */
+export async function refund(pfPaymentId: string, amountCents: number, reason: string): Promise<boolean> {
+  if (!pfPaymentId) return false;
+  return pfApi("POST", `/refunds/${pfPaymentId}`, { amount: String(amountCents), reason, notify_buyer: "1" });
+}
+
+/** Cancels a recurring subscription by its PayFast token. */
+export async function cancelSubscription(token: string): Promise<boolean> {
+  if (!token) return false;
+  return pfApi("PUT", `/subscriptions/${token}/cancel`, {});
+}
+
+export type SubscriptionRequest = {
+  vendorId: string;
+  amountCents: number;
+  itemName: string;
+  phone: string;
+  appUrl: string;
+};
+
+/** m_payment_id prefix that marks an ITN as a vendor plan payment rather than a booking. */
+export const PLAN_PREFIX = "plan-";
+
+/** Fields for a monthly PayFast subscription (first payment today, then monthly until cancelled). */
+export function subscriptionForm(p: SubscriptionRequest): { action: string; fields: Array<[string, string]> } {
+  const amount = (p.amountCents / 100).toFixed(2);
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Johannesburg" }).format(new Date());
+  const fields: Array<[string, string]> = [
+    ["merchant_id", process.env.PAYFAST_MERCHANT_ID!],
+    ["merchant_key", process.env.PAYFAST_MERCHANT_KEY!],
+    ["return_url", `${p.appUrl}/vendor/plan?paid=1`],
+    ["cancel_url", `${p.appUrl}/vendor/plan`],
+    ["notify_url", `${p.appUrl}/api/payfast/notify`],
+    ["cell_number", p.phone.replace("+27", "0")],
+    ["m_payment_id", PLAN_PREFIX + p.vendorId],
+    ["amount", amount],
+    ["item_name", p.itemName.slice(0, 100)],
+    ["subscription_type", "1"],
+    ["billing_date", today],
+    ["recurring_amount", amount],
+    ["frequency", "3"],
+    ["cycles", "0"],
+  ];
+  fields.push(["signature", pfSignature(fields, process.env.PAYFAST_PASSPHRASE || undefined)]);
+  return { action: `${payfastHost()}/eng/process`, fields };
 }

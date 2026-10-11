@@ -6,6 +6,8 @@ import { VendorMap } from "@/components/VendorMap";
 import { LocateMe } from "@/components/LocateMe";
 import { LowDataToggle } from "@/components/LowDataToggle";
 import { cookies } from "next/headers";
+import { getSettings } from "@/lib/settings";
+import { featuredOrder, isFeatured, planAllowsListing, planState } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +23,9 @@ export default async function Discover({ searchParams }: { searchParams: SP }) {
   const cat = CATEGORIES.includes(searchParams.cat ?? "") ? searchParams.cat! : "All";
   const here = searchParams.lat && searchParams.lng ? { lat: Number(searchParams.lat), lng: Number(searchParams.lng) } : null;
 
-  const vendors = await db.vendor.findMany({
+  const settings = await getSettings();
+  const now = new Date();
+  const found = await db.vendor.findMany({
     where: {
       status: "APPROVED",
       ...(cat !== "All" ? { category: cat } : {}),
@@ -31,8 +35,11 @@ export default async function Discover({ searchParams }: { searchParams: SP }) {
       queueDays: { where: { date: sastDate() } },
       reviews: { select: { rating: true } },
     },
+    orderBy: [{ featured: "desc" }, { featuredRank: "desc" }],
     take: 100,
   });
+  // Shops whose free trial ended without a plan are hidden.
+  const vendors = found.filter((v) => planAllowsListing(planState(v, settings, now)));
 
   const counts = await db.booking.groupBy({
     by: ["queueDayId"],
@@ -56,9 +63,9 @@ export default async function Discover({ searchParams }: { searchParams: SP }) {
       if (day && day.status !== "CLOSED") {
         state = (usedBy.get(day.id) ?? 0) >= day.capacity ? { label: "Full today", kind: "bad" } : { label: `${waitingBy.get(day.id) ?? 0} waiting`, kind: "" };
       }
-      return { v, km, rating, count: v.reviews.length, state };
+      return { v, km, rating, count: v.reviews.length, state, featured: isFeatured(v, now) };
     })
-    .sort((a, b) => (a.km ?? 1e9) - (b.km ?? 1e9) || b.rating - a.rating);
+    .sort((a, b) => featuredOrder(a.v, b.v, now) || (a.km ?? 1e9) - (b.km ?? 1e9) || b.rating - a.rating);
 
   const qs = (patch: Partial<SP>) => {
     const p = new URLSearchParams(Object.entries({ ...searchParams, ...patch }).filter(([, v]) => v) as [string, string][]);
@@ -97,11 +104,11 @@ export default async function Discover({ searchParams }: { searchParams: SP }) {
       )}
       <div className="stack" style={{ gap: 0 }}>
         {rows.length === 0 && <p className="muted">No shops found{q ? ` for "${q}"` : ""}.</p>}
-        {rows.map(({ v, km, rating, count, state }) => (
+        {rows.map(({ v, km, rating, count, state, featured }) => (
           <Link key={v.id} className="listrow" href={`/v/${v.slug}`}>
             <span className="avatar">{initials(v.name)}</span>
             <span className="grow">
-              <b>{v.name}</b>
+              <b>{v.name}</b>{featured && <> <span className="pill">Featured</span></>}
               <br />
               <span className="small muted">
                 {v.category}{km != null ? ` · ${distance(km)}` : ""}{count ? ` · ★ ${rating.toFixed(1)} (${count})` : " · New"}

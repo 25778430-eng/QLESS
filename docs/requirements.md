@@ -7,7 +7,7 @@ Working requirements for the first version of Qless. Items marked **(proposed)**
 - A booking and live-queue **web app** (web first) for vendors: barbers, nail technicians, hair salons and other walk-in businesses.
 - Market: South Africa. Prices in Rand (ZAR).
 - Both customers and vendors have accounts. There is also an admin role for vendor approval.
-- No vendor fee or subscription for now. Qless earns from a fixed **customer booking fee** (default R5), switched off until the admin turns it on (see 2, Booking fee).
+- Qless earns from a fixed **customer booking fee** (default R5), a **vendor monthly plan** (default R149) and **featured listings**. All are switched off until the admin turns them on (see 2, Booking fee; 3, Monthly plan; 4, Admin).
 
 ## 2. Customers
 
@@ -63,6 +63,15 @@ Working requirements for the first version of Qless. Items marked **(proposed)**
 - Services with name, duration and price.
 - Booking deposit amount and refund window.
 
+### Monthly plan
+- When the admin switches the plan on, vendors pay a monthly price (default **R149**) through a PayFast subscription (card or debit order), billed monthly until cancelled.
+- Every shop gets a free trial first (default **14 days**): from the day the plan is switched on for existing shops, from approval for new ones.
+- Shops without a plan after the trial are hidden from search, their page says they aren't taking bookings, and they can't open a queue. Bookings already made are not affected.
+- Each payment covers a month plus 3 days' grace, so a late debit order doesn't hide the shop.
+- Vendors see their trial or plan status at the top of their screens and can subscribe or cancel on the Monthly plan page. Cancelling keeps them listed until the paid period ends.
+- A price change applies to new subscriptions; existing subscribers keep paying what they signed up at.
+- The admin can waive the plan for any shop.
+
 ### Running the day
 - Before the queue opens, vendor sets the number of staff working today. Capacity follows from staff count; **bookings close when the queue is full**.
 - Live queue with booked customers and **walk-ins** in one line.
@@ -80,6 +89,8 @@ Working requirements for the first version of Qless. Items marked **(proposed)**
 
 - Vendor approval list: check each CIPC number before approving or rejecting. Rejected vendors get an SMS with the reason.
 - Customer booking fee: amount, on/off switch, and fees collected in the last 30 days.
+- Vendor monthly plan: price, free-trial length, on/off switch (**off by default**), number of shops subscribed, and per-shop plan status with a waive switch.
+- Featured listings: per shop, the admin switches featuring on or off, sets a rank (higher shows first) and an optional end date. Featured shops show first in search with a "Featured" badge. A featured shop still needs its plan to be listed. Admin-controlled only for now; vendors can't buy featuring themselves yet.
 
 ## 5. Security and abuse (proposed set)
 
@@ -105,7 +116,7 @@ Working requirements for the first version of Qless. Items marked **(proposed)**
 
 The first version of the app implements everything above. Decisions taken while building, which can be changed:
 
-- Deposits are collected into one Qless PayFast account. Paying vendors their share (deposits kept from no-shows) is manual for now. Booking fees stay with Qless.
+- Deposits are collected into one Qless PayFast account. Paying vendors their share (deposits kept from no-shows) is manual for now. Booking fees, plan payments and featuring stay with Qless.
 - Customers join today's live queue only; there is no booking for a future day yet.
 - A customer can hold 2 active bookings at once. 3 no-shows in 30 days blocks booking for 7 days.
 - Unpaid bookings are released after 15 minutes.

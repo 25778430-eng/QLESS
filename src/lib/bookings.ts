@@ -6,6 +6,7 @@ import { notifyCustomer } from "./notify";
 import { refund } from "./payfast";
 import { bookingFee } from "./fees";
 import { getSettings } from "./settings";
+import { vendorListed } from "./plan-billing";
 import { rand, sastDate, sastWeekday, time } from "./format";
 import {
   ARRIVAL_WINDOW_MINS,
@@ -88,6 +89,7 @@ function countsTowardCapacity(b: Booking): boolean {
 
 export async function openQueue(vendor: Vendor, staffIds: string[]): Promise<QueueDay> {
   if (vendor.status !== "APPROVED") throw new BookingError("Your business must be approved before you can open a queue.");
+  if (!(await vendorListed(vendor))) throw new BookingError("Your free trial has ended. Subscribe to the monthly plan to open your queue.");
   if (!staffIds.length) throw new BookingError("Pick at least one staff member working today.");
   const services = await db.service.findMany({ where: { vendorId: vendor.id, active: true } });
   if (!services.length) throw new BookingError("Add at least one service first.");
@@ -132,7 +134,7 @@ export async function createBooking(customer: User, vendorId: string, serviceId:
   if (active >= MAX_ACTIVE_BOOKINGS) throw new BookingError(`You can only have ${MAX_ACTIVE_BOOKINGS} bookings at a time.`);
 
   const vendor = await db.vendor.findUnique({ where: { id: vendorId } });
-  if (!vendor || vendor.status !== "APPROVED") throw new BookingError("This shop isn't taking bookings.");
+  if (!vendor || !(await vendorListed(vendor))) throw new BookingError("This shop isn't taking bookings.");
   const day = await todayQueue(vendorId);
   if (!day || day.status === "CLOSED") throw new BookingError("This shop's queue isn't open right now.");
 

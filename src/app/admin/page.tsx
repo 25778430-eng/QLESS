@@ -2,11 +2,27 @@ import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { prettyPhone, rand, shortDate } from "@/lib/format";
 import { MAX_FEE_CENTS } from "@/lib/fees";
+import { MAX_PLAN_CENTS, isFeatured, planState, type PlanState } from "@/lib/plans";
 import { Logo } from "@/components/Logo";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { getSettings } from "@/lib/settings";
-import { approveVendor, rejectVendor, saveBookingFee } from "./actions";
+import { approveVendor, rejectVendor, saveBookingFee, saveFeatured, savePlan, setPlanWaived } from "./actions";
+
+function planLabel(p: PlanState): string {
+  switch (p.kind) {
+    case "OFF": return "Plan off";
+    case "WAIVED": return "Plan waived";
+    case "ACTIVE": return `Plan paid to ${shortDate(p.until)}`;
+    case "TRIAL": return `Trial to ${shortDate(p.until)}`;
+    case "EXPIRED": return `Hidden: no plan since ${shortDate(p.since)}`;
+  }
+}
+
+/** YYYY-MM-DD in South Africa, for a date input. */
+function dateInput(d: Date | null): string {
+  return d ? new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Johannesburg" }).format(d) : "";
+}
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +36,8 @@ export default async function Admin({ searchParams }: { searchParams: { error?: 
     _sum: { feeCents: true },
     _count: true,
   });
+  const now = new Date();
+  const subscribed = await db.vendor.count({ where: { planToken: { not: null } } });
   const vendors = await db.vendor.findMany({
     where: showAll ? {} : { status: "PENDING" },
     include: { owner: { select: { name: true } } },
@@ -48,8 +66,22 @@ export default async function Admin({ searchParams }: { searchParams: { error?: 
           <span className="small muted">Last 30 days: {rand(fees._sum.feeCents ?? 0)} from {fees._count} paid bookings.</span>
           <Submit className="btn sm">Save</Submit>
         </form>
-        <h2>Vendor approvals</h2>
-        <a className="small" href={showAll ? "/admin" : "/admin?show=all"}>{showAll ? "Show pending only" : "Show all vendors"}</a>
+        <form action={savePlan} className="card stack">
+          <div className="row between">
+            <b>Vendor monthly plan</b>
+            <span className={`pill ${settings.planOn ? "ok" : ""}`}>{settings.planOn ? "On" : "Off"}</span>
+          </div>
+          <span className="small muted">Vendors pay monthly through a PayFast subscription. Shops without a plan are hidden from customers once their free trial ends. Switching it on starts every shop&apos;s free trial from today; new shops get theirs from approval.</span>
+          <div className="row">
+            <label className="f grow">Price a month (R)<input className="i mono" type="number" min="1" max={MAX_PLAN_CENTS / 100} step="0.01" name="price" defaultValue={settings.planPriceCents / 100} /></label>
+            <label className="f grow">Free trial (days)<input className="i mono" type="number" min="0" max="90" step="1" name="trial" defaultValue={settings.planTrialDays} /></label>
+          </div>
+          <label className="row small"><input type="checkbox" name="on" defaultChecked={settings.planOn} /> Require the plan</label>
+          <span className="small muted">{subscribed} shops subscribed.</span>
+          <Submit className="btn sm">Save</Submit>
+        </form>
+        <h2>Vendors</h2>
+        <a className="small" href={showAll ? "/admin" : "/admin?show=all"}>{showAll ? "Show pending only" : "Show all vendors (plan and featured settings)"}</a>
         <p className="small muted">Check each CIPC number on the CIPC BizPortal (bizportal.gov.za) before approving.</p>
         {vendors.length === 0 && <p className="muted">Nothing waiting.</p>}
         {vendors.map((v) => (
@@ -69,6 +101,28 @@ export default async function Admin({ searchParams }: { searchParams: { error?: 
               </>
             ) : (
               <span className={`pill ${v.status === "APPROVED" ? "ok" : "bad"}`} style={{ alignSelf: "flex-start" }}>{v.status === "APPROVED" ? "Approved" : `Rejected: ${v.rejectReason}`}</span>
+            )}
+            {v.status === "APPROVED" && (
+              <>
+                <form action={setPlanWaived} className="row between">
+                  <input type="hidden" name="id" value={v.id} />
+                  <input type="hidden" name="waived" value={v.planWaived ? "0" : "1"} />
+                  <span className="small">{planLabel(planState(v, settings, now))}</span>
+                  <Submit className="btn sm alt">{v.planWaived ? "Require plan" : "Waive plan"}</Submit>
+                </form>
+                <form action={saveFeatured} className="stack" style={{ gap: 8 }}>
+                  <input type="hidden" name="id" value={v.id} />
+                  <div className="row between">
+                    <label className="row small"><input type="checkbox" name="featured" defaultChecked={v.featured} /> Featured</label>
+                    {isFeatured(v, now) && <span className="pill">Featured now</span>}
+                  </div>
+                  <div className="row">
+                    <label className="f grow">Rank (higher shows first)<input className="i mono" type="number" min="0" max="100" step="1" name="rank" defaultValue={v.featuredRank} /></label>
+                    <label className="f grow">Until (optional)<input className="i" type="date" name="until" defaultValue={dateInput(v.featuredUntil)} /></label>
+                  </div>
+                  <Submit className="btn sm alt">Save featured</Submit>
+                </form>
+              </>
             )}
           </div>
         ))}

@@ -58,21 +58,21 @@ model User {
   blockedUntil     DateTime?
   createdAt        DateTime  @default(now())
 
-  sessions      Session[]
-  pushSubs      PushSubscription[]
-  vendor        Vendor?
-  bookings      Booking[]
-  reviews       Review[]
+  sessions Session[]
+  pushSubs PushSubscription[]
+  vendor   Vendor?
+  bookings Booking[]
+  reviews  Review[]
 }
 
 model OtpCode {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   phone     String
   codeHash  String
-  attempts  Int      @default(0)
+  attempts  Int       @default(0)
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([phone, createdAt])
 }
@@ -116,6 +116,16 @@ model Vendor {
   openTime         String       @default("08:00")
   closeTime        String       @default("18:00")
   createdAt        DateTime     @default(now())
+  approvedAt       DateTime?
+  // Monthly plan. planPaidUntil moves forward with each PayFast subscription payment.
+  planWaived       Boolean      @default(false)
+  planPaidUntil    DateTime?
+  planToken        String?
+  planAmountCents  Int?
+  // Featured listing, set by the admin. Higher rank shows first.
+  featured         Boolean      @default(false)
+  featuredRank     Int          @default(0)
+  featuredUntil    DateTime?
 
   owner     User       @relation(fields: [ownerId], references: [id])
   staff     Staff[]
@@ -228,8 +238,12 @@ model Review {
 
 // App-wide settings, one row with id "global". Changed by the admin.
 model Setting {
-  id              String   @id @default("global")
-  bookingFeeOn    Boolean  @default(false)
-  bookingFeeCents Int      @default(500)
-  updatedAt       DateTime @updatedAt
+  id              String    @id @default("global")
+  bookingFeeOn    Boolean   @default(false)
+  bookingFeeCents Int       @default(500)
+  planOn          Boolean   @default(false)
+  planOnSince     DateTime?
+  planPriceCents  Int       @default(14900)
+  planTrialDays   Int       @default(14)
+  updatedAt       DateTime  @updatedAt
 }
