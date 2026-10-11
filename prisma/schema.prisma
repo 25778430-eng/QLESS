@@ -191,6 +191,8 @@ model Booking {
   priceCents       Int
   depositCents     Int
   depositStatus    DepositStatus @default(NONE)
+  // Qless booking fee paid on top of the deposit. Kept by Qless, never refunded.
+  feeCents         Int           @default(0)
   payfastPaymentId String?
   reminded60       Boolean       @default(false)
   reminded20       Boolean       @default(false)
@@ -222,4 +224,12 @@ model Review {
   booking    Booking  @relation(fields: [bookingId], references: [id])
   vendor     Vendor   @relation(fields: [vendorId], references: [id])
   customer   User     @relation(fields: [customerId], references: [id])
+}
+
+// App-wide settings, one row with id "global". Changed by the admin.
+model Setting {
+  id              String   @id @default("global")
+  bookingFeeOn    Boolean  @default(false)
+  bookingFeeCents Int      @default(500)
+  updatedAt       DateTime @updatedAt
 }

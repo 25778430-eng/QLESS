@@ -15,18 +15,20 @@ export default async function Cancel({ params }: { params: { id: string } }) {
   if (!["PENDING_PAYMENT", "WAITING", "CALLED"].includes(b.status)) redirect(`/bookings/${b.id}`);
   const view = await loadQueue(b.queueDay);
   const paid = b.depositStatus === "PAID";
-  const refund = paid && b.status === "WAITING" && refundOnCancel(new Date(), view.etas.get(b.id), b.vendor.refundWindowMins);
+  const refund = paid && b.depositCents > 0 && b.status === "WAITING" && refundOnCancel(new Date(), view.etas.get(b.id), b.vendor.refundWindowMins);
   const hours = b.vendor.refundWindowMins / 60;
   return (
     <main className="main">
       <h2>Cancel booking?</h2>
       <div className="card stack">
-        {!paid ? (
-          <span>You haven&apos;t paid a deposit, so nothing is charged.</span>
+        {!paid && b.status === "PENDING_PAYMENT" ? (
+          <span>You haven&apos;t paid yet, so nothing is charged.</span>
+        ) : !paid || b.depositCents === 0 ? (
+          <span>There&apos;s no deposit to refund.{b.feeCents > 0 ? " The booking fee isn't refunded." : ""}</span>
         ) : refund ? (
           <>
             <span className="pill ok" style={{ alignSelf: "flex-start" }}>Full refund</span>
-            <span>Your turn is more than {hours} hours away, so your <b className="mono">{rand(b.depositCents)}</b> deposit goes back to you within 3–5 working days.</span>
+            <span>Your turn is more than {hours} hours away, so your <b className="mono">{rand(b.depositCents)}</b> deposit goes back to you within 3–5 working days.{b.feeCents > 0 && <> The {rand(b.feeCents)} booking fee isn&apos;t refunded.</>}</span>
           </>
         ) : (
           <>

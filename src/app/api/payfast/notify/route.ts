@@ -1,8 +1,9 @@
 import { db } from "@/lib/db";
 import { markPaid } from "@/lib/bookings";
+import { amountDue } from "@/lib/fees";
 import { payfastConfigured, verifyItn } from "@/lib/payfast";
 
-/** PayFast ITN: confirms a deposit payment server-to-server. */
+/** PayFast ITN: confirms a deposit (plus any booking fee) payment server-to-server. */
 export async function POST(req: Request) {
   if (!payfastConfigured()) return new Response("Payments not configured", { status: 503 });
   const raw = await req.text();
@@ -15,8 +16,8 @@ export async function POST(req: Request) {
   const booking = await db.booking.findUnique({ where: { id: data.m_payment_id ?? "" } });
   if (!booking) return new Response("Unknown booking", { status: 404 });
   const paidCents = Math.round(Number(data.amount_gross) * 100);
-  if (paidCents !== booking.depositCents) {
-    console.error("[payfast] amount mismatch", booking.id, paidCents, booking.depositCents);
+  if (paidCents !== amountDue(booking)) {
+    console.error("[payfast] amount mismatch", booking.id, paidCents, amountDue(booking));
     return new Response("Amount mismatch", { status: 400 });
   }
   if (data.payment_status === "COMPLETE") await markPaid(booking.id, data.pf_payment_id ?? null);

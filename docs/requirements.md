@@ -7,7 +7,7 @@ Working requirements for the first version of Qless. Items marked **(proposed)**
 - A booking and live-queue **web app** (web first) for vendors: barbers, nail technicians, hair salons and other walk-in businesses.
 - Market: South Africa. Prices in Rand (ZAR).
 - Both customers and vendors have accounts. There is also an admin role for vendor approval.
-- No platform fee or subscription for now.
+- No vendor fee or subscription for now. Qless earns from a fixed **customer booking fee** (default R5), switched off until the admin turns it on (see 2, Booking fee).
 
 ## 2. Customers
 
@@ -32,6 +32,14 @@ Working requirements for the first version of Qless. Items marked **(proposed)**
 - Payment provider: PayFast **(proposed)**.
 - Full refund if the customer cancels early enough (default 2 hours or more before their turn). Inside that window the vendor keeps the deposit.
 - No-show forfeits the deposit **(proposed)**.
+
+### Booking fee
+- A fixed Qless booking fee (default **R5**) is added on top of the deposit and paid in the same PayFast payment. If a vendor takes no deposit, the customer pays just the fee.
+- Shown on the vendor page and itemised on the payment screen before the customer pays.
+- Qless keeps it; it is not part of the service price and is not passed to vendors.
+- **Not refunded** on cancel, early or late. Only the deposit is refunded.
+- Walk-ins added by the vendor pay no fee.
+- The admin sets the amount (R0 to R50) and switches it on or off. **Off by default.** Changes apply to new bookings only.
 
 ### Live queue
 - Shows position, people ahead and estimated turn time, plus a check-in code to show on arrival.
@@ -71,6 +79,7 @@ Working requirements for the first version of Qless. Items marked **(proposed)**
 ## 4. Admin
 
 - Vendor approval list: check each CIPC number before approving or rejecting. Rejected vendors get an SMS with the reason.
+- Customer booking fee: amount, on/off switch, and fees collected in the last 30 days.
 
 ## 5. Security and abuse (proposed set)
 
@@ -96,7 +105,7 @@ Working requirements for the first version of Qless. Items marked **(proposed)**
 
 The first version of the app implements everything above. Decisions taken while building, which can be changed:
 
-- Deposits are collected into one Qless PayFast account. Paying vendors their share (deposits kept from no-shows) is manual for now.
+- Deposits are collected into one Qless PayFast account. Paying vendors their share (deposits kept from no-shows) is manual for now. Booking fees stay with Qless.
 - Customers join today's live queue only; there is no booking for a future day yet.
 - A customer can hold 2 active bookings at once. 3 no-shows in 30 days blocks booking for 7 days.
 - Unpaid bookings are released after 15 minutes.

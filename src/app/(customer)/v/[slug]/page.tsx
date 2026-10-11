@@ -5,6 +5,8 @@ import { currentUser } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { isOpenToday, loadQueue, todayQueue } from "@/lib/bookings";
 import { initials, rand, shortDate } from "@/lib/format";
+import { bookingFee } from "@/lib/fees";
+import { getSettings } from "@/lib/settings";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { AutoRefresh } from "@/components/AutoRefresh";
@@ -31,6 +33,7 @@ export default async function VendorPage({ params, searchParams }: { params: { s
   });
   if (!vendor || vendor.status !== "APPROVED") notFound();
   const user = await currentUser();
+  const feeCents = bookingFee(await getSettings());
   const lowData = user ? user.lowData : cookies().get("lowData")?.value === "1";
 
   const day = await todayQueue(vendor.id);
@@ -124,6 +127,9 @@ export default async function VendorPage({ params, searchParams }: { params: { s
           </div>
           {vendor.depositCents > 0 && (
             <p className="small muted">A {rand(vendor.depositCents)} deposit holds your spot and comes off the final price.</p>
+          )}
+          {feeCents > 0 && (
+            <p className="small muted">Qless adds a {rand(feeCents)} booking fee, paid with {vendor.depositCents > 0 ? "the deposit" : "your booking"}. It isn&apos;t refunded.</p>
           )}
           <Submit>Join the queue</Submit>
         </form>

@@ -4,6 +4,8 @@ import type { Booking, QueueDay, Service, Staff, User, Vendor } from "@prisma/cl
 import { db } from "./db";
 import { notifyCustomer } from "./notify";
 import { refund } from "./payfast";
+import { bookingFee } from "./fees";
+import { getSettings } from "./settings";
 import { rand, sastDate, sastWeekday, time } from "./format";
 import {
   ARRIVAL_WINDOW_MINS,
@@ -146,7 +148,9 @@ export async function createBooking(customer: User, vendorId: string, serviceId:
   if (!service) throw new BookingError("Pick a service.");
   if (staffId && !day.staffIds.includes(staffId)) throw new BookingError("That staff member isn't working today.");
 
-  const needsDeposit = vendor.depositCents > 0;
+  const depositCents = Math.min(vendor.depositCents, service.priceCents);
+  const feeCents = bookingFee(await getSettings());
+  const needsPayment = depositCents + feeCents > 0;
   return db.booking.create({
     data: {
       ref: await uniqueRef(),
@@ -156,10 +160,11 @@ export async function createBooking(customer: User, vendorId: string, serviceId:
       serviceId,
       staffId,
       position: await nextPosition(day.id),
-      status: needsDeposit ? "PENDING_PAYMENT" : "WAITING",
+      status: needsPayment ? "PENDING_PAYMENT" : "WAITING",
       checkInCode: code(4),
       priceCents: service.priceCents,
-      depositCents: Math.min(vendor.depositCents, service.priceCents),
+      depositCents,
+      feeCents,
       depositStatus: "NONE",
     },
   });
@@ -184,7 +189,8 @@ export async function markPaid(bookingId: string, pfPaymentId: string | null): P
 }
 
 async function returnDeposit(b: Booking, reason: string): Promise<"REFUNDED" | "REFUND_PENDING" | "NONE"> {
-  if (b.depositStatus !== "PAID") return "NONE";
+  if (b.depositStatus !== "PAID" || b.depositCents === 0) return "NONE";
+  // Only the deposit goes back; the Qless booking fee is not refunded.
   const ok = await refund(b.payfastPaymentId ?? "", b.depositCents, reason);
   return ok ? "REFUNDED" : "REFUND_PENDING";
 }
@@ -288,7 +294,7 @@ export async function markNoShow(bookingId: string, vendorId?: string): Promise<
   await notifyCustomer(
     b.customer,
     "You missed your turn",
-    `Qless: you missed your turn at ${b.vendor.name}, so your spot went to the next person${b.depositStatus === "PAID" ? " and the deposit was kept" : ""}.`,
+    `Qless: you missed your turn at ${b.vendor.name}, so your spot went to the next person${b.depositStatus === "PAID" && b.depositCents > 0 ? " and the deposit was kept" : ""}.`,
   );
   const since = new Date(Date.now() - 30 * 86_400_000);
   const misses = await db.booking.count({ where: { customerId: b.customer.id, status: "NO_SHOW", createdAt: { gte: since } } });
