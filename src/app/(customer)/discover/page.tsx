@@ -28,6 +28,7 @@ export default async function Discover({ searchParams }: { searchParams: SP }) {
   const found = await db.vendor.findMany({
     where: {
       status: "APPROVED",
+      owner: { banned: false },
       ...(cat !== "All" ? { category: cat } : {}),
       ...(q ? { OR: [{ name: { contains: q, mode: "insensitive" } }, { address: { contains: q, mode: "insensitive" } }, { services: { some: { name: { contains: q, mode: "insensitive" } } } }] } : {}),
     },

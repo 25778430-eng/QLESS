@@ -90,6 +90,8 @@ Working requirements for the first version of Qless. Items marked **(proposed)**
 - Vendor approval list: check each CIPC number before approving or rejecting. Rejected vendors get an SMS with the reason.
 - Customer booking fee: amount, on/off switch, and fees collected in the last 30 days.
 - Vendor monthly plan: price, free-trial length, on/off switch (**off by default**), number of shops subscribed, and per-shop plan status with a waive switch.
+- Money dashboard: Qless income (booking fees, plan payments, featured payments) for this month, per month for the last 12 months and per day for the last 30 days. Deposits owed to each vendor for a chosen month: deposits that came off a customer's bill or were kept for a no-show or late cancel, plus deposits still held and refunded. Featured payments are entered by the admin when featuring a shop.
+- Users page: search customers and vendors by name, cellphone or shop name; filter by customers, vendors or blocked. Each user shows their bookings, no-shows (all time and last 30 days) and fees. The admin can block a user (signed out, can't sign in or book, and their shop is hidden) with a private reason, unblock them, or lift an automatic no-show booking pause. Admins can't be blocked from the page.
 - Featured listings: per shop, the admin switches featuring on or off, sets a rank (higher shows first) and an optional end date. Featured shops show first in search with a "Featured" badge. A featured shop still needs its plan to be listed. Admin-controlled only for now; vendors can't buy featuring themselves yet.
 
 ## 5. Security and abuse (proposed set)

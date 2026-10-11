@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { prettyPhone, rand, shortDate } from "@/lib/format";
 import { MAX_FEE_CENTS } from "@/lib/fees";
 import { MAX_PLAN_CENTS, isFeatured, planState, type PlanState } from "@/lib/plans";
-import { Logo } from "@/components/Logo";
+import { AdminHeader } from "@/components/AdminHeader";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { getSettings } from "@/lib/settings";
@@ -46,7 +46,7 @@ export default async function Admin({ searchParams }: { searchParams: { error?: 
   });
   return (
     <>
-      <header className="topbar"><Logo href="/admin" /><a className="small muted" href="/account">Account</a></header>
+      <AdminHeader current="/admin" />
       <main className="main">
         <div className="row between">
           <h1>Admin</h1>
@@ -120,6 +120,7 @@ export default async function Admin({ searchParams }: { searchParams: { error?: 
                     <label className="f grow">Rank (higher shows first)<input className="i mono" type="number" min="0" max="100" step="1" name="rank" defaultValue={v.featuredRank} /></label>
                     <label className="f grow">Until (optional)<input className="i" type="date" name="until" defaultValue={dateInput(v.featuredUntil)} /></label>
                   </div>
+                  <label className="f">Amount paid for featuring (R, optional, shows on Money)<input className="i mono" type="number" min="0" step="0.01" name="paid" placeholder="0" /></label>
                   <Submit className="btn sm alt">Save featured</Submit>
                 </form>
               </>

@@ -8,9 +8,11 @@ export async function vendorPlan(vendor: Vendor): Promise<PlanState> {
   return planState(vendor, await getSettings());
 }
 
-/** Whether customers can find and book this vendor right now (approved and plan in order). */
+/** Whether customers can find and book this vendor right now (approved, plan in order, owner not banned). */
 export async function vendorListed(vendor: Vendor): Promise<boolean> {
-  return vendor.status === "APPROVED" && planAllowsListing(await vendorPlan(vendor));
+  if (vendor.status !== "APPROVED" || !planAllowsListing(await vendorPlan(vendor))) return false;
+  const owner = await db.user.findUnique({ where: { id: vendor.ownerId }, select: { banned: true } });
+  return !owner?.banned;
 }
 
 /** Applies a plan ITN: each COMPLETE payment extends the plan by a month; CANCELLED clears the token. */
@@ -29,9 +31,12 @@ export async function recordPlanPayment(vendorId: string, status: string, paidCe
     console.error("[payfast] plan amount too low", vendor.id, paidCents);
     return "Amount mismatch";
   }
-  await db.vendor.update({
-    where: { id: vendor.id },
-    data: { planPaidUntil: paidUntilAfterPayment(vendor.planPaidUntil), planToken: token || vendor.planToken, planAmountCents: paidCents },
-  });
+  await db.$transaction([
+    db.vendor.update({
+      where: { id: vendor.id },
+      data: { planPaidUntil: paidUntilAfterPayment(vendor.planPaidUntil), planToken: token || vendor.planToken, planAmountCents: paidCents },
+    }),
+    db.income.create({ data: { kind: "PLAN", vendorId: vendor.id, amountCents: paidCents, note: token.startsWith("test-") ? "Test payment" : "PayFast subscription" } }),
+  ]);
   return "OK";
 }

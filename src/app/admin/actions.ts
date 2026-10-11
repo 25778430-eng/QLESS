@@ -67,10 +67,42 @@ export async function saveFeatured(form: FormData) {
   if (!(rank >= 0 && rank <= 100)) back("/admin?show=all", { error: "Rank must be 0 to 100." });
   const until = str(form, "until");
   if (until && !/^\d{4}-\d{2}-\d{2}$/.test(until)) back("/admin?show=all", { error: "Pick a valid end date." });
+  const paid = str(form, "paid") ? parseFeeRand(str(form, "paid"), MAX_PLAN_CENTS) : 0;
+  if (paid === null) back("/admin?show=all", { error: `Amount paid must be between R0 and ${rand(MAX_PLAN_CENTS)}.` });
   const v = await db.vendor.update({
     where: { id: str(form, "id") },
     // The listing stays featured through the end of the chosen day, South African time.
     data: { featured, featuredRank: rank, featuredUntil: until ? new Date(`${until}T23:59:59+02:00`) : null },
   });
+  if (paid > 0) {
+    await db.income.create({ data: { kind: "FEATURED", vendorId: v.id, amountCents: paid, note: until ? `Featured until ${until}` : "Featured" } });
+  }
   back("/admin?show=all", { notice: featured ? `${v.name} is featured${until ? ` until ${until}` : ""}.` : `${v.name} is no longer featured.` });
+}
+
+export async function banUser(form: FormData) {
+  const admin = await requireAdmin();
+  const id = str(form, "id");
+  const target = await db.user.findUnique({ where: { id } });
+  if (!target) back("/admin/users", { error: "User not found." });
+  if (target.id === admin.id || target.role === "ADMIN") back(`/admin/users/${id}`, { error: "Admins can't be blocked here." });
+  await db.$transaction([
+    db.user.update({ where: { id }, data: { banned: true, bannedReason: str(form, "reason").slice(0, 200) || null } }),
+    db.session.deleteMany({ where: { userId: id } }),
+  ]);
+  back(`/admin/users/${id}`, { notice: `${target.name} is blocked and signed out.` });
+}
+
+export async function unbanUser(form: FormData) {
+  await requireAdmin();
+  const id = str(form, "id");
+  const u = await db.user.update({ where: { id }, data: { banned: false, bannedReason: null } });
+  back(`/admin/users/${id}`, { notice: `${u.name} is unblocked and can sign in again.` });
+}
+
+export async function liftNoShowBlock(form: FormData) {
+  await requireAdmin();
+  const id = str(form, "id");
+  const u = await db.user.update({ where: { id }, data: { blockedUntil: null } });
+  back(`/admin/users/${id}`, { notice: `${u.name} can book again.` });
 }
