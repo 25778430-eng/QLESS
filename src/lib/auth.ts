@@ -82,7 +82,7 @@ export async function currentUser(): Promise<User | null> {
   const token = cookies().get(COOKIE)?.value;
   if (!token) return null;
   const session = await db.session.findUnique({ where: { tokenHash: hashToken(token) }, include: { user: true } });
-  if (!session || session.expiresAt < new Date()) return null;
+  if (!session || session.expiresAt < new Date() || session.user.banned) return null;
   return session.user;
 }
 

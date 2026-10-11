@@ -16,6 +16,7 @@ export async function sendCode(form: FormData) {
   const here = `/signin?next=${encodeURIComponent(next)}`;
   if (!phone) back(here, { error: "Enter a valid South African cellphone number." });
   const existing = await db.user.findUnique({ where: { phone } });
+  if (existing?.banned) back(here, { error: "This account is blocked. Contact Qless support if you think this is a mistake." });
   if (!existing) {
     if (!str(form, "name")) back(here, { error: "Enter your name." });
     if (form.get("consentReminders") !== "on") back(here, { error: "Tick the first box so we can send your booking reminders." });
@@ -43,6 +44,7 @@ export async function checkCode(form: FormData) {
     redirect(`/signin/verify?${params}`);
   }
   let user = await db.user.findUnique({ where: { phone } });
+  if (user?.banned) back("/signin", { error: "This account is blocked. Contact Qless support if you think this is a mistake." });
   if (!user) {
     user = await db.user.create({
       data: {

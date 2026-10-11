@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { aheadOf, depositLine, loadQueue } from "@/lib/bookings";
 import { ARRIVAL_WINDOW_MINS, refundOnCancel } from "@/lib/queue";
 import { rand, time } from "@/lib/format";
+import { amountDue } from "@/lib/fees";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { AutoRefresh } from "@/components/AutoRefresh";
@@ -34,9 +35,9 @@ export default async function BookingPage({ params, searchParams }: { params: { 
 
       {b.status === "PENDING_PAYMENT" && (
         <>
-          <h2>Pay your deposit</h2>
+          <h2>{b.depositCents > 0 ? "Pay your deposit" : "Pay your booking fee"}</h2>
           <p className="muted">Your spot at {b.vendor.name} is held for 15 minutes while you pay.</p>
-          <Link className="btn" href={`/bookings/${b.id}/pay`}>Pay {rand(b.depositCents)} deposit</Link>
+          <Link className="btn" href={`/bookings/${b.id}/pay`}>Pay {rand(amountDue(b))}{b.feeCents > 0 ? "" : " deposit"}</Link>
           <Link className="btn alt" href={`/bookings/${b.id}/cancel`}>Cancel</Link>
         </>
       )}

@@ -56,23 +56,26 @@ model User {
   notifyWhatsapp   Boolean   @default(true)
   lowData          Boolean   @default(false)
   blockedUntil     DateTime?
+  // Set by the admin. A banned user is signed out, cannot sign in, and their shop is hidden.
+  banned           Boolean   @default(false)
+  bannedReason     String?
   createdAt        DateTime  @default(now())
 
-  sessions      Session[]
-  pushSubs      PushSubscription[]
-  vendor        Vendor?
-  bookings      Booking[]
-  reviews       Review[]
+  sessions Session[]
+  pushSubs PushSubscription[]
+  vendor   Vendor?
+  bookings Booking[]
+  reviews  Review[]
 }
 
 model OtpCode {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   phone     String
   codeHash  String
-  attempts  Int      @default(0)
+  attempts  Int       @default(0)
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([phone, createdAt])
 }
@@ -116,6 +119,16 @@ model Vendor {
   openTime         String       @default("08:00")
   closeTime        String       @default("18:00")
   createdAt        DateTime     @default(now())
+  approvedAt       DateTime?
+  // Monthly plan. planPaidUntil moves forward with each PayFast subscription payment.
+  planWaived       Boolean      @default(false)
+  planPaidUntil    DateTime?
+  planToken        String?
+  planAmountCents  Int?
+  // Featured listing, set by the admin. Higher rank shows first.
+  featured         Boolean      @default(false)
+  featuredRank     Int          @default(0)
+  featuredUntil    DateTime?
 
   owner     User       @relation(fields: [ownerId], references: [id])
   staff     Staff[]
@@ -124,6 +137,7 @@ model Vendor {
   queueDays QueueDay[]
   bookings  Booking[]
   reviews   Review[]
+  income    Income[]
 }
 
 model Staff {
@@ -191,6 +205,8 @@ model Booking {
   priceCents       Int
   depositCents     Int
   depositStatus    DepositStatus @default(NONE)
+  // Qless booking fee paid on top of the deposit. Kept by Qless, never refunded.
+  feeCents         Int           @default(0)
   payfastPaymentId String?
   reminded60       Boolean       @default(false)
   reminded20       Boolean       @default(false)
@@ -222,4 +238,34 @@ model Review {
   booking    Booking  @relation(fields: [bookingId], references: [id])
   vendor     Vendor   @relation(fields: [vendorId], references: [id])
   customer   User     @relation(fields: [customerId], references: [id])
+}
+
+// App-wide settings, one row with id "global". Changed by the admin.
+model Setting {
+  id              String    @id @default("global")
+  bookingFeeOn    Boolean   @default(false)
+  bookingFeeCents Int       @default(500)
+  planOn          Boolean   @default(false)
+  planOnSince     DateTime?
+  planPriceCents  Int       @default(14900)
+  planTrialDays   Int       @default(14)
+  updatedAt       DateTime  @updatedAt
+}
+
+enum IncomeKind {
+  PLAN
+  FEATURED
+}
+
+// Money Qless earns from vendors. Booking fees are read from bookings instead.
+model Income {
+  id          String     @id @default(cuid())
+  kind        IncomeKind
+  vendorId    String
+  amountCents Int
+  note        String     @default("")
+  createdAt   DateTime   @default(now())
+  vendor      Vendor     @relation(fields: [vendorId], references: [id])
+
+  @@index([createdAt])
 }

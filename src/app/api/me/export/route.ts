@@ -25,7 +25,7 @@ export async function GET() {
     },
     bookings: bookings.map((b) => ({
       ref: b.ref, shop: b.vendor.name, service: b.service.name, status: b.status, createdAt: b.createdAt,
-      priceCents: b.priceCents, depositCents: b.depositCents, depositStatus: b.depositStatus,
+      priceCents: b.priceCents, depositCents: b.depositCents, feeCents: b.feeCents, depositStatus: b.depositStatus,
     })),
     reviews: reviews.map((r) => ({ rating: r.rating, text: r.text, createdAt: r.createdAt })),
     business: vendor,
