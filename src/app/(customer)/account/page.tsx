@@ -36,7 +36,10 @@ export default async function Account({ searchParams }: { searchParams: { error?
       )}
       {user.role === "ADMIN" && <Link className="btn alt" href="/admin">Admin: vendor approvals</Link>}
       <h3>Privacy</h3>
-      <p className="small muted">We keep your details safe under POPIA and never sell them.</p>
+      <p className="small muted">
+        We keep your details safe under POPIA and never sell them. Read our <a href="/privacy">privacy policy</a> and{" "}
+        <a href="/terms">terms</a>.
+      </p>
       <a className="btn alt" href="/api/me/export">Download my data</a>
       <details className="card">
         <summary>Delete my account</summary>

@@ -30,7 +30,8 @@ export default function SignIn({ searchParams }: { searchParams: { next?: string
           <input type="checkbox" name="consentOffers" /> Send me offers from shops I&apos;ve visited. (Optional)
         </label>
         <p className="small muted">
-          We keep your details safe under POPIA and never sell them. You can change this any time in Account.
+          We keep your details safe under POPIA and never sell them. You can change this any time in Account. By continuing
+          you agree to our <a href="/terms">terms</a> and <a href="/privacy">privacy policy</a>.
         </p>
         <Submit>Send code</Submit>
       </form>

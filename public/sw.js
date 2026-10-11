@@ -2,7 +2,7 @@
 self.addEventListener("push", (event) => {
   let data = { title: "Qless", body: "", url: "/bookings" };
   try { data = { ...data, ...event.data.json() }; } catch (e) {}
-  event.waitUntil(self.registration.showNotification(data.title, { body: data.body, icon: "/qmark.png", badge: "/qmark.png", data: { url: data.url } }));
+  event.waitUntil(self.registration.showNotification(data.title, { body: data.body, icon: "/icons/icon-192.png", badge: "/qmark.png", data: { url: data.url } }));
 });
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
