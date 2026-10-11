@@ -91,3 +91,14 @@ Working requirements for the first version of Qless. Items marked **(proposed)**
 - Confirm PayFast, Twilio and the no-show rule.
 - Confirm the security set in section 5.
 - Tech stack and hosting are not decided yet.
+
+## 8. Build notes
+
+The first version of the app implements everything above. Decisions taken while building, which can be changed:
+
+- Deposits are collected into one Qless PayFast account. Paying vendors their share (deposits kept from no-shows) is manual for now.
+- Customers join today's live queue only; there is no booking for a future day yet.
+- A customer can hold 2 active bookings at once. 3 no-shows in 30 days blocks booking for 7 days.
+- Unpaid bookings are released after 15 minutes.
+- Daily capacity is staff working × opening hours ÷ average service length.
+- Vendor photos are stored in the database (up to 12 per shop, 1.5 MB each).

@@ -1,0 +1,9 @@
+{
+  "name": "Qless",
+  "short_name": "Qless",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#0b0b0b",
+  "icons": [{ "src": "/qmark.png", "sizes": "160x160", "type": "image/png" }]
+}
