@@ -1,0 +1,784 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Qless Mock-up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: a screen index beside a phone frame; on phones the index becomes a scrolling chip row above the app. */
+:root{
+  --bg:#f1f1ef; --panel:#ffffff; --ink:#0b0b0b; --muted:#5f5f5b; --line:#dcdcd8;
+  --surface:#f6f6f4; --brand:#0b0b0b; --brand-ink:#ffffff; --brand-soft:#ececea;
+  --signal:#f5b700; --signal-ink:#1d1600; --danger:#c2412d; --danger-soft:#fbe5e0; --ok:#1d7a4a; --ok-soft:#ddf3e6;
+  --map-land:#e6e6e3; --map-road:#ffffff; --map-park:#d6d6d2;
+  --frame:#000000;
+  --qmark:url("data:image/png;base64,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");
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Figtree", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#070707; --panel:#131313; --ink:#f2f2f0; --muted:#9b9b97; --line:#2b2b2b;
+  --surface:#1c1c1c; --brand:#f2f2f0; --brand-ink:#0b0b0b; --brand-soft:#262626;
+  --signal:#ffc929; --signal-ink:#1d1600; --danger:#ff7a63; --danger-soft:#3a1d18; --ok:#4fd08a; --ok-soft:#14321f;
+  --map-land:#1d1d1d; --map-road:#2f2f2f; --map-park:#262626; --frame:#000000; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#070707; --panel:#131313; --ink:#f2f2f0; --muted:#9b9b97; --line:#2b2b2b;
+  --surface:#1c1c1c; --brand:#f2f2f0; --brand-ink:#0b0b0b; --brand-soft:#262626;
+  --signal:#ffc929; --signal-ink:#1d1600; --danger:#ff7a63; --danger-soft:#3a1d18; --ok:#4fd08a; --ok-soft:#14321f;
+  --map-land:#1d1d1d; --map-road:#2f2f2f; --map-park:#262626; --frame:#000000; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;padding-inline:16px;padding-block:24px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+.wrap{max-width:1040px;margin:0 auto;display:grid;grid-template-columns:300px 1fr;gap:32px;align-items:start}
+@media (max-width:820px){.wrap{grid-template-columns:1fr;gap:16px}}
+
+/* Logo: the uploaded Q mark as a mask, always white on a black tile */
+.logo{display:inline-flex;align-items:center;gap:12px}
+.logo .tile{width:var(--s,44px);height:var(--s,44px);border-radius:calc(var(--s,44px) * .26);background:#000;display:grid;place-items:center;flex:0 0 auto;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.logo .tile i{width:58%;height:58%;background:#fff;-webkit-mask:var(--qmark) center/contain no-repeat;mask:var(--qmark) center/contain no-repeat}
+.logo .name{font-family:var(--f-display);font-weight:800;letter-spacing:-.02em;font-size:calc(var(--s,44px) * .72);line-height:1}
+
+/* New features */
+.check{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted)}
+.check input{margin-top:3px;accent-color:var(--brand);width:18px;height:18px;flex:0 0 auto}
+.gallery{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.gallery figure{margin:0;flex:0 0 108px;height:120px;border-radius:14px;position:relative;overflow:hidden;background:var(--surface)}
+.gallery figure::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(var(--a,135deg),var(--line) 0 6px,transparent 6px 14px)}
+.gallery figcaption{position:absolute;left:8px;bottom:8px;right:8px;font-size:12px;font-weight:700;background:var(--panel);border-radius:8px;padding:3px 7px}
+.lite-note{display:none}
+.lite .map,.lite .gallery{display:none}
+.lite .lite-note{display:block}
+.banner{border-radius:14px;padding:12px 14px;background:var(--signal);color:var(--signal-ink);font-weight:600;font-size:14px}
+.opt{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.opt:has(input:checked){border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.opt input{accent-color:var(--brand)}
+.bars{display:flex;align-items:flex-end;gap:6px;height:120px;padding-top:16px}
+.bars div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px;min-width:0}
+.bars b{font-size:11px;font-family:var(--f-mono)}
+.bars i{display:block;width:100%;background:var(--ink);border-radius:5px 5px 2px 2px}
+.bars i.peak{background:var(--signal)}
+.bars span{font-size:11px;color:var(--muted);font-family:var(--f-mono)}
+
+/* Index */
+.index{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);display:flex;flex-direction:column;gap:16px;min-width:0}
+.wordmark{font-family:var(--f-display);font-weight:800;font-size:34px;letter-spacing:-.02em;line-height:1}
+.wordmark span{color:var(--brand)}
+.lede{color:var(--muted);margin:0;text-wrap:pretty}
+.roles{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px}
+.roles button{flex:1;border:0;background:transparent;padding:8px 6px;border-radius:9px;font-weight:600;color:var(--muted)}
+.roles button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink)}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.steps button{width:100%;text-align:left;border:0;background:transparent;padding:9px 10px;border-radius:9px;display:flex;gap:10px;align-items:baseline}
+.steps button .n{font-family:var(--f-mono);font-size:12px;color:var(--muted);min-width:18px}
+.steps button .t{font-weight:600}
+.steps button .d{display:block;font-size:13px;color:var(--muted);font-weight:400}
+.steps button[aria-current="true"]{background:var(--panel);box-shadow:inset 0 0 0 1px var(--line)}
+.note{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;margin:0}
+@media (max-width:820px){
+  .index{position:static}
+  .steps{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:4px}
+  .steps li{flex:0 0 auto}
+  .steps button{border:1px solid var(--line);background:var(--panel);padding:6px 12px;border-radius:99px}
+  .steps button .d{display:none}
+  .note{display:none}
+}
+
+/* Phone */
+.stage{display:flex;justify-content:center;min-width:0}
+.phone{width:390px;max-width:100%;height:780px;background:var(--frame);border-radius:44px;padding:12px;box-shadow:0 30px 60px -30px rgba(10,30,25,.45)}
+.screen{position:relative;height:100%;background:var(--panel);border-radius:34px;overflow:hidden;display:flex;flex-direction:column}
+@media (max-width:480px){.phone{height:auto;min-height:720px;border-radius:28px;padding:6px}.screen{border-radius:23px;min-height:708px}}
+.sbar{display:flex;justify-content:space-between;padding:12px 24px 4px;font-size:12px;font-weight:600;font-family:var(--f-mono)}
+.view{flex:1;overflow-y:auto;padding:8px 18px 20px;display:flex;flex-direction:column;gap:14px}
+.view[hidden]{display:none!important}
+.top{display:flex;align-items:center;gap:10px;min-height:36px}
+.back{border:0;background:var(--surface);width:34px;height:34px;border-radius:50%;font-size:18px;line-height:1}
+.top h2{font-family:var(--f-display);font-size:20px;margin:0;font-weight:700;letter-spacing:-.01em}
+h3{font-family:var(--f-display);font-size:17px;margin:0;font-weight:700}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+.stack{display:flex;flex-direction:column;gap:8px}
+.card{border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--panel)}
+.fill{background:var(--surface);border-radius:16px;padding:14px}
+.btn{border:0;border-radius:14px;padding:14px 16px;font-weight:700;width:100%;background:var(--brand);color:var(--brand-ink);font-size:15px}
+.btn.alt{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+.btn.sig{background:var(--signal);color:var(--signal-ink)}
+.btn.warn{background:var(--danger-soft);color:var(--danger)}
+.btn.sm{width:auto;padding:8px 12px;border-radius:10px;font-size:13px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--brand-soft);color:var(--brand)}
+.pill.sig{background:var(--signal);color:var(--signal-ink)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.bad{background:var(--danger-soft);color:var(--danger)}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600;color:var(--muted)}
+input.i,select.i{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:12px;font:inherit;font-size:15px;width:100%}
+.otp{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.otp input{text-align:center;font-family:var(--f-mono);font-size:22px;padding:10px 0}
+.stars{display:flex;gap:6px}
+.stars button{border:0;background:transparent;font-size:34px;line-height:1;color:var(--line);padding:0}
+.stars button.on{color:var(--signal)}
+.toast{position:absolute;left:16px;right:16px;bottom:18px;background:var(--ink);color:var(--panel);padding:12px 14px;border-radius:12px;font-weight:600;font-size:14px;opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none}
+.toast.show{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+
+/* Map */
+.map{position:relative;border-radius:18px;overflow:hidden;height:220px;flex:0 0 auto;background:var(--map-land)}
+.map svg{position:absolute;inset:0;width:100%;height:100%}
+.pin{position:absolute;transform:translate(-50%,-100%);border:0;background:var(--brand);color:var(--brand-ink);font-size:12px;font-weight:700;padding:4px 8px;border-radius:10px 10px 10px 2px;white-space:nowrap}
+.pin.busy{background:var(--signal);color:var(--signal-ink)}
+.me{position:absolute;width:16px;height:16px;border-radius:50%;background:#2f7cf6;box-shadow:0 0 0 6px rgba(47,124,246,.25);transform:translate(-50%,-50%)}
+.vendor{display:flex;gap:12px;align-items:center;border:0;background:transparent;text-align:left;padding:10px 0;border-bottom:1px solid var(--line);width:100%}
+.avatar{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:18px;background:var(--brand-soft);color:var(--brand);flex:0 0 auto}
+.grow{flex:1;min-width:0}
+.search{display:flex;gap:8px}
+.search .i{flex:1}
+
+/* Ticket */
+.ticket{background:var(--brand);color:var(--brand-ink);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.ticket .big{font-family:var(--f-display);font-weight:800;font-size:64px;line-height:.9;letter-spacing:-.03em}
+.ahead{display:flex;gap:6px}
+.ahead i{flex:1;height:8px;border-radius:4px;background:color-mix(in srgb, var(--brand-ink) 30%, transparent)}
+.ahead i.you{background:var(--signal)}
+.code{font-family:var(--f-mono);font-size:30px;font-weight:700;letter-spacing:.18em;text-align:center;background:var(--surface);border-radius:14px;padding:12px;border:2px dashed var(--line)}
+.tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.tl li{display:flex;gap:10px;align-items:center;font-size:14px}
+.tl .ic{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:var(--surface);font-size:13px;font-weight:700;font-family:var(--f-mono)}
+.toggle{width:42px;height:24px;border-radius:99px;border:0;background:var(--line);position:relative;flex:0 0 auto}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--panel);transition:.15s}
+.toggle[aria-checked="true"]{background:var(--brand)}
+.toggle[aria-checked="true"]::after{left:21px}
+
+/* Called */
+.called{background:var(--signal);color:var(--signal-ink);border-radius:22px;padding:22px 18px;text-align:center;display:flex;flex-direction:column;gap:6px}
+.ring{width:190px;height:190px;margin:6px auto;position:relative}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .t{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-mono);font-weight:700;font-size:40px}
+
+/* Vendor */
+.stepper{display:flex;align-items:center;gap:12px}
+.stepper button{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:20px;font-weight:700}
+.stepper .v{font-family:var(--f-display);font-weight:800;font-size:28px;min-width:28px;text-align:center}
+.q{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.q .no{font-family:var(--f-mono);font-weight:700;width:30px;color:var(--muted)}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.days button{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 0;font-weight:700;font-size:13px}
+.days button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.svc{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);gap:10px}
+.svc:last-child{border-bottom:0}
+.svc .p{font-family:var(--f-mono);font-weight:700}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px;font-size:13px;font-weight:600}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.stat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat div{background:var(--surface);border-radius:14px;padding:10px;text-align:center}
+.stat b{display:block;font-family:var(--f-display);font-size:24px;font-weight:800}
+.stat span{font-size:12px;color:var(--muted)}
+.qr{width:200px;height:200px;margin:0 auto;border-radius:20px;position:relative;background:#0b0f0e;display:grid;place-items:center}
+.qr::before{content:"";position:absolute;inset:18px;border:3px dashed var(--signal);border-radius:16px}
+.qr canvas{width:110px;height:110px;image-rendering:pixelated}
+</style>
+
+<div class="wrap">
+  <aside class="index">
+    <div class="logo" style="--s:44px"><span class="tile"><i></i></span><span class="name">Qless</span></div>
+    <p class="lede">A clickable mock-up of the web app. Pick a side, then tap through the screens or use the buttons inside the phone. Everything here is sample data.</p>
+    <div class="roles" role="group" aria-label="Choose who you are">
+      <button id="r-customer" data-role="customer" aria-pressed="true">Customer</button>
+      <button id="r-vendor" data-role="vendor" aria-pressed="false">Vendor</button>
+      <button id="r-admin" data-role="admin" aria-pressed="false">Admin</button>
+    </div>
+    <ol class="steps" id="steps"></ol>
+    <p class="note">Prices in Rand. Deposits through PayFast, reminders by push, SMS and WhatsApp. Nothing on this page is connected to a real system.</p>
+  </aside>
+
+  <div class="stage">
+    <div class="phone"><div class="screen" id="screen">
+      <div class="sbar"><span>09:41</span><span>LTE ▮▮▮</span></div>
+
+      <!-- CUSTOMER: sign up -->
+      <section class="view" data-view="c-signup">
+        <div style="padding-top:20px" class="stack">
+          <div class="logo" style="--s:56px"><span class="tile"><i></i></span><span class="name">Qless</span></div>
+          <p class="muted" style="margin:0">Book your spot. Arrive when it's your turn.</p>
+        </div>
+        <label class="f">Full name<input class="i" id="su-name" value="Lerato Mokoena"></label>
+        <label class="f">Cellphone number
+          <div class="row"><span class="fill mono" style="padding:12px">+27</span><input class="i mono" id="su-phone" inputmode="tel" value="82 555 0147"></div>
+        </label>
+        <div class="fill small">We'll send a 6-digit code by SMS to confirm it's you.</div>
+        <label class="check"><input type="checkbox" id="popia1" checked> I agree that Qless may send me booking updates and reminders by SMS, WhatsApp and push.</label>
+        <label class="check"><input type="checkbox" id="popia2"> Send me offers from shops I've visited. (Optional)</label>
+        <p class="small muted" style="margin:0">We keep your details safe under POPIA and never sell them. You can change this any time in Settings.</p>
+        <div style="flex:1"></div>
+        <button class="btn" id="send-code">Send code</button>
+        <button class="btn alt" data-role-go="vendor">I'm a vendor</button>
+      </section>
+
+      <!-- CUSTOMER: OTP -->
+      <section class="view" data-view="c-otp" hidden>
+        <div class="top"><button class="back" data-go="c-signup" aria-label="Back">‹</button><h2>Enter your code</h2></div>
+        <p class="muted" style="margin:0">Sent to <b class="mono">+27 82 555 0147</b></p>
+        <div class="otp">
+          <input class="i" id="o1" value="4"><input class="i" id="o2" value="8"><input class="i" id="o3" value="2"><input class="i" id="o4" value="9"><input class="i" id="o5" value="1"><input class="i" id="o6" value="6">
+        </div>
+        <p class="small muted" style="margin:0">Didn't get it? Resend in <span class="mono">0:24</span></p>
+        <div style="flex:1"></div>
+        <button class="btn" data-go="c-discover">Verify and continue</button>
+      </section>
+
+      <!-- CUSTOMER: discover -->
+      <section class="view" data-view="c-discover" hidden>
+        <div class="row between"><div><div class="small muted">Near you</div><h2 style="font-family:var(--f-display);margin:0;font-size:22px">Braamfontein, JHB</h2></div>
+          <div class="row" style="gap:6px"><button class="btn sm alt" data-go="c-history">My bookings</button><button class="btn sm sig" data-go="c-scan">Scan QR</button></div></div>
+        <div class="row between fill" style="padding:10px 14px"><span class="small"><b>Low-data mode</b><br><span class="muted">Hides the map and photos</span></span><button class="toggle" role="switch" aria-checked="false" aria-label="Low-data mode" id="tg-lite"></button></div>
+        <div class="search"><input class="i" id="search" placeholder="Search barbers, nails, braids…" value=""></div>
+        <div class="chips" role="group" aria-label="Category">
+          <button class="chip" aria-pressed="true">All</button><button class="chip" aria-pressed="false">Barbers</button><button class="chip" aria-pressed="false">Nails</button><button class="chip" aria-pressed="false">Hair</button>
+        </div>
+        <p class="lite-note small muted" style="margin:0">Map is off to save data. Shops are listed by distance.</p>
+        <div class="map">
+          <svg viewBox="0 0 340 220" preserveAspectRatio="none" aria-hidden="true">
+            <rect x="200" y="20" width="110" height="70" rx="10" fill="var(--map-park)"/>
+            <rect x="20" y="150" width="80" height="50" rx="10" fill="var(--map-park)"/>
+            <path d="M0 110 H340" stroke="var(--map-road)" stroke-width="14"/>
+            <path d="M120 0 V220" stroke="var(--map-road)" stroke-width="12"/>
+            <path d="M0 40 L340 190" stroke="var(--map-road)" stroke-width="8"/>
+            <path d="M250 0 V220" stroke="var(--map-road)" stroke-width="6"/>
+            <path d="M0 175 H340" stroke="var(--map-road)" stroke-width="6"/>
+          </svg>
+          <span class="me" style="left:44%;top:56%"></span>
+          <button class="pin" style="left:30%;top:40%" data-go="c-vendor">Sharp Lines · 3</button>
+          <button class="pin busy" style="left:74%;top:72%" data-toast="Kasi Kutz is full for today">Kasi Kutz · Full</button>
+          <button class="pin" style="left:78%;top:30%" data-toast="Opens the Nailed It profile">Nailed It · 1</button>
+        </div>
+        <div class="stack" style="gap:0">
+          <button class="vendor" data-go="c-vendor"><span class="avatar">SL</span><span class="grow"><b>Sharp Lines Barbershop</b><br><span class="small muted">Barber · 350 m · ★ 4.8 (212)</span></span><span class="pill"><span class="dot"></span>3 waiting</span></button>
+          <button class="vendor" data-toast="Opens the Nailed It profile"><span class="avatar">NI</span><span class="grow"><b>Nailed It Studio</b><br><span class="small muted">Nails · 900 m · ★ 4.9 (87)</span></span><span class="pill"><span class="dot"></span>1 waiting</span></button>
+          <button class="vendor" data-toast="Kasi Kutz is full for today"><span class="avatar">KK</span><span class="grow"><b>Kasi Kutz</b><br><span class="small muted">Barber · 1.4 km · ★ 4.6 (340)</span></span><span class="pill bad">Full today</span></button>
+        </div>
+      </section>
+
+      <!-- CUSTOMER: scan -->
+      <section class="view" data-view="c-scan" hidden>
+        <div class="top"><button class="back" data-go="c-discover" aria-label="Back">‹</button><h2>Scan the shop's QR</h2></div>
+        <p class="muted" style="margin:0">Every Qless vendor has a QR code at the door. Point your camera at it to open their queue.</p>
+        <div class="qr"><canvas id="qrc" width="21" height="21" aria-label="Sample QR code"></canvas></div>
+        <p class="small muted" style="text-align:center;margin:0">Camera preview (mock)</p>
+        <div style="flex:1"></div>
+        <button class="btn" data-go="c-vendor">Simulate scan: Sharp Lines</button>
+      </section>
+
+      <!-- CUSTOMER: vendor profile -->
+      <section class="view" data-view="c-vendor" hidden>
+        <div class="top"><button class="back" data-go="c-discover" aria-label="Back">‹</button><h2>Sharp Lines Barbershop</h2></div>
+        <div class="row"><span class="avatar" style="width:58px;height:58px;font-size:22px">SL</span>
+          <div class="grow"><div><b>★ 4.8</b> <span class="muted small">212 reviews</span></div><div class="small muted">Jorissen St, Braamfontein · Verified business</div></div></div>
+        <div class="stat"><div><b>3</b><span>in queue</span></div><div><b>~35</b><span>min wait</span></div><div><b>2</b><span>barbers on</span></div></div>
+        <div class="small muted">Open today 08:00–18:00 · Mon–Sat</div>
+        <div class="gallery" aria-label="Photos of recent work">
+          <figure style="--a:135deg"><figcaption>Skin fade</figcaption></figure>
+          <figure style="--a:45deg"><figcaption>Taper + design</figcaption></figure>
+          <figure style="--a:90deg"><figcaption>Beard line-up</figcaption></figure>
+          <figure style="--a:0deg"><figcaption>Kids cut</figcaption></figure>
+        </div>
+        <h3>Choose your barber</h3>
+        <div class="stack" id="staff-pick">
+          <label class="opt"><input type="radio" name="barber" id="bb0" value="Anyone|3" checked><span class="grow"><b>Anyone available</b><br><span class="small muted">Fastest · 3 waiting</span></span></label>
+          <label class="opt"><input type="radio" name="barber" id="bb1" value="Tshepo|1"><span class="avatar" style="width:36px;height:36px;font-size:14px">T</span><span class="grow"><b>Tshepo</b><br><span class="small muted">★ 4.9 · 1 waiting</span></span></label>
+          <label class="opt"><input type="radio" name="barber" id="bb2" value="Bongani|2"><span class="avatar" style="width:36px;height:36px;font-size:14px">B</span><span class="grow"><b>Bongani</b><br><span class="small muted">★ 4.7 · 2 waiting</span></span></label>
+        </div>
+        <h3>Choose a service</h3>
+        <div class="card" style="padding:4px 14px" id="svc-list">
+          <label class="svc"><span><input type="radio" name="svc" id="svc1" value="Skin fade|120" checked> <b>Skin fade</b><br><span class="small muted">30 min</span></span><span class="p">R120</span></label>
+          <label class="svc"><span><input type="radio" name="svc" id="svc2" value="Cut &amp; beard|160"> <b>Cut &amp; beard</b><br><span class="small muted">45 min</span></span><span class="p">R160</span></label>
+          <label class="svc"><span><input type="radio" name="svc" id="svc3" value="Kids cut|80"> <b>Kids cut</b><br><span class="small muted">20 min</span></span><span class="p">R80</span></label>
+          <label class="svc"><span><input type="radio" name="svc" id="svc4" value="Chiskop|70"> <b>Chiskop</b><br><span class="small muted">15 min</span></span><span class="p">R70</span></label>
+        </div>
+        <div class="card small"><b>"Quick, clean fade. Was in and out."</b><br><span class="muted">Sipho M. · ★★★★★ · last week</span></div>
+        <button class="btn" data-go="c-book">Join the queue</button>
+      </section>
+
+      <!-- CUSTOMER: booking & deposit -->
+      <section class="view" data-view="c-book" hidden>
+        <div class="top"><button class="back" data-go="c-vendor" aria-label="Back">‹</button><h2>Confirm and pay deposit</h2></div>
+        <div class="card stack">
+          <div class="row between"><span class="muted">Service</span><b id="b-svc">Skin fade</b></div>
+          <div class="row between"><span class="muted">Barber</span><b id="b-barber">Anyone available</b></div>
+          <div class="row between"><span class="muted">Price</span><b class="mono" id="b-price">R120</b></div>
+          <div class="row between"><span class="muted">Deposit now</span><b class="mono">R50</b></div>
+          <div class="row between" style="border-top:1px solid var(--line);padding-top:8px"><span class="muted">Pay at the shop</span><b class="mono" id="b-rest">R70</b></div>
+        </div>
+        <div class="fill small stack" style="gap:6px">
+          <b>Deposit rules</b>
+          <span>The deposit comes off your final price.</span>
+          <span>Cancel 2 hours or more before your turn for a full refund.</span>
+          <span>If you're called and don't arrive within 15 minutes, you lose your spot and the deposit.</span>
+        </div>
+        <div style="flex:1"></div>
+        <button class="btn" id="pay">Pay R50 with PayFast</button>
+        <p class="small muted" style="text-align:center;margin:0">Card, Instant EFT, SnapScan or Zapper via PayFast</p>
+      </section>
+
+      <!-- CUSTOMER: live queue -->
+      <section class="view" data-view="c-queue" hidden>
+        <div class="row between"><h2 style="font-family:var(--f-display);margin:0;font-size:20px">Your spot</h2><span class="pill ok"><span class="dot"></span>Deposit paid</span></div>
+        <div class="banner" id="q-paused" hidden></div>
+        <div class="ticket">
+          <div class="row between"><span>Sharp Lines · <span id="q-svc">Skin fade</span></span><span class="mono" style="white-space:nowrap">#Q-0417</span></div>
+          <div class="row" style="align-items:flex-end;gap:12px"><span class="big" id="q-ahead">3</span><span style="padding-bottom:6px;font-weight:600">people ahead of you</span></div>
+          <div class="ahead" id="q-bar"><i></i><i></i><i></i><i class="you"></i></div>
+          <div class="row between small"><span>Estimated turn</span><b class="mono" id="q-eta">10:20</b></div>
+        </div>
+        <div class="stack">
+          <div class="small muted">Show this code when you arrive</div>
+          <div class="code">7K4P</div>
+        </div>
+        <h3>Reminders</h3>
+        <div class="card stack">
+          <div class="row between"><span>1 hour before</span><span class="small muted">Push · SMS · WhatsApp</span></div>
+          <div class="row between"><span>20 minutes before</span><span class="small muted">Push · SMS · WhatsApp</span></div>
+          <div class="row between"><span>WhatsApp messages</span><button class="toggle" role="switch" aria-checked="true" aria-label="WhatsApp reminders" id="tg-wa"></button></div>
+          <div class="row between"><span>SMS messages</span><button class="toggle" role="switch" aria-checked="true" aria-label="SMS reminders" id="tg-sms"></button></div>
+        </div>
+        <button class="btn sig" id="advance">Simulate: queue moves</button>
+        <button class="btn alt" id="move-btn" data-go="c-move">Move my spot back</button>
+        <button class="btn warn" data-go="c-cancel">Cancel booking</button>
+      </section>
+
+      <!-- CUSTOMER: move my spot -->
+      <section class="view" data-view="c-move" hidden>
+        <div class="top"><button class="back" data-go="c-queue" aria-label="Back">‹</button><h2>Move my spot back</h2></div>
+        <p class="muted" style="margin:0">Running late? Let people behind you go first and keep your deposit.</p>
+        <div class="stack">
+          <label class="opt"><input type="radio" name="mv" id="mv1" value="1" checked><span class="grow"><b>1 place back</b><br><span class="small muted">About 12 minutes later</span></span></label>
+          <label class="opt"><input type="radio" name="mv" id="mv2" value="2"><span class="grow"><b>2 places back</b><br><span class="small muted">About 25 minutes later</span></span></label>
+          <label class="opt"><input type="radio" name="mv" id="mv3" value="3"><span class="grow"><b>3 places back</b><br><span class="small muted">About 35 minutes later</span></span></label>
+        </div>
+        <div class="fill small">You can move back once per booking. It's free, and the shop is told automatically.</div>
+        <div style="flex:1"></div>
+        <button class="btn" id="move-confirm">Move me back</button>
+      </section>
+
+      <!-- CUSTOMER: my bookings -->
+      <section class="view" data-view="c-history" hidden>
+        <div class="top"><button class="back" data-go="c-discover" aria-label="Back">‹</button><h2>My bookings</h2></div>
+        <h3>Upcoming</h3>
+        <button class="vendor card" style="padding:12px;border-bottom:1px solid var(--line)" data-go="c-queue"><span class="avatar">SL</span><span class="grow"><b>Sharp Lines Barbershop</b><br><span class="small muted">Today · Skin fade · 3 ahead</span></span><span class="pill ok">Paid R50</span></button>
+        <h3>Past visits</h3>
+        <div class="stack" style="gap:0">
+          <div class="vendor"><span class="avatar">SL</span><span class="grow"><b>Sharp Lines</b><br><span class="small muted">19 Sep · Skin fade with Tshepo · R120</span></span><button class="btn sm" data-go="c-vendor">Book again</button></div>
+          <div class="vendor"><span class="avatar">NI</span><span class="grow"><b>Nailed It Studio</b><br><span class="small muted">2 Sep · Gel overlay · R280</span></span><button class="btn sm" data-toast="Opens the Nailed It profile">Book again</button></div>
+          <div class="vendor"><span class="avatar">KK</span><span class="grow"><b>Kasi Kutz</b><br><span class="small muted">14 Aug · Chiskop · No-show, deposit kept</span></span><span class="pill bad">Missed</span></div>
+        </div>
+        <h3>Privacy</h3>
+        <div class="card stack">
+          <div class="row between"><span>Booking reminders</span><button class="toggle" role="switch" aria-checked="true" aria-label="Booking reminders" id="tg-p1"></button></div>
+          <div class="row between"><span>Offers from shops</span><button class="toggle" role="switch" aria-checked="false" aria-label="Offers from shops" id="tg-p2"></button></div>
+          <button class="btn sm alt" style="align-self:flex-start" data-toast="We'll email a copy of your data within 30 days">Request my data</button>
+        </div>
+      </section>
+
+      <!-- CUSTOMER: cancel -->
+      <section class="view" data-view="c-cancel" hidden>
+        <div class="top"><button class="back" data-go="c-queue" aria-label="Back">‹</button><h2>Cancel booking?</h2></div>
+        <div class="card stack">
+          <span class="pill ok" style="align-self:flex-start">Full refund</span>
+          <span>Your turn is more than 2 hours away, so your <b class="mono">R50</b> deposit goes back to your card within 3–5 working days.</span>
+        </div>
+        <div class="fill small">Inside 2 hours of your turn, the deposit is kept by the vendor.</div>
+        <div style="flex:1"></div>
+        <button class="btn warn" data-go="c-discover" data-toast="Booking cancelled. R50 refund on its way.">Yes, cancel and refund</button>
+        <button class="btn alt" data-go="c-queue">Keep my spot</button>
+      </section>
+
+      <!-- CUSTOMER: called -->
+      <section class="view" data-view="c-called" hidden>
+        <div class="called">
+          <div class="small" style="font-weight:700;letter-spacing:.08em;text-transform:uppercase">It's your turn</div>
+          <h2 style="font-family:var(--f-display);font-size:26px;margin:0">Sharp Lines is ready for you</h2>
+          <div class="ring">
+            <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="rgba(0,0,0,.12)" stroke-width="8"/><circle id="ring" cx="50" cy="50" r="44" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="0"/></svg>
+            <div class="t" id="cd">15:00</div>
+          </div>
+          <div class="small">Arrive within 15 minutes or your spot and deposit go to the next person.</div>
+        </div>
+        <div class="card row between"><span>Your check-in code</span><b class="mono" style="font-size:22px;letter-spacing:.15em">7K4P</b></div>
+        <button class="btn" data-toast="Sharp Lines knows you're on your way">I'm on my way</button>
+        <button class="btn alt" data-go="c-rate" id="arrived">Simulate: checked in and done</button>
+      </section>
+
+      <!-- CUSTOMER: rate -->
+      <section class="view" data-view="c-rate" hidden>
+        <div class="top"><h2>How was your fade?</h2></div>
+        <div class="card stack">
+          <div class="row between"><span>Paid at shop</span><b class="mono">R70</b></div>
+          <div class="row between"><span>Deposit applied</span><b class="mono">R50</b></div>
+          <div class="row between" style="border-top:1px solid var(--line);padding-top:8px"><b>Total</b><b class="mono">R120</b></div>
+        </div>
+        <h3>Rate Sharp Lines</h3>
+        <div class="stars" id="stars"></div>
+        <label class="f">Leave a review (optional)<textarea class="i" id="review" rows="3" style="resize:vertical">Didn't have to sit and wait. Great cut.</textarea></label>
+        <div style="flex:1"></div>
+        <button class="btn" data-go="c-discover" data-toast="Thanks! Your review is posted.">Post review</button>
+      </section>
+
+      <!-- VENDOR: sign up -->
+      <section class="view" data-view="v-signup" hidden>
+        <div class="top"><h2>List your business</h2></div>
+        <label class="f">Business name<input class="i" id="vb-name" value="Sharp Lines Barbershop"></label>
+        <label class="f">Type of business<select class="i" id="vb-type"><option>Barber</option><option>Nail technician</option><option>Hair salon</option><option>Other</option></select></label>
+        <label class="f">CIPC registration number<input class="i mono" id="vb-cipc" value="2021/483920/07"></label>
+        <label class="f">Street address<input class="i" id="vb-addr" value="12 Jorissen St, Braamfontein"></label>
+        <label class="f">Owner cellphone<input class="i mono" id="vb-phone" value="+27 71 234 5678"></label>
+        <div class="fill small">We verify every business before it goes live. Usually within 1 working day.</div>
+        <button class="btn" data-go="v-pending">Submit for approval</button>
+      </section>
+
+      <!-- VENDOR: pending -->
+      <section class="view" data-view="v-pending" hidden>
+        <div class="top"><button class="back" data-go="v-signup" aria-label="Back">‹</button><h2>Application sent</h2></div>
+        <div class="card stack">
+          <span class="pill sig" style="align-self:flex-start">Waiting for approval</span>
+          <b>Sharp Lines Barbershop</b>
+          <span class="small muted mono">CIPC 2021/483920/07</span>
+        </div>
+        <ul class="tl">
+          <li><span class="ic">✓</span>Phone verified</li>
+          <li><span class="ic">✓</span>Business details submitted</li>
+          <li><span class="ic">…</span>Qless checks your CIPC number</li>
+          <li><span class="ic">○</span>Go live and print your QR code</li>
+        </ul>
+        <p class="small muted" style="margin:0">You can set up your hours and services while you wait.</p>
+        <div style="flex:1"></div>
+        <button class="btn" data-go="v-setup">Set up my shop</button>
+      </section>
+
+      <!-- VENDOR: setup -->
+      <section class="view" data-view="v-setup" hidden>
+        <div class="top"><button class="back" data-go="v-pending" aria-label="Back">‹</button><h2>Shop setup</h2></div>
+        <h3>Open days</h3>
+        <div class="days" id="days"></div>
+        <div class="row"><label class="f grow">Opens<input class="i mono" id="v-open" value="08:00"></label><label class="f grow">Closes<input class="i mono" id="v-close" value="18:00"></label></div>
+        <h3>Services and prices</h3>
+        <div class="card" style="padding:4px 14px">
+          <div class="svc"><span><b>Skin fade</b><br><span class="small muted">30 min</span></span><span class="p">R120</span></div>
+          <div class="svc"><span><b>Cut &amp; beard</b><br><span class="small muted">45 min</span></span><span class="p">R160</span></div>
+          <div class="svc"><span><b>Kids cut</b><br><span class="small muted">20 min</span></span><span class="p">R80</span></div>
+          <div class="svc"><span><b>Chiskop</b><br><span class="small muted">15 min</span></span><span class="p">R70</span></div>
+        </div>
+        <button class="btn alt" data-toast="Add a service: name, time, price">+ Add service</button>
+        <div class="card stack">
+          <div class="row between"><b>Booking deposit</b><b class="mono">R50</b></div>
+          <div class="row between small"><span class="muted">Refund if cancelled</span><span>2+ hours before</span></div>
+        </div>
+        <button class="btn" data-go="v-start">Save</button>
+      </section>
+
+      <!-- VENDOR: start day -->
+      <section class="view" data-view="v-start" hidden>
+        <div class="top"><h2>Start today's queue</h2></div>
+        <p class="muted" style="margin:0">Saturday 10 October · 08:00–18:00</p>
+        <div class="card stack" style="gap:12px">
+          <b>How many staff are working today?</b>
+          <div class="stepper"><button id="st-minus" aria-label="Fewer staff">−</button><span class="v" id="st-v">2</span><button id="st-plus" aria-label="More staff">+</button></div>
+          <div class="chips" id="st-names"></div>
+          <span class="small muted" id="st-cap">That's room for about 36 customers today. Bookings close when the queue is full.</span>
+        </div>
+        <div class="card row between"><span>Already booked</span><b class="mono">5</b></div>
+        <div style="flex:1"></div>
+        <button class="btn" data-go="v-queue">Open the queue</button>
+      </section>
+
+      <!-- VENDOR: live queue -->
+      <section class="view" data-view="v-queue" hidden>
+        <div class="row between"><h2 style="font-family:var(--f-display);margin:0;font-size:20px">Live queue</h2><span class="pill ok" id="vq-state"><span class="dot"></span>Open · <span id="vq-staff">2</span> staff</span></div>
+        <div class="banner" id="vq-paused" hidden></div>
+        <div class="stat"><div><b id="vq-count">5</b><span>waiting</span></div><div><b>11</b><span>done today</span></div><div><b class="mono" style="font-size:20px">R1,320</b><span>takings</span></div></div>
+        <div class="card" style="padding:12px 14px">
+          <div class="small muted">Now serving</div>
+          <div class="row between"><b id="vq-now">Thabo N. · Cut &amp; beard</b><span class="pill">Chair 1</span></div>
+        </div>
+        <div id="vq-list"></div>
+        <div class="row" style="gap:8px">
+          <button class="btn" id="call-next">Call next</button>
+          <button class="btn alt" id="add-walkin">+ Walk-in</button>
+        </div>
+        <div class="card stack">
+          <b>Check in an arrival</b>
+          <div class="row"><input class="i mono" id="ci" value="7K4P" style="letter-spacing:.15em"><button class="btn sm" id="ci-btn">Check in</button></div>
+        </div>
+        <div class="row" style="gap:8px"><button class="btn warn" id="pause-btn" data-go="v-pause">Pause queue</button><button class="btn alt" data-go="v-summary">Today's summary</button></div>
+        <button class="btn alt" data-go="v-qr">Show my QR poster</button>
+      </section>
+
+      <!-- VENDOR: pause -->
+      <section class="view" data-view="v-pause" hidden>
+        <div class="top"><button class="back" data-go="v-queue" aria-label="Back">‹</button><h2>Pause the queue</h2></div>
+        <p class="muted" style="margin:0">Everyone waiting gets a message with their new time. Nobody loses their deposit.</p>
+        <h3>Why?</h3>
+        <div class="chips" id="pz-reason" role="group" aria-label="Reason">
+          <button class="chip" aria-pressed="true">Load-shedding</button><button class="chip" aria-pressed="false">Staff on a break</button><button class="chip" aria-pressed="false">Running late</button><button class="chip" aria-pressed="false">Other</button>
+        </div>
+        <h3>For how long?</h3>
+        <div class="chips" id="pz-mins" role="group" aria-label="How long">
+          <button class="chip" aria-pressed="false" data-m="15">15 min</button><button class="chip" aria-pressed="true" data-m="30">30 min</button><button class="chip" aria-pressed="false" data-m="60">1 hour</button><button class="chip" aria-pressed="false" data-m="120">2 hours</button>
+        </div>
+        <div class="fill small" id="pz-preview">5 customers will get: "Sharp Lines is paused for load-shedding. Your new estimated time is 10:50."</div>
+        <div style="flex:1"></div>
+        <button class="btn" id="pz-go">Pause and notify 5 customers</button>
+      </section>
+
+      <!-- VENDOR: daily summary -->
+      <section class="view" data-view="v-summary" hidden>
+        <div class="top"><button class="back" data-go="v-queue" aria-label="Back">‹</button><h2>Today's summary</h2></div>
+        <p class="muted" style="margin:0">Saturday 10 October · sample day</p>
+        <div class="stat"><div><b>16</b><span>served</span></div><div><b>2</b><span>no-shows</span></div><div><b>3</b><span>walk-ins</span></div></div>
+        <div class="card stack">
+          <div class="row between"><span>Takings from services</span><b class="mono">R2,140</b></div>
+          <div class="row between"><span>Deposits kept (no-shows)</span><b class="mono">R100</b></div>
+          <div class="row between"><span>Deposits refunded</span><b class="mono">R50</b></div>
+          <div class="row between" style="border-top:1px solid var(--line);padding-top:8px"><b>Paid out by PayFast</b><b class="mono">R900</b></div>
+        </div>
+        <h3>Customers by hour</h3>
+        <div class="bars" id="bars"></div>
+        <h3>By barber</h3>
+        <div class="card" style="padding:4px 14px">
+          <div class="svc"><span><b>Tshepo</b><br><span class="small muted">9 customers · ★ 4.9</span></span><span class="p">R1,200</span></div>
+          <div class="svc"><span><b>Bongani</b><br><span class="small muted">7 customers · ★ 4.7</span></span><span class="p">R940</span></div>
+        </div>
+      </section>
+
+      <!-- VENDOR: QR -->
+      <section class="view" data-view="v-qr" hidden>
+        <div class="top"><button class="back" data-go="v-queue" aria-label="Back">‹</button><h2>Your QR poster</h2></div>
+        <div class="card stack" style="align-items:center;text-align:center;padding:24px">
+          <div class="logo" style="--s:36px"><span class="tile"><i></i></span><span class="name">Qless</span></div>
+          <b style="font-size:18px">Sharp Lines Barbershop</b>
+          <canvas id="qrc2" width="21" height="21" style="width:180px;height:180px;image-rendering:pixelated;background:#fff;padding:10px;border-radius:12px" aria-label="Sample QR code"></canvas>
+          <span>Scan to join the queue</span>
+          <span class="small muted mono">qless.co.za/sharp-lines</span>
+        </div>
+        <p class="small muted" style="margin:0">Print this and stick it at your door. Walk-ins can scan it to join without waiting inside.</p>
+      </section>
+
+      <!-- ADMIN -->
+      <section class="view" data-view="a-approvals" hidden>
+        <div class="row between"><h2 style="font-family:var(--f-display);margin:0;font-size:20px">Vendor approvals</h2><span class="pill sig" id="a-count">3 pending</span></div>
+        <div id="a-list" class="stack" style="gap:10px"></div>
+        <p class="small muted" style="margin:0">Check each CIPC number on the CIPC BizPortal before approving.</p>
+      </section>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </div></div>
+  </div>
+</div>
+
+<script>
+const SCREENS = {
+  customer:[
+    ["c-signup","Sign up","Name and cellphone"],
+    ["c-otp","Verify phone","6-digit SMS code"],
+    ["c-discover","Find a vendor","Nearby map and list"],
+    ["c-scan","Scan QR","Open a shop's queue"],
+    ["c-vendor","Vendor page","Services, prices, wait"],
+    ["c-book","Pay deposit","R50 via PayFast"],
+    ["c-queue","Live queue","Position and reminders"],
+    ["c-move","Move my spot","Drop back, keep deposit"],
+    ["c-cancel","Cancel","Refund if 2h+ before"],
+    ["c-called","You're called","15-minute countdown"],
+    ["c-rate","Rate","Stars and review"],
+    ["c-history","My bookings","History, rebook, privacy"]
+  ],
+  vendor:[
+    ["v-signup","Register","Business and CIPC number"],
+    ["v-pending","Awaiting approval","Verification steps"],
+    ["v-setup","Shop setup","Days, hours, services"],
+    ["v-start","Start the day","Staff working today"],
+    ["v-queue","Live queue","Call next, walk-ins"],
+    ["v-pause","Pause queue","Load-shedding, breaks"],
+    ["v-summary","Daily summary","Takings, no-shows"],
+    ["v-qr","QR poster","For the shop door"]
+  ],
+  admin:[["a-approvals","Approvals","Check and approve vendors"]]
+};
+let role = "customer", current = "c-signup";
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+
+function renderSteps(){
+  $("#steps").innerHTML = SCREENS[role].map(([id,t,d],i)=>
+    `<li><button data-step="${id}" aria-current="${id===current}"><span class="n">${String(i+1).padStart(2,"0")}</span><span><span class="t">${t}</span><span class="d">${d}</span></span></button></li>`).join("");
+}
+function roleOf(id){return id[0]==="c"?"customer":id[0]==="v"?"vendor":"admin"}
+function go(id){
+  current = id; role = roleOf(id);
+  $$(".view").forEach(v=>v.hidden = v.dataset.view!==id);
+  $$(".roles button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.role===role));
+  renderSteps();
+  const v = $(`[data-view="${id}"]`); v.scrollTop = 0;
+  if(id==="c-called") startCountdown(); else stopCountdown();
+  try{localStorage.setItem("qless-screen",id)}catch(e){}
+}
+let tt;
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("show"),2200)}
+
+document.addEventListener("click",e=>{
+  const s=e.target.closest("[data-step]"); if(s){go(s.dataset.step);return}
+  const r=e.target.closest("[data-role]"); if(r){go(SCREENS[r.dataset.role][0][0]);return}
+  const rg=e.target.closest("[data-role-go]"); if(rg){go(SCREENS[rg.dataset.roleGo][0][0]);return}
+  const el=e.target.closest("[data-go],[data-toast]"); if(!el) return;
+  if(el.dataset.go) go(el.dataset.go);
+  if(el.dataset.toast) toast(el.dataset.toast);
+});
+$$(".chips .chip").forEach(c=>c.addEventListener("click",()=>{$$(".chips .chip").forEach(x=>x.setAttribute("aria-pressed",x===c))}));
+$$(".toggle").forEach(t=>t.addEventListener("click",()=>t.setAttribute("aria-checked",t.getAttribute("aria-checked")!=="true")));
+
+// Booking
+function selectedSvc(){const v=(document.querySelector('input[name="svc"]:checked')||{value:"Skin fade|120"}).value.split("|");return {name:v[0],price:+v[1]}}
+$$('input[name="svc"]').forEach(r=>r.addEventListener("change",syncSvc));
+$$('input[name="barber"]').forEach(r=>r.addEventListener("change",syncSvc));
+function barber(){const v=(document.querySelector('input[name="barber"]:checked')||{value:"Anyone|3"}).value.split("|");return {name:v[0],ahead:+v[1]}}
+function syncSvc(){const s=selectedSvc(),b=barber();$("#b-barber").textContent=b.name==="Anyone"?"Anyone available":b.name;$("#b-svc").textContent=s.name;$("#b-price").textContent="R"+s.price;$("#b-rest").textContent="R"+(s.price-50);$("#q-svc").textContent=s.name+(b.name==="Anyone"?"":` with ${b.name}`)}
+syncSvc();
+$("#pay").addEventListener("click",()=>{toast("PayFast: payment of R50 approved");ahead=barber().ahead;moved=false;renderAhead();go("c-queue")});
+
+// Queue position
+let ahead=3, moved=false, paused=null;
+function renderAhead(){
+  $("#q-ahead").textContent=ahead;
+  $("#q-bar").innerHTML="<i></i>".repeat(ahead)+'<i class="you"></i>';
+  const m=9*60+44+ahead*12+(paused?paused.mins:0); $("#q-eta").textContent=`${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;
+}
+$("#advance").addEventListener("click",()=>{
+  ahead--;
+  if(ahead===2) toast("Reminder sent: about 1 hour to your turn");
+  if(ahead===1) toast("Reminder sent: 20 minutes to your turn. Start heading over.");
+  if(ahead<=0){go("c-called");return}
+  renderAhead();
+});
+
+// POPIA consent gate
+$("#send-code").addEventListener("click",()=>{ if(!$("#popia1").checked){toast("Tick the first box so we can send your booking reminders");return} go("c-otp") });
+
+// Low-data mode
+$("#tg-lite").addEventListener("click",()=>{const on=$("#tg-lite").getAttribute("aria-checked")==="true";$("#screen").classList.toggle("lite",on);toast(on?"Low-data mode on":"Low-data mode off")});
+
+// Move my spot
+$("#move-confirm").addEventListener("click",()=>{
+  if(moved){toast("You've already moved back once for this booking");go("c-queue");return}
+  const n=+(document.querySelector('input[name="mv"]:checked')||{value:1}).value;
+  ahead+=n;moved=true;renderAhead();$("#move-btn").textContent="Moved back once";
+  toast(`Moved back ${n} place${n>1?"s":""}. Sharp Lines has been told.`);go("c-queue");
+});
+
+// Pause queue (vendor) shows on the customer's ticket too
+const REASON={"Load-shedding":"for load-shedding","Staff on a break":"for a staff break","Running late":"because it's running late","Other":""};
+function pzState(){const r=$("#pz-reason [aria-pressed=true]").textContent,m=+$("#pz-mins [aria-pressed=true]").dataset.m;return {r,m}}
+function pzPreview(){const {r,m}=pzState();const t=9*60+44+3*12+m;
+  $("#pz-preview").textContent=`${queue.length} customers will get: "Sharp Lines is paused ${REASON[r]}. Your new estimated time is ${String(Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}."`.replace("  "," ").replace("paused .","paused.");
+  $("#pz-go").textContent=`Pause and notify ${queue.length} customers`}
+["#pz-reason","#pz-mins"].forEach(g=>$(g).addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;$$(g+" .chip").forEach(x=>x.setAttribute("aria-pressed",x===b));pzPreview()}));
+function renderPause(){
+  const msg=paused?`Paused ${REASON[paused.r]} · back in about ${paused.mins>=60?paused.mins/60+" hour"+(paused.mins>60?"s":""):paused.mins+" min"}`.replace("  "," "):"";
+  $("#q-paused").hidden=!paused; $("#q-paused").textContent=msg+(paused?". Your time has been updated.":"");
+  $("#vq-paused").hidden=!paused; $("#vq-paused").textContent=msg;
+  $("#vq-state").className="pill "+(paused?"sig":"ok");
+  $("#vq-state").innerHTML=paused?'<span class="dot"></span>Paused':`<span class="dot"></span>Open · <span id="vq-staff">${staff}</span> staff`;
+  $("#pause-btn").textContent=paused?"Resume queue":"Pause queue";
+  renderAhead();
+}
+$("#pz-go").addEventListener("click",()=>{const {r,m}=pzState();paused={r,mins:m};renderPause();toast(`Queue paused. ${queue.length} customers notified.`);go("v-queue")});
+$("#pause-btn").addEventListener("click",e=>{ if(paused){e.stopPropagation();paused=null;renderPause();toast("Queue resumed. Customers notified.")} else pzPreview() },true);
+
+// Summary chart
+const HOURS=[[8,1],[9,2],[10,3],[11,2],[12,1],[13,2],[14,1],[15,1],[16,2],[17,1]],MAXH=Math.max(...HOURS.map(h=>h[1]));
+$("#bars").innerHTML=HOURS.map(([h,n])=>`<div><b>${n}</b><i class="${n===MAXH?"peak":""}" style="height:${n/MAXH*80}%"></i><span>${h}</span></div>`).join("");
+
+// Countdown
+let cdT=null;
+function startCountdown(){
+  stopCountdown(); let left=15*60; const ring=$("#ring"), C=276.5;
+  const tick=()=>{ $("#cd").textContent=`${Math.floor(left/60)}:${String(left%60).padStart(2,"0")}`; ring.setAttribute("stroke-dashoffset", C*(1-left/900)); if(left>0) left--; };
+  tick(); cdT=setInterval(tick,1000);
+}
+function stopCountdown(){if(cdT){clearInterval(cdT);cdT=null}}
+
+// Stars
+let rating=5;
+function renderStars(){$("#stars").innerHTML=[1,2,3,4,5].map(n=>`<button aria-label="${n} star${n>1?"s":""}" class="${n<=rating?"on":""}" data-star="${n}">★</button>`).join("")}
+$("#stars").addEventListener("click",e=>{const b=e.target.closest("[data-star]");if(b){rating=+b.dataset.star;renderStars()}});
+renderStars();
+
+// Vendor setup days
+const DAYS=["M","T","W","T","F","S","S"], on=[1,1,1,1,1,1,0];
+$("#days").innerHTML=DAYS.map((d,i)=>`<button aria-pressed="${!!on[i]}" aria-label="Day ${i+1}">${d}</button>`).join("");
+$("#days").addEventListener("click",e=>{const b=e.target.closest("button");if(b)b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true")});
+
+// Staff stepper
+let staff=2;
+const STAFF=["Tshepo","Bongani","Sizwe","Lindo","Kabelo","Neo","Themba","Jabu"];
+function syncStaff(){$("#st-names").innerHTML=STAFF.slice(0,staff).map(n=>`<span class="chip">${n}</span>`).join("");$("#st-v").textContent=staff;if($("#vq-staff"))$("#vq-staff").textContent=staff;$("#st-cap").textContent=`That's room for about ${staff*18} customers today. Bookings close when the queue is full.`}
+$("#st-minus").addEventListener("click",()=>{if(staff>1){staff--;syncStaff()}});
+$("#st-plus").addEventListener("click",()=>{if(staff<8){staff++;syncStaff()}});
+syncStaff();
+
+// Vendor live queue
+let queue=[
+  {n:"Lerato M.",s:"Skin fade",k:"Booked",code:"7K4P",here:false},
+  {n:"Kagiso D.",s:"Chiskop",k:"Booked",code:"P2XM",here:true},
+  {n:"Walk-in",s:"Kids cut",k:"Walk-in",here:true},
+  {n:"Ayanda Z.",s:"Cut & beard",k:"Booked",code:"9QRT",here:false},
+  {n:"Musa K.",s:"Skin fade",k:"Booked",code:"L5BW",here:false}
+];
+let walkins=1;
+function renderQueue(){
+  $("#vq-count").textContent=queue.length;
+  $("#vq-list").innerHTML=queue.map((q,i)=>`<div class="q"><span class="no">${String(i+1).padStart(2,"0")}</span><span class="grow"><b>${q.n}</b><br><span class="small muted">${q.s}</span></span>${q.k==="Walk-in"?'<span class="pill">Walk-in</span>':""}${q.here?'<span class="pill ok">Here</span>':'<span class="pill sig">On way</span>'}</div>`).join("")||'<p class="muted">Nobody waiting.</p>';
+}
+renderQueue();
+$("#call-next").addEventListener("click",()=>{
+  const q=queue.shift(); if(!q){toast("Queue is empty");return}
+  $("#vq-now").textContent=`${q.n} · ${q.s}`; renderQueue();
+  toast(q.here?`${q.n} called to the chair`:`${q.n} notified. 15 minutes to arrive.`);
+});
+$("#add-walkin").addEventListener("click",()=>{walkins++;queue.push({n:`Walk-in ${walkins}`,s:"Skin fade",k:"Walk-in",here:true});renderQueue();toast("Walk-in added to the end of the queue")});
+$("#ci-btn").addEventListener("click",()=>{
+  const c=$("#ci").value.trim().toUpperCase(); const q=queue.find(x=>x.code===c);
+  if(q){q.here=true;renderQueue();toast(`${q.n} checked in`)} else toast("No booking with that code. Check the letters and try again.");
+});
+
+// Admin
+let apps=[
+  {n:"Sharp Lines Barbershop",t:"Barber",c:"2021/483920/07",a:"Braamfontein, JHB",d:"Today"},
+  {n:"Glam Tips by Naledi",t:"Nail technician",c:"2023/118204/07",a:"Soshanguve, PTA",d:"Yesterday"},
+  {n:"Cape Braids Co.",t:"Hair salon",c:"2019/700455/07",a:"Khayelitsha, CPT",d:"Yesterday"}
+];
+function renderApps(){
+  const p=apps.filter(a=>!a.s).length; $("#a-count").textContent=p?`${p} pending`:"All done";
+  $("#a-list").innerHTML=apps.map((a,i)=>`<div class="card stack"><div class="row between"><b>${a.n}</b><span class="small muted">${a.d}</span></div>
+    <span class="small muted">${a.t} · ${a.a}</span><span class="mono small">CIPC ${a.c}</span>
+    ${a.s?`<span class="pill ${a.s==="Approved"?"ok":"bad"}" style="align-self:flex-start">${a.s}</span>`:
+    `<div class="row" style="gap:8px"><button class="btn sm" data-ap="${i}">Approve</button><button class="btn sm warn" data-rj="${i}">Reject</button></div>`}</div>`).join("");
+}
+$("#a-list").addEventListener("click",e=>{
+  const a=e.target.closest("[data-ap]"),r=e.target.closest("[data-rj]");
+  if(a){apps[a.dataset.ap].s="Approved";toast(`${apps[a.dataset.ap].n} is now live`)}
+  if(r){apps[r.dataset.rj].s="Rejected";toast("Rejected. The vendor gets an SMS with the reason.")}
+  renderApps();
+});
+renderApps();
+
+// Fake QR pattern
+function drawQR(cv){const x=cv.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,21,21);x.fillStyle="#000";let s=7;
+  for(let i=0;i<21;i++)for(let j=0;j<21;j++){s=(s*9301+49297)%233280;if(s/233280>.55)x.fillRect(i,j,1,1)}
+  [[0,0],[14,0],[0,14]].forEach(([a,b])=>{x.fillStyle="#fff";x.fillRect(a,b,7,7);x.fillStyle="#000";x.fillRect(a,b,7,7);x.fillStyle="#fff";x.fillRect(a+1,b+1,5,5);x.fillStyle="#000";x.fillRect(a+2,b+2,3,3)})}
+drawQR($("#qrc"));drawQR($("#qrc2"));
+
+let start="c-signup"; try{const s=localStorage.getItem("qless-screen"); if(s&&$(`[data-view="${s}"]`)) start=s}catch(e){}
+go(start);
+</script>
+
+</body></html>

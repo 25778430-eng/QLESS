@@ -1,0 +1,225 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  VENDOR
+  ADMIN
+}
+
+enum VendorStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum QueueStatus {
+  OPEN
+  PAUSED
+  CLOSED
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT
+  WAITING
+  CALLED
+  IN_SERVICE
+  DONE
+  NO_SHOW
+  CANCELLED
+}
+
+enum DepositStatus {
+  NONE
+  PAID
+  APPLIED
+  REFUND_PENDING
+  REFUNDED
+  FORFEITED
+}
+
+model User {
+  id               String    @id @default(cuid())
+  phone            String    @unique
+  name             String
+  role             Role      @default(CUSTOMER)
+  consentReminders Boolean   @default(false)
+  consentOffers    Boolean   @default(false)
+  consentAt        DateTime?
+  notifySms        Boolean   @default(true)
+  notifyWhatsapp   Boolean   @default(true)
+  lowData          Boolean   @default(false)
+  blockedUntil     DateTime?
+  createdAt        DateTime  @default(now())
+
+  sessions      Session[]
+  pushSubs      PushSubscription[]
+  vendor        Vendor?
+  bookings      Booking[]
+  reviews       Review[]
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  phone     String
+  codeHash  String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([phone, createdAt])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Vendor {
+  id               String       @id @default(cuid())
+  ownerId          String       @unique
+  name             String
+  slug             String       @unique
+  category         String
+  cipc             String
+  address          String
+  lat              Float?
+  lng              Float?
+  phone            String
+  status           VendorStatus @default(PENDING)
+  rejectReason     String?
+  depositCents     Int          @default(5000)
+  refundWindowMins Int          @default(120)
+  // Seven characters, Monday first: "1111110" means open Mon to Sat.
+  openDays         String       @default("1111110")
+  openTime         String       @default("08:00")
+  closeTime        String       @default("18:00")
+  createdAt        DateTime     @default(now())
+
+  owner     User       @relation(fields: [ownerId], references: [id])
+  staff     Staff[]
+  services  Service[]
+  photos    Photo[]
+  queueDays QueueDay[]
+  bookings  Booking[]
+  reviews   Review[]
+}
+
+model Staff {
+  id       String    @id @default(cuid())
+  vendorId String
+  name     String
+  active   Boolean   @default(true)
+  vendor   Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+}
+
+model Service {
+  id           String    @id @default(cuid())
+  vendorId     String
+  name         String
+  durationMins Int
+  priceCents   Int
+  active       Boolean   @default(true)
+  vendor       Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  bookings     Booking[]
+}
+
+model Photo {
+  id        String   @id @default(cuid())
+  vendorId  String
+  caption   String   @default("")
+  mime      String
+  data      Bytes
+  createdAt DateTime @default(now())
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+}
+
+model QueueDay {
+  id          String      @id @default(cuid())
+  vendorId    String
+  // Local date in Africa/Johannesburg, YYYY-MM-DD.
+  date        String
+  staffIds    String[]
+  capacity    Int
+  status      QueueStatus @default(OPEN)
+  pausedUntil DateTime?
+  pauseReason String?
+  openedAt    DateTime    @default(now())
+  vendor      Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  bookings    Booking[]
+
+  @@unique([vendorId, date])
+}
+
+model Booking {
+  id               String        @id @default(cuid())
+  ref              String        @unique
+  vendorId         String
+  queueDayId       String
+  customerId       String?
+  walkInName       String?
+  isWalkIn         Boolean       @default(false)
+  serviceId        String
+  staffId          String?
+  position         Float
+  status           BookingStatus
+  checkInCode      String
+  arrived          Boolean       @default(false)
+  movedBack        Boolean       @default(false)
+  priceCents       Int
+  depositCents     Int
+  depositStatus    DepositStatus @default(NONE)
+  payfastPaymentId String?
+  reminded60       Boolean       @default(false)
+  reminded20       Boolean       @default(false)
+  calledAt         DateTime?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  cancelledAt      DateTime?
+  createdAt        DateTime      @default(now())
+
+  vendor   Vendor   @relation(fields: [vendorId], references: [id])
+  queueDay QueueDay @relation(fields: [queueDayId], references: [id])
+  customer User?    @relation(fields: [customerId], references: [id])
+  service  Service  @relation(fields: [serviceId], references: [id])
+  staff    Staff?   @relation(fields: [staffId], references: [id])
+  review   Review?
+
+  @@index([queueDayId, status])
+  @@index([customerId, status])
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  bookingId  String   @unique
+  vendorId   String
+  customerId String
+  rating     Int
+  text       String   @default("")
+  createdAt  DateTime @default(now())
+  booking    Booking  @relation(fields: [bookingId], references: [id])
+  vendor     Vendor   @relation(fields: [vendorId], references: [id])
+  customer   User     @relation(fields: [customerId], references: [id])
+}
