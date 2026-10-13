@@ -15,5 +15,7 @@ export function str(form: FormData, key: string): string {
 }
 
 export function appUrl(): string {
-  return (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "");
+  // On Vercel, fall back to the project's own *.vercel.app address until APP_URL is set
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  return (process.env.APP_URL || (vercel ? `https://${vercel}` : "http://localhost:3000")).replace(/\/$/, "");
 }
