@@ -25,6 +25,7 @@ You need Node 20+ and PostgreSQL.
 cp .env.example .env          # then set DATABASE_URL and AUTH_SECRET
 npm install
 npx prisma migrate deploy     # creates the tables
+# or paste database/qless.sql into your database's SQL editor (e.g. Supabase) to create them
 npm run db:seed               # optional demo shops
 npm run dev                   # http://localhost:3000
 ```
