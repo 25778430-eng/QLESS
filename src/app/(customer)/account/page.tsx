@@ -1,26 +1,49 @@
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
+import { cookies } from "next/headers";
+import { requireUser, staffFor } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { prettyPhone } from "@/lib/format";
+import { initials, prettyPhone } from "@/lib/format";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { PushToggle } from "@/components/PushToggle";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
-import { cookies } from "next/headers";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { deleteAccount, signOutAction, updateAccount } from "./actions";
 
 export default async function Account({ searchParams }: { searchParams: { error?: string; notice?: string } }) {
   const user = await requireUser();
   const vendor = await db.vendor.findUnique({ where: { ownerId: user.id } });
+  const staff = await staffFor(user);
   return (
     <main className="main">
-      <h1>Account</h1>
+      <div className="prof">
+        <span className="avatar">{initials(user.name)}</span>
+        <div className="stack" style={{ gap: 2 }}>
+          <h2>{user.name}</h2>
+          {user.email && <span className="small muted">{user.email}</span>}
+          <span className="small muted mono">{prettyPhone(user.phone)}</span>
+        </div>
+      </div>
       <Messages searchParams={searchParams} />
+      {!user.email && <div className="banner">Add your email so we can send receipts and help you get back into your account.</div>}
+
+      {(vendor || staff.length > 0 || user.role === "ADMIN") && (
+        <>
+          <div className="lbl">Work</div>
+          <div className="list">
+            {vendor && <Link className="li" href="/vendor/account"><span className="grow"><b>{vendor.name}</b><span>Your business hub</span></span><span className="chev">›</span></Link>}
+            {staff.map((s) => <Link key={s.id} className="li" href="/staff"><span className="grow"><b>My chair at {s.vendor.name}</b><span>Call your next client</span></span><span className="chev">›</span></Link>)}
+            {user.role === "ADMIN" && <Link className="li" href="/admin"><span className="grow"><b>Admin</b><span>Vendor approvals and settings</span></span><span className="chev">›</span></Link>}
+          </div>
+        </>
+      )}
+
       <form action={updateAccount} className="stack" style={{ gap: 12 }}>
-        <label className="f">Name<input className="i" name="name" defaultValue={user.name} /></label>
-        <div className="small muted">Cellphone <span className="mono">{prettyPhone(user.phone)}</span></div>
-        <h3>Notifications</h3>
+        <div className="lbl">Personal details</div>
+        <label className="f">Full name<input className="i" name="name" defaultValue={user.name} autoComplete="name" /></label>
+        <label className="f">Email<input className="i" type="email" name="email" defaultValue={user.email ?? ""} autoComplete="email" placeholder="you@example.com" /></label>
+        <div className="small muted">Cellphone <span className="mono">{prettyPhone(user.phone)}</span> is how you sign in.</div>
+        <div className="lbl">Notifications</div>
         <div className="card stack">
           <label className="check"><input type="checkbox" name="consentReminders" defaultChecked={user.consentReminders} /> Booking updates and reminders by SMS and WhatsApp</label>
           <label className="check"><input type="checkbox" name="notifySms" defaultChecked={user.notifySms} /> Use SMS</label>
@@ -30,26 +53,20 @@ export default async function Account({ searchParams }: { searchParams: { error?
         </div>
         <Submit>Save</Submit>
       </form>
-      <h3>Appearance</h3>
-      <ThemeSwitch initial={parseTheme(cookies().get(THEME_COOKIE)?.value)} />
       <PushToggle publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ""} />
-      <h3>Business</h3>
-      {vendor ? (
-        <Link className="btn alt" href="/vendor">Go to {vendor.name}</Link>
-      ) : (
-        <Link className="btn alt" href="/vendor/register">List your business on Qless</Link>
-      )}
-      {user.role === "ADMIN" && <Link className="btn alt" href="/admin">Admin: vendor approvals</Link>}
-      <h3>Privacy</h3>
-      <p className="small muted">
-        We keep your details safe under POPIA and never sell them. Read our <a href="/privacy">privacy policy</a> and{" "}
-        <a href="/terms">terms</a>.
-      </p>
-      <a className="btn alt" href="/api/me/export">Download my data</a>
+      <div className="lbl">Appearance</div>
+      <ThemeSwitch initial={parseTheme(cookies().get(THEME_COOKIE)?.value)} />
+
+      <div className="lbl">More</div>
+      <div className="list">
+        {!vendor && <Link className="li" href="/vendor/register"><span className="grow"><b>List your business</b><span>Barbers, nails, salons and more</span></span><span className="chev">›</span></Link>}
+        <a className="li" href="/privacy"><span className="grow"><b>Privacy policy</b><span>How we protect your details under POPIA</span></span><span className="chev">›</span></a>
+        <a className="li" href="/api/me/export"><span className="grow"><b>Download my data</b><span>Everything we hold about you</span></span><span className="chev">›</span></a>
+      </div>
       <details className="card">
         <summary>Delete my account</summary>
         <form action={deleteAccount} className="stack" style={{ marginTop: 10 }}>
-          <p className="small muted">This removes your name and number. Past visits stay on the shops&apos; records without your details.</p>
+          <p className="small muted">This removes your name, email and number. Past visits stay on the shops&apos; records without your details.</p>
           <input className="i" name="confirm" placeholder="Type DELETE" />
           <Submit className="btn warn">Delete my account</Submit>
         </form>

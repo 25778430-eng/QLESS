@@ -1,10 +1,10 @@
 import { requireVendor } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { rand } from "@/lib/format";
+import { prettyPhone, rand } from "@/lib/format";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { UseMyLocation } from "@/components/UseMyLocation";
-import { addPhoto, addService, addStaff, removePhoto, removeService, removeStaff, saveShop } from "../actions";
+import { addPhoto, addService, addStaff, removePhoto, removeService, removeStaff, saveShop, setStaffPhone } from "../actions";
 
 const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -34,19 +34,27 @@ export default async function Setup({ searchParams }: { searchParams: { error?: 
           <label className="f grow">Opens<input className="i mono" type="time" name="openTime" defaultValue={vendor.openTime} /></label>
           <label className="f grow">Closes<input className="i mono" type="time" name="closeTime" defaultValue={vendor.closeTime} /></label>
         </div>
+        {vendor.level === "BASIC" ? (
+          <>
+            <input type="hidden" name="deposit" value={vendor.depositCents / 100} />
+            <input type="hidden" name="refundHours" value={vendor.refundWindowMins / 60} />
+            <p className="small muted">Basic shops don&apos;t take deposits. Become Verified in Account to take them.</p>
+          </>
+        ) : (<>
         <h3>Deposit</h3>
         <div className="row">
           <label className="f grow">Deposit (R)<input className="i mono" type="number" min="0" max="1000" step="1" name="deposit" defaultValue={vendor.depositCents / 100} /></label>
           <label className="f grow">Refund if cancelled (hours before)<input className="i mono" type="number" min="0" max="48" step="0.5" name="refundHours" defaultValue={vendor.refundWindowMins / 60} /></label>
         </div>
         <p className="small muted">The deposit comes off the customer&apos;s final price. No-shows lose it.</p>
+        </>)}
         <h3>Location</h3>
         <label className="f">Street address<input className="i" name="address" defaultValue={vendor.address} /></label>
         <UseMyLocation hasLocation={vendor.lat != null} />
         <Submit>Save shop details</Submit>
       </form>
 
-      <h3>Services and prices</h3>
+      <h3 id="services">Services and prices</h3>
       <div className="card" style={{ padding: "4px 14px" }}>
         {services.length === 0 && <p className="muted" style={{ padding: "10px 0" }}>No services yet.</p>}
         {services.map((s) => (
@@ -70,18 +78,25 @@ export default async function Setup({ searchParams }: { searchParams: { error?: 
         </form>
       </details>
 
-      <h3>Staff</h3>
+      <h3 id="staff">Staff</h3>
+      <p className="small muted">Add a staff member&apos;s cellphone and they can sign in to their own chair screen and call their own next client.</p>
       <div className="card" style={{ padding: "4px 14px" }}>
         {staff.length === 0 && <p className="muted" style={{ padding: "10px 0" }}>No staff yet. Add yourself if you work alone.</p>}
         {staff.map((s) => (
           <div className="svc" key={s.id}>
-            <b>{s.name}</b>
+            <span className="grow"><b>{s.name}</b><br /><span className="small muted mono">{s.phone ? prettyPhone(s.phone) : "No login"}</span></span>
+            <form action={setStaffPhone} className="row">
+              <input type="hidden" name="id" value={s.id} />
+              <input className="i mono" name="phone" placeholder="082 555 0147" defaultValue={s.phone ? prettyPhone(s.phone) : ""} style={{ width: 140, padding: 8 }} aria-label={`${s.name}'s cellphone`} />
+              <button className="btn sm alt">Save</button>
+            </form>
             <form action={removeStaff}><input type="hidden" name="id" value={s.id} /><button className="btn sm alt" aria-label={`Remove ${s.name}`}>✕</button></form>
           </div>
         ))}
       </div>
       <form action={addStaff} className="row">
         <input className="i grow" name="name" placeholder="Staff name" required />
+        <input className="i mono" name="phone" placeholder="Cellphone (optional)" style={{ width: 170 }} />
         <Submit className="btn sm">Add</Submit>
       </form>
 

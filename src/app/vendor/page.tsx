@@ -6,6 +6,8 @@ import { longDate, rand, time } from "@/lib/format";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { AutoRefresh } from "@/components/AutoRefresh";
+import { getSettings } from "@/lib/settings";
+import { firstName, greeting, requiredDocs } from "@/lib/verification";
 import { callNextAction, checkInAction, closeToday, doneAction, noShowAction, resumeAction, startAction, walkInAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -13,9 +15,12 @@ export const dynamic = "force-dynamic";
 type SP = { error?: string; notice?: string };
 
 export default async function VendorHome({ searchParams }: { searchParams: SP }) {
-  const { vendor } = await requireVendor();
+  const { user, vendor } = await requireVendor();
 
   if (vendor.status !== "APPROVED") {
+    const rules = await getSettings();
+    const have = await db.document.findMany({ where: { vendorId: vendor.id }, select: { kind: true } });
+    const missing = requiredDocs(vendor.level, rules).filter((k) => !have.some((d) => d.kind === k));
     return (
       <main className="main">
         <h2>{vendor.status === "PENDING" ? "Application sent" : "Application not approved"}</h2>
@@ -25,17 +30,19 @@ export default async function VendorHome({ searchParams }: { searchParams: SP })
             {vendor.status === "PENDING" ? "Waiting for approval" : "Rejected"}
           </span>
           <b>{vendor.name}</b>
-          <span className="small muted mono">CIPC {vendor.cipc}</span>
+          <span className="small muted">{vendor.level === "BASIC" ? "Basic listing" : "Verified listing"}{vendor.cipc ? <> · <span className="mono">CIPC {vendor.cipc}</span></> : null}</span>
           {vendor.rejectReason && <span className="small">Reason: {vendor.rejectReason}</span>}
         </div>
         <ul className="stack small" style={{ listStyle: "none", padding: 0, margin: 0 }}>
           <li>✓ Phone verified</li>
           <li>✓ Business details submitted</li>
-          <li>{vendor.status === "PENDING" ? "…" : "✗"} Qless checks your CIPC number</li>
+          <li>{missing.length ? "○ Upload your documents" : "✓ Documents uploaded"}</li>
+          <li>{vendor.status === "PENDING" ? "…" : "✗"} Qless checks your documents</li>
           <li>○ Go live and print your QR code</li>
         </ul>
         <p className="small muted">You can set up your hours, services and staff while you wait.</p>
-        <Link className="btn" href="/vendor/setup">Set up my shop</Link>
+        {missing.length > 0 && <Link className="btn" href="/vendor/documents">Upload documents ({missing.length} to go)</Link>}
+        <Link className={missing.length ? "btn alt" : "btn"} href="/vendor/setup">Set up my shop</Link>
       </main>
     );
   }
@@ -66,8 +73,8 @@ export default async function VendorHome({ searchParams }: { searchParams: SP })
   return (
     <main className="main">
       <AutoRefresh seconds={20} />
-      <div className="row between">
-        <h2>Live queue</h2>
+      <div className="row between" style={{ alignItems: "flex-end" }}>
+        <div className="hello"><small>{greeting()}, {firstName(user.name)} · {vendor.name}</small>{waiting.length} waiting</div>
         <span className={`pill ${day.status === "PAUSED" ? "sig" : "ok"}`}><span className="dot" />{day.status === "PAUSED" ? "Paused" : `Open · ${staff.length} staff`}</span>
       </div>
       <Messages searchParams={searchParams} />

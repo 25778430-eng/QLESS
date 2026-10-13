@@ -1,0 +1,653 @@
+<title>Qless Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: a design board. Short intro, then rows of phone screens grouped by who uses them (customer, vendor, admin), with a note under each. */
+:root{
+  --board:#e9e9e6; --paper:#ffffff; --ink:#0b0b0c; --muted:#6a6a70; --line:#e2e2e5; --chip:#f2f2f3;
+  --alert:#ffd21f; --alert-ink:#0b0b0c; --ok:#178a4c; --bad:#c9302c; --frame:#141416;
+  --map-land:#f1efe9; --map-park:#cdeac0; --map-water:#a9d3f5; --map-road:#ffffff; --map-edge:#d9d6cf; --map-hwy:#fbd78a; --map-hwy-edge:#e6b85c; --map-label:#5f6368; --map-block:#e7e4dc;
+  --display:"Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
+  --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --board:#151517; --paper:#000000; --ink:#f5f5f5; --muted:#9a9aa1; --line:#26262a; --chip:#17171a;
+  --alert:#ffd21f; --alert-ink:#0b0b0c; --ok:#3ccf7d; --bad:#ff6b5e; --frame:#2a2a2e;
+  --map-land:#242f3e; --map-park:#263c3f; --map-water:#17263c; --map-road:#38414e; --map-edge:#212a37; --map-hwy:#746855; --map-hwy-edge:#1f2835; --map-label:#9ca5b3; --map-block:#2b3646;
+  color-scheme:dark }}
+:root[data-theme="dark"]{
+  --board:#151517; --paper:#000000; --ink:#f5f5f5; --muted:#9a9aa1; --line:#26262a; --chip:#17171a;
+  --alert:#ffd21f; --alert-ink:#0b0b0c; --ok:#3ccf7d; --bad:#ff6b5e; --frame:#2a2a2e;
+  --map-land:#242f3e; --map-park:#263c3f; --map-water:#17263c; --map-road:#38414e; --map-edge:#212a37; --map-hwy:#746855; --map-hwy-edge:#1f2835; --map-label:#9ca5b3; --map-block:#2b3646;
+  color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--board); color:var(--ink); font-family:var(--body); font-size:14px; line-height:1.45}
+.wrap{max-width:1240px; margin:0 auto; padding-inline:20px; padding-block:36px 64px}
+h1,h2,h3{font-family:var(--display); text-wrap:balance; margin:0}
+a{color:inherit}
+.intro{display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:32px; align-items:end}
+.intro h1{font-size:clamp(40px,7vw,76px); font-weight:800; letter-spacing:-.03em; line-height:.95}
+.intro h1 .q{display:inline-grid; place-items:center; width:.9em; height:.9em; background:var(--ink); color:var(--paper); border-radius:.22em; margin-right:.08em; font-size:.92em; vertical-align:-.04em}
+.intro p{max-width:58ch; color:var(--muted); font-size:16px; margin:14px 0 0}
+.changes{background:var(--paper); border-radius:18px; padding:18px 20px; display:grid; gap:8px}
+.changes b{font-family:var(--display)}
+.changes ul{margin:0; padding-left:18px; display:grid; gap:4px}
+.cmp{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px}
+.btnlink{display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:999px; background:var(--ink); color:var(--paper); text-decoration:none; font-weight:600}
+.btnlink.ghost{background:transparent; color:var(--ink); border:1.5px solid var(--ink)}
+.group{margin-top:56px}
+.ghead{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; border-bottom:2px solid var(--ink); padding-bottom:10px; margin-bottom:24px}
+.ghead h2{font-size:30px; font-weight:800; letter-spacing:-.02em}
+.ghead span{color:var(--muted)}
+.row{display:flex; flex-wrap:wrap; gap:36px 28px}
+.shot{width:300px; max-width:100%; display:grid; gap:12px; align-content:start}
+.cap{display:grid; gap:4px}
+.cap b{font-family:var(--display); font-size:17px}
+.cap p{margin:0; color:var(--muted); font-size:13px; max-width:300px}
+.tag{font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
+
+/* phone */
+.phone{width:300px; max-width:100%; height:620px; border:9px solid var(--frame); border-radius:40px; background:var(--paper); overflow:hidden; position:relative; display:flex; flex-direction:column; box-shadow:0 18px 40px -22px rgba(0,0,0,.45)}
+.sb{display:flex; justify-content:space-between; padding:9px 20px 4px; font-size:11px; font-weight:600; font-family:var(--mono)}
+.scr{flex:1; overflow-y:auto; overflow-x:hidden; padding:6px 16px 16px; display:flex; flex-direction:column; gap:12px; scrollbar-width:none}
+.scr > *{flex-shrink:0}
+.scr::-webkit-scrollbar{display:none}
+.tabbar{display:grid; grid-template-columns:repeat(5,1fr); align-items:center; border-top:1px solid var(--line); padding:6px 6px 12px; background:var(--paper)}
+.tabbar.four{grid-template-columns:repeat(4,1fr)}
+.tb{display:grid; justify-items:center; gap:2px; font-size:10px; color:var(--muted); font-weight:600}
+.tb svg{width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.8}
+.tb.on{color:var(--ink)}
+.tb.fab span{width:44px; height:44px; border-radius:16px; background:var(--ink); color:var(--paper); display:grid; place-items:center; margin-top:-18px}
+.tb.fab svg{stroke:var(--paper)}
+.logo{width:30px; height:30px; border-radius:9px; background:var(--ink); color:var(--paper); display:grid; place-items:center; font-family:var(--display); font-weight:800; font-size:18px}
+.top{display:flex; align-items:center; justify-content:space-between; gap:8px}
+.av{width:34px; height:34px; border-radius:50%; background:var(--ink); color:var(--paper); display:grid; place-items:center; font-weight:700; font-size:12px}
+.hello{font-family:var(--display); font-size:30px; font-weight:800; line-height:1; letter-spacing:-.02em}
+.hello small{display:block; font-family:var(--body); font-size:13px; font-weight:500; color:var(--muted); letter-spacing:0; margin-bottom:6px}
+.muted{color:var(--muted)} .s{font-size:12px} .xs{font-size:11px}
+.mono{font-family:var(--mono)}
+.field{display:grid; gap:5px}
+.field label{font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em}
+.in{border:1.5px solid var(--line); border-radius:12px; padding:11px 12px; font-size:14px; background:var(--paper); color:var(--ink); display:flex; gap:8px; align-items:center}
+.in.focus{border-color:var(--ink)}
+.in .pre{font-family:var(--mono); color:var(--muted); border-right:1px solid var(--line); padding-right:8px}
+.two{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.btn{border:0; border-radius:14px; padding:13px; font-weight:700; font-size:14px; background:var(--ink); color:var(--paper); text-align:center; font-family:var(--body)}
+.btn.alt{background:var(--chip); color:var(--ink)}
+.btn.y{background:var(--alert); color:var(--alert-ink)}
+.check{display:flex; gap:8px; align-items:flex-start; font-size:12px}
+.box{flex:none; width:18px; height:18px; border-radius:5px; background:var(--ink); color:var(--paper); display:grid; place-items:center; font-size:11px; margin-top:1px}
+.box.off{background:transparent; border:1.5px solid var(--line)}
+.search{display:flex; gap:8px; align-items:center; background:var(--chip); border-radius:14px; padding:11px 12px; color:var(--muted)}
+.search svg{width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2}
+.chips{display:flex; gap:6px; overflow:hidden}
+.chip{flex:none; padding:7px 11px; border-radius:999px; background:var(--chip); font-size:12px; font-weight:600}
+.chip.on{background:var(--ink); color:var(--paper)}
+.live{background:var(--ink); color:var(--paper); border-radius:20px; padding:14px; display:grid; gap:10px; position:relative; overflow:hidden}
+.live .k{font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; opacity:.7}
+.live .big{font-family:var(--display); font-size:44px; font-weight:800; line-height:.9}
+.strip{background:var(--alert); color:var(--alert-ink); border-radius:12px; padding:8px 10px; font-weight:700; font-size:12.5px; display:flex; justify-content:space-between; gap:8px}
+.sec{display:flex; justify-content:space-between; align-items:baseline}
+.sec h3{font-size:17px; font-weight:700}
+.sec a{font-size:12px; font-weight:600; text-decoration:underline}
+.cards{display:flex; gap:10px; overflow:hidden}
+.vc{flex:none; width:150px; border:1px solid var(--line); border-radius:16px; overflow:hidden}
+.ph{height:74px; position:relative}
+.ph.a{background:repeating-linear-gradient(135deg,var(--ink) 0 10px,var(--paper) 10px 20px,var(--alert) 20px 26px,var(--paper) 26px 36px)}
+.ph.b{background:radial-gradient(circle at 30% 40%,var(--alert) 0 18px,transparent 19px),radial-gradient(circle at 70% 65%,var(--muted) 0 24px,transparent 25px),var(--chip)}
+.ph.c{background:linear-gradient(90deg,var(--chip) 50%,var(--line) 50%) 0 0/18px 18px}
+.ph .wait{position:absolute; left:8px; bottom:8px; background:var(--paper); color:var(--ink); font-size:10.5px; font-weight:700; padding:3px 7px; border-radius:999px}
+.vc .t{padding:8px 10px; display:grid; gap:2px}
+.vc .t b{font-size:13px}
+.minimap{border-radius:16px; overflow:hidden; position:relative; height:110px}
+.minimap svg, .map svg{display:block; width:100%; height:100%}
+.feat{font-size:9.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; background:var(--alert); color:var(--alert-ink); padding:2px 6px; border-radius:5px}
+
+/* map screen */
+.map{position:absolute; inset:0}
+.mapui{position:absolute; inset:0; display:flex; flex-direction:column; justify-content:space-between; pointer-events:none}
+.mapui > *{pointer-events:auto}
+.mtop{padding:34px 12px 0; display:grid; gap:8px}
+.mtop .search{background:var(--paper); color:var(--ink); box-shadow:0 4px 14px -6px rgba(0,0,0,.35)}
+.mtop .chip{background:var(--paper); box-shadow:0 2px 8px -4px rgba(0,0,0,.35)}
+.mtop .chip.on{background:var(--ink)}
+.sheet{background:var(--paper); border-radius:22px 22px 0 0; padding:8px 14px 12px; display:grid; gap:10px; box-shadow:0 -6px 20px -10px rgba(0,0,0,.4)}
+.grab{width:36px; height:4px; border-radius:2px; background:var(--line); margin:0 auto}
+.mrow{display:flex; gap:10px; align-items:center}
+.mrow .th{width:52px; height:52px; border-radius:12px; flex:none}
+.gm{position:absolute; right:12px; bottom:200px; display:grid; gap:6px}
+.gm span{width:36px; height:36px; border-radius:50%; background:var(--paper); display:grid; place-items:center; box-shadow:0 2px 8px -3px rgba(0,0,0,.4); font-weight:700}
+.credit{position:absolute; left:10px; bottom:186px; font-size:9px; color:var(--map-label); font-weight:600}
+
+/* shop */
+.hero{margin:-6px -16px 0; height:150px; position:relative}
+.hero .ph{height:100%}
+.back{position:absolute; top:10px; left:12px; width:32px; height:32px; border-radius:50%; background:var(--paper); display:grid; place-items:center; font-weight:700}
+.stat3{display:grid; grid-template-columns:repeat(3,1fr); gap:6px}
+.stat3 div{background:var(--chip); border-radius:12px; padding:8px; display:grid}
+.stat3 b{font-family:var(--display); font-size:19px}
+.svc{display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--line)}
+.svc .r{display:flex; align-items:center; gap:8px}
+.radio{width:18px; height:18px; border-radius:50%; border:1.5px solid var(--line)}
+.radio.on{border:5px solid var(--ink)}
+.staff{display:flex; gap:10px}
+.staff div{display:grid; justify-items:center; gap:3px; font-size:11px; font-weight:600}
+.staff .av{width:42px; height:42px}
+.staff .av.ring{outline:2.5px solid var(--alert); outline-offset:2px}
+.staff .av.any{background:var(--chip); color:var(--ink)}
+.sum{background:var(--chip); border-radius:14px; padding:10px 12px; display:grid; gap:4px; font-size:12.5px}
+.sum div{display:flex; justify-content:space-between}
+
+/* ticket */
+.ticket{background:var(--ink); color:var(--paper); border-radius:22px; position:relative; display:grid}
+.ticket .tt{padding:16px; display:grid; gap:6px}
+.ticket .perf{height:0; border-top:2px dashed color-mix(in srgb, var(--paper) 35%, transparent); margin:0 14px; position:relative}
+.ticket .perf::before,.ticket .perf::after{content:""; position:absolute; top:-12px; width:22px; height:22px; border-radius:50%; background:var(--paper)}
+.ticket .perf::before{left:-26px} .ticket .perf::after{right:-26px}
+.ticket .num{font-family:var(--display); font-size:92px; font-weight:800; line-height:.85; letter-spacing:-.04em}
+.ticket .num sup{font-size:26px; vertical-align:top; margin-left:2px}
+.dots{display:flex; gap:5px; align-items:center}
+.dots i{width:9px; height:9px; border-radius:50%; background:color-mix(in srgb, var(--paper) 30%, transparent)}
+.dots i.d{background:var(--paper)} .dots i.me{background:var(--alert); width:22px; border-radius:5px}
+.code{font-family:var(--mono); font-size:22px; letter-spacing:.3em; font-weight:700}
+.timeline{display:grid; gap:8px; font-size:12.5px}
+.timeline div{display:flex; gap:10px; align-items:center}
+.timeline i{width:8px; height:8px; border-radius:50%; background:var(--ink); flex:none}
+.timeline i.o{background:transparent; border:1.5px solid var(--muted)}
+
+/* lists */
+.list{border:1px solid var(--line); border-radius:16px; overflow:hidden}
+.li{display:flex; align-items:center; gap:10px; padding:11px 12px; border-bottom:1px solid var(--line); font-size:13px}
+.li:last-child{border-bottom:0}
+.li .ic{width:30px; height:30px; border-radius:9px; background:var(--chip); display:grid; place-items:center; flex:none}
+.li .ic svg{width:16px; height:16px; stroke:var(--ink); fill:none; stroke-width:1.8}
+.li .m{flex:1; min-width:0; display:grid}
+.li .m span{color:var(--muted); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.li .chev{color:var(--muted); font-weight:700}
+.lbl{font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:-4px}
+.prof{display:flex; gap:12px; align-items:center}
+.prof .av{width:56px; height:56px; font-size:18px; border-radius:18px}
+.pill{display:inline-flex; align-items:center; gap:5px; padding:3px 8px; border-radius:999px; font-size:10.5px; font-weight:700; background:var(--chip)}
+.pill.ok{color:var(--ok)} .pill.y{background:var(--alert); color:var(--alert-ink)} .pill.bad{color:var(--bad)}
+.pill i{width:6px; height:6px; border-radius:50%; background:currentColor}
+.sw{width:38px; height:22px; border-radius:999px; background:var(--line); position:relative; flex:none; border:0; cursor:pointer; padding:0}
+.sw::after{content:""; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:var(--paper); transition:left .15s}
+.sw[aria-checked="true"]{background:var(--ink)}
+.sw[aria-checked="true"]::after{left:19px}
+.sw:focus-visible{outline:2px solid var(--alert); outline-offset:2px}
+
+/* vendor */
+.steps{display:grid; grid-template-columns:repeat(4,1fr); gap:4px}
+.steps i{height:4px; border-radius:2px; background:var(--line)}
+.steps i.d{background:var(--ink)}
+.doc{border:1.5px dashed var(--line); border-radius:14px; padding:10px 12px; display:flex; gap:10px; align-items:center}
+.doc.done{border-style:solid}
+.doc .m{flex:1; min-width:0; display:grid; gap:1px}
+.doc .m b{font-size:13px}
+.doc .m span{font-size:11px; color:var(--muted)}
+.up{font-size:11.5px; font-weight:700; padding:6px 10px; border-radius:999px; background:var(--ink); color:var(--paper); flex:none}
+.tick{width:24px; height:24px; border-radius:50%; background:var(--ok); color:#fff; display:grid; place-items:center; font-size:12px; flex:none}
+.req{font-family:var(--mono); font-size:9.5px; letter-spacing:.06em; text-transform:uppercase}
+.off-note{font-size:11.5px; color:var(--muted); background:var(--chip); border-radius:12px; padding:9px 11px}
+.qhead{display:flex; justify-content:space-between; align-items:center}
+.now{background:var(--alert); color:var(--alert-ink); border-radius:20px; padding:14px; display:grid; gap:8px}
+.now .big{font-family:var(--display); font-size:26px; font-weight:800; line-height:1}
+.qrow{display:flex; gap:10px; align-items:center; padding:9px 0; border-bottom:1px solid var(--line); font-size:13px}
+.qrow .n{font-family:var(--display); font-weight:800; font-size:18px; width:26px}
+.qrow .m{flex:1; display:grid}
+.qrow .m span{font-size:11px; color:var(--muted)}
+.btnrow{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+
+/* notes */
+.answer{margin-top:28px; background:var(--paper); border-radius:20px; padding:20px 22px; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:24px}
+.answer h3{font-size:20px; margin-bottom:6px}
+.answer p, .answer ul{margin:0; color:var(--muted); font-size:14px}
+.answer ul{padding-left:18px; display:grid; gap:3px}
+.keynote{border-left:4px solid var(--alert); padding-left:14px}
+@media (max-width:760px){ .intro,.answer{grid-template-columns:1fr} .row{justify-content:center} }
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+
+<div class="wrap">
+  <header class="intro">
+    <div>
+      <div class="tag">Proposal · 13 Oct 2026 · nothing in the live app has changed</div>
+      <h1><span class="q">Q</span>less, redrawn</h1>
+      <p>A bolder take on the same black, white and yellow brand. Your place in the queue becomes a real ticket, the home screen greets people by name, maps move to Google Maps, and vendors get a proper Account hub. Scroll through, then compare it with the current design.</p>
+      <div class="cmp">
+        <a class="btnlink" href="https://claude.ai/artifact/SD7Ahwi8ajRsM4zBV2q4kA" target="_blank" rel="noopener">Open the current design</a>
+        <a class="btnlink ghost" href="#admin">Try the CIPC switch</a>
+      </div>
+    </div>
+    <div class="changes">
+      <b>What's different</b>
+      <ul>
+        <li>Sign-up asks for first name, surname, email and cellphone</li>
+        <li>Home screen says "Good afternoon, Lerato" and shows your live ticket</li>
+        <li>Google Maps with wait times on every pin</li>
+        <li>Bottom tab bar with a big centre button: Scan for customers, Walk-in for vendors</li>
+        <li>Vendor sign-up asks for documents (ID, proof of address, bank letter)</li>
+        <li>Admin can switch the CIPC requirement on or off</li>
+        <li>Vendor Account becomes a business hub</li>
+        <li>Two vendor levels: Basic (no documents) and Verified</li>
+        <li>Each staff member gets their own portal with their own Call next button</li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- CUSTOMERS -->
+  <section class="group" id="customers">
+    <div class="ghead"><h2>Customers</h2><span>Sign up, find a shop, join the queue, arrive on time</span></div>
+    <div class="row">
+
+      <div class="shot">
+        <div class="phone"><div class="sb"><span>14:02</span><span>5G ▮▮▮</span></div>
+          <div class="scr">
+            <div class="top"><div class="logo">Q</div><span class="s muted">Have an account? <u>Sign in</u></span></div>
+            <div class="hello"><small>Welcome to Qless</small>Skip the wait.<br>Not your spot.</div>
+            <div class="two">
+              <div class="field"><label for="fn">First name</label><div class="in focus" id="fn">Lerato</div></div>
+              <div class="field"><label for="ln">Surname</label><div class="in" id="ln">Mokoena</div></div>
+            </div>
+            <div class="field"><label>Email</label><div class="in">lerato.m@gmail.com</div></div>
+            <div class="field"><label>Cellphone</label><div class="in"><span class="pre">+27</span><span class="mono">82 555 0147</span></div></div>
+            <div class="check"><span class="box">✓</span><span>Send me booking updates and reminders by SMS, WhatsApp and push.</span></div>
+            <div class="check"><span class="box off"></span><span class="muted">Send me offers from shops I've visited. (Optional)</span></div>
+            <div class="btn">Send my code</div>
+            <div class="xs muted" style="text-align:center">We'll SMS a 6-digit code. POPIA: we never sell your details.</div>
+            <div class="s" style="text-align:center"><b><u>Own a business? List it on Qless</u></b></div>
+          </div>
+        </div>
+        <div class="cap"><span class="tag">01 · Sign up</span><b>Name, email and cellphone</b><p>Email is new. It's used for receipts and account recovery. The phone code stays as the way in.</p></div>
+      </div>
+
+      <div class="shot">
+        <div class="phone"><div class="sb"><span>14:05</span><span>5G ▮▮▮</span></div>
+          <div class="scr">
+            <div class="top"><div class="logo">Q</div><div class="av">LM</div></div>
+            <div class="hello"><small>Good afternoon,</small>Lerato</div>
+            <div class="live">
+              <div style="display:flex;justify-content:space-between;align-items:start"><div><div class="k">Your ticket · Sharp Lines</div><div class="big">3rd</div></div><div style="text-align:right"><div class="k">Leave by</div><div class="big" style="font-size:28px">14:10</div></div></div>
+              <div class="strip"><span>Head out in 5 min</span><span>View ›</span></div>
+            </div>
+            <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Barbers, nails, braids…</div>
+            <div class="chips"><span class="chip on">All</span><span class="chip">Barbers</span><span class="chip">Nails</span><span class="chip">Hair</span><span class="chip">Lashes</span></div>
+            <div class="sec"><h3>Near you</h3><a>See map</a></div>
+            <div class="cards">
+              <div class="vc"><div class="ph a"><span class="wait">~25 min</span></div><div class="t"><b>Sharp Lines</b><span class="xs muted">Barber · 0.6 km · ★ 4.8</span></div></div>
+              <div class="vc"><div class="ph b"><span class="wait">~10 min</span></div><div class="t"><b>Nailed It Studio</b><span class="xs muted">Nails · 1.1 km · ★ 4.9</span></div></div>
+            </div>
+            <div class="sec"><h3>Book again</h3><a>All</a></div>
+            <div class="list"><div class="li"><div class="av" style="width:30px;height:30px;font-size:10px">SL</div><div class="m"><b>Fade + beard</b><span>Sharp Lines · 2 Oct · with Sipho</span></div><span class="pill">Rebook</span></div></div>
+          </div>
+          <div class="tabbar">
+            <div class="tb on"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3z"/></svg>Home</div>
+            <div class="tb"><svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>Map</div>
+            <div class="tb fab"><span><svg viewBox="0 0 24 24"><path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4M4 12h16"/></svg></span>Scan</div>
+            <div class="tb"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>Bookings</div>
+            <div class="tb"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>Account</div>
+          </div>
+        </div>
+        <div class="cap"><span class="tag">02 · Home</span><b>Greets you by name</b><p>Your live ticket sits at the top in black, with the yellow strip only when it's time to move.</p></div>
+      </div>
+
+      <div class="shot">
+        <div class="phone">
+          <div class="map">
+            <svg viewBox="0 0 282 602" preserveAspectRatio="xMidYMid slice" aria-label="Map of Rosebank with shop pins">
+              <rect width="282" height="602" fill="var(--map-land)"/>
+              <g fill="var(--map-block)"><rect x="14" y="120" width="70" height="60" rx="3"/><rect x="120" y="128" width="58" height="52" rx="3"/><rect x="200" y="60" width="66" height="70" rx="3"/><rect x="18" y="250" width="60" height="70" rx="3"/><rect x="190" y="250" width="80" height="44" rx="3"/><rect x="110" y="340" width="70" height="56" rx="3"/></g>
+              <path d="M0 400 C60 380 90 430 150 420 S240 380 282 400 V470 C230 450 190 480 140 476 S50 450 0 470Z" fill="var(--map-park)"/>
+              <path d="M200 0 C215 40 190 80 210 120 S260 170 282 160 V0Z" fill="var(--map-water)"/>
+              <g fill="none" stroke-linecap="round">
+                <g stroke="var(--map-edge)" stroke-width="13"><path d="M0 220 H282"/><path d="M100 0 V602"/><path d="M0 330 C80 320 180 340 282 310"/><path d="M180 0 L170 602"/></g>
+                <g stroke="var(--map-road)" stroke-width="10"><path d="M0 220 H282"/><path d="M100 0 V602"/><path d="M0 330 C80 320 180 340 282 310"/><path d="M180 0 L170 602"/></g>
+                <path d="M0 520 L282 480" stroke="var(--map-hwy-edge)" stroke-width="16"/><path d="M0 520 L282 480" stroke="var(--map-hwy)" stroke-width="12"/>
+                <g stroke="var(--map-road)" stroke-width="5"><path d="M0 100 H190"/><path d="M40 0 V200"/><path d="M230 220 V420"/><path d="M0 380 H90"/></g>
+              </g>
+              <g fill="var(--map-label)" font-family="Figtree, sans-serif" font-size="9" font-weight="600">
+                <text x="108" y="214">Oxford Rd</text><text x="104" y="560" transform="rotate(-90 104 560)">Jan Smuts Ave</text><text x="20" y="508" transform="rotate(-8 20 508)">M1 North</text><text x="196" y="306" transform="rotate(-6 196 306)">Tyrwhitt Ave</text><text x="30" y="444">Zoo Lake Park</text>
+              </g>
+              <g font-family="Figtree, sans-serif" font-weight="700" font-size="10">
+                <g transform="translate(120 255)"><rect x="-32" y="-38" width="64" height="24" rx="12" fill="var(--ink)"/><text x="0" y="-22" text-anchor="middle" fill="var(--paper)">Q · 25 min</text><path d="M0 -14 l-6 -2 h12z" fill="var(--ink)"/><circle r="5" fill="var(--ink)" stroke="var(--paper)" stroke-width="2"/></g>
+                <g transform="translate(222 200)"><rect x="-30" y="-38" width="60" height="24" rx="12" fill="var(--paper)" stroke="var(--ink)"/><text x="0" y="-22" text-anchor="middle" fill="var(--ink)">10 min</text><circle r="5" fill="var(--ink)" stroke="var(--paper)" stroke-width="2"/></g>
+                <g transform="translate(56 362)"><rect x="-26" y="-38" width="52" height="24" rx="12" fill="var(--paper)" stroke="var(--ink)"/><text x="0" y="-22" text-anchor="middle" fill="var(--ink)">Full</text><circle r="5" fill="var(--muted)" stroke="var(--paper)" stroke-width="2"/></g>
+                <g transform="translate(150 150)"><rect x="-30" y="-38" width="60" height="24" rx="12" fill="var(--alert)"/><text x="0" y="-22" text-anchor="middle" fill="var(--alert-ink)">★ 5 min</text><circle r="5" fill="var(--ink)" stroke="var(--paper)" stroke-width="2"/></g>
+              </g>
+              <circle cx="140" cy="300" r="22" fill="#4285f4" opacity=".18"/><circle cx="140" cy="300" r="7" fill="#4285f4" stroke="#fff" stroke-width="2.5"/>
+            </svg>
+          </div>
+          <div class="credit">Google Maps · Map data ©2026</div>
+          <div class="gm"><span>◎</span><span>+</span></div>
+          <div class="mapui">
+            <div class="mtop">
+              <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search Rosebank</div>
+              <div class="chips"><span class="chip on">Open now</span><span class="chip">Under 15 min</span><span class="chip">Barbers</span></div>
+            </div>
+            <div class="sheet">
+              <div class="grab"></div>
+              <div class="mrow"><div class="th ph a"></div><div style="flex:1;display:grid;gap:2px"><b>Sharp Lines Barbers</b><span class="xs muted">Barber · 650 m · 8 min walk · ★ 4.8</span><span class="xs"><b>6 waiting</b> · next free ~14:30</span></div></div>
+              <div class="btnrow"><div class="btn alt">Directions</div><div class="btn">Join queue</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="cap"><span class="tag">03 · Map</span><b>Google Maps, with wait times</b><p>Each pin shows the current wait. Featured shops get the yellow pin. Directions opens Google Maps navigation.</p></div>
+      </div>
+
+      <div class="shot">
+        <div class="phone"><div class="sb"><span>14:06</span><span>5G ▮▮▮</span></div>
+          <div class="scr">
+            <div class="hero"><div class="ph a"></div><span class="back">‹</span></div>
+            <div style="display:grid;gap:4px"><div style="display:flex;gap:6px;align-items:center"><span class="feat">Featured</span><span class="pill ok"><i></i>Open till 18:00</span></div><h3 style="font-size:24px">Sharp Lines Barbers</h3><span class="s muted">14 Tyrwhitt Ave, Rosebank · ★ 4.8 (212)</span></div>
+            <div class="stat3"><div><b>6</b><span class="xs muted">waiting</span></div><div><b>~25m</b><span class="xs muted">wait</span></div><div><b>3</b><span class="xs muted">barbers</span></div></div>
+            <div class="lbl">Choose a service</div>
+            <div>
+              <div class="svc"><div class="r"><span class="radio on"></span><div><b>Fade + beard</b><div class="xs muted">45 min</div></div></div><b>R180</b></div>
+              <div class="svc"><div class="r"><span class="radio"></span><div><b>Chiskop</b><div class="xs muted">20 min</div></div></div><b>R80</b></div>
+            </div>
+            <div class="lbl">Who cuts?</div>
+            <div class="staff"><div><span class="av any">Any</span>First free</div><div><span class="av ring">SN</span>Sipho</div><div><span class="av">KM</span>Kabelo</div><div><span class="av">TN</span>Thabo</div></div>
+            <div class="sum"><div><span>Deposit (off the final price)</span><b>R50</b></div><div><span>Booking fee</span><b>R5</b></div><div class="muted xs">Cancel 2h+ before for a deposit refund.</div></div>
+            <div class="btn">Join the queue · pay R55</div>
+          </div>
+        </div>
+        <div class="cap"><span class="tag">04 · Shop</span><b>Book in one screen</b><p>Service, staff member and what you pay now, all on one page with a single button.</p></div>
+      </div>
+
+      <div class="shot">
+        <div class="phone"><div class="sb"><span>14:10</span><span>5G ▮▮▮</span></div>
+          <div class="scr">
+            <div class="top"><span class="back" style="position:static;background:var(--chip)">‹</span><b>Your ticket</b><span class="pill y">Live</span></div>
+            <div class="ticket">
+              <div class="tt">
+                <span class="xs" style="opacity:.7">Sharp Lines · Fade + beard · Sipho</span>
+                <div class="num">3<sup>rd</sup></div>
+                <div class="dots"><i class="d"></i><i class="d"></i><i class="me"></i><i></i><i></i><i></i></div>
+                <span class="s" style="opacity:.8">2 people ahead of you</span>
+              </div>
+              <div class="perf"></div>
+              <div class="tt" style="grid-template-columns:1fr 1fr">
+                <div><div class="xs" style="opacity:.7">Leave by</div><b style="font-size:20px">14:10</b></div>
+                <div><div class="xs" style="opacity:.7">Check-in code</div><span class="code">4827</span></div>
+              </div>
+            </div>
+            <div class="strip"><span>Time to head out. 8 min walk.</span><span>Map ›</span></div>
+            <div class="timeline">
+              <div><i></i>Booked at 13:20 · deposit paid</div>
+              <div><i></i>Reminder sent at 13:10 (1 hour)</div>
+              <div><i class="o"></i>Reminder at 14:15 (20 min)</div>
+              <div><i class="o"></i>When called: 15 min to arrive</div>
+            </div>
+            <div class="btnrow"><div class="btn alt">Move me back</div><div class="btn alt">Cancel</div></div>
+          </div>
+        </div>
+        <div class="cap"><span class="tag">05 · Ticket</span><b>Your place, as a ticket</b><p>A big position number, the time to leave and the check-in code you show at the shop.</p></div>
+      </div>
+
+      <div class="shot">
+        <div class="phone"><div class="sb"><span>14:12</span><span>5G ▮▮▮</span></div>
+          <div class="scr">
+            <div class="prof"><div class="av">LM</div><div style="display:grid;gap:3px"><h3 style="font-size:20px">Lerato Mokoena</h3><span class="xs muted">lerato.m@gmail.com</span><span class="xs muted mono">+27 82 555 0147</span></div></div>
+            <div class="lbl">You</div>
+            <div class="list">
+              <div class="li"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></span><div class="m"><b>Personal details</b><span>Name, email, cellphone</span></div><span class="chev">›</span></div>
+              <div class="li"><span class="ic"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/></svg></span><div class="m"><b>Notifications</b><span>Push, SMS, WhatsApp</span></div><span class="chev">›</span></div>
+              <div class="li"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 11c0 5.5-7 10-7 10z"/></svg></span><div class="m"><b>Favourite shops</b><span>3 saved</span></div><span class="chev">›</span></div>
+              <div class="li"><span class="ic"><svg viewBox="0 0 24 24"><path d="M2 12h4l3-7 4 14 3-7h6"/></svg></span><div class="m"><b>Low-data mode</b><span>Hide map and photos</span></div><span class="sw" aria-checked="false"></span></div>
+              <div class="li"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v16" /></svg></span><div class="m"><b>Appearance</b><span>Follows your phone</span></div><span class="chev">›</span></div>
+            </div>
+            <div class="lbl">More</div>
+            <div class="list">
+              <div class="li"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 9h18l-2-5H5zM5 9v11h14V9"/></svg></span><div class="m"><b>List your business</b><span>Start a free 14-day trial</span></div><span class="chev">›</span></div>
+              <div class="li"><span class="ic"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span><div class="m"><b>Privacy and my data</b><span>Download or delete</span></div><span class="chev">›</span></div>
+            </div>
+            <div class="btn alt">Sign out</div>
+          </div>
+        </div>
+        <div class="cap"><span class="tag">06 · Account</span><b>Tidy, grouped settings</b><p>The long single page becomes short rows you tap into.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VENDORS -->
+  <section class="group" id="vendors">
+    <div class="ghead"><h2>Vendors</h2><span>Sign up with documents, run the queue, manage the business</span></div>
+    <div class="row">
+
+      <div class="shot">
+        <div class="phone"><div class="sb"><span>09:00</span><span>5G ▮▮▮</span></div>
+          <div class="scr">
+            <div class="top"><span class="back" style="position:static;background:var(--chip)">‹</span><span class="xs muted">Step 2 of 5</span></div>
+            <div class="steps" style="grid-template-columns:repeat(5,1fr)"><i class="d"></i><i class="d"></i><i></i><i></i><i></i></div>
+            <div class="hello" style="font-size:26px"><small>List Sharp Lines Barbers</small>How do you want to start?</div>
+            <div class="list" style="border:2px solid var(--ink)">
+              <div class="li" style="align-items:flex-start"><span class="radio on" style="margin-top:2px"></span><div class="m" style="gap:4px"><b>Verified <span class="pill ok" style="margin-left:4px"><i></i>Recommended</span></b><span style="white-space:normal">Take deposits and get paid out. Needs any ID (SA ID, passport, asylum or refugee permit) and a bank letter in your name.</span></div></div>
+            </div>
+            <div class="list">
+              <div class="li" style="align-items:flex-start"><span class="radio" style="margin-top:2px"></span><div class="m" style="gap:4px"><b>Basic</b><span style="white-space:normal">No documents. Walk-ins and free bookings only, no deposits or payouts. Shows "Not verified" to customers.</span></div></div>
+            </div>
+            <div class="sum"><div><b>Basic needs</b></div><div class="muted">Phone code, a selfie, a shop photo and your map pin</div></div>
+            <div class="xs muted">You can upgrade from Basic to Verified any time in Account.</div>
+            <div class="btn">Continue</div>
+          </div>
+        </div>
+        <div class="cap"><span class="tag">07 · Pick a level</span><b>Basic or Verified</b><p>Shops without documents can still list and run a queue. Money only flows once they are verified.</p></div>
+      </div>
+
+      <div class="shot">
+        <div class="phone"><div class="sb"><span>09:01</span><span>5G ▮▮▮</span></div>
+          <div class="scr">
+            <div class="top"><span class="back" style="position:static;background:var(--chip)">‹</span><span class="xs muted">Step 3 of 5</span></div>
+            <div class="steps" style="grid-template-columns:repeat(5,1fr)"><i class="d"></i><i class="d"></i><i class="d"></i><i></i><i></i></div>
+            <div class="hello" style="font-size:26px"><small>List Sharp Lines Barbers</small>Upload your documents</div>
+            <p class="s muted" style="margin:0">Photos or PDFs, up to 10 MB each. Our team checks them within 2 working days.</p>
+            <div class="doc done"><span class="tick">✓</span><div class="m"><b>Owner ID, passport or permit</b><span>SA ID, passport, asylum (s22) or refugee permit · id_thabo.jpg</span></div><span class="req muted">Required</span></div>
+            <div class="doc" data-doc="address"><div class="m"><b>Proof of business address</b><span>Lease, utility bill or bank statement, under 3 months old</span></div><span class="up">Upload</span></div>
+            <div class="doc" data-doc="bank"><div class="m"><b>Bank confirmation letter</b><span>So we can pay out your deposits</span></div><span class="up">Upload</span></div>
+            <div id="cipcBlock" style="display:grid;gap:8px">
+              <div class="field"><label>CIPC registration number</label><div class="in mono">2021/483920/07</div></div>
+              <div class="doc"><div class="m"><b>CIPC registration certificate</b><span>CoR 14.3 from CIPC</span></div><span class="up">Upload</span></div>
+            </div>
+            <div id="cipcOff" class="off-note" hidden>Not registered with CIPC? That's fine for now. Qless isn't asking for it at the moment.</div>
+            <div class="doc"><div class="m"><b>Shop front photo</b><span>Helps customers find you</span></div><span class="req muted">Optional</span></div>
+            <div class="btn">Continue to bank details</div>
+          </div>
+        </div>
+        <div class="cap"><span class="tag">08 · Vendor sign-up</span><b>Documents are required</b><p>For the Verified level. Any ID works: SA ID, passport, asylum seeker or refugee permit. The CIPC part follows the admin switch below.</p></div>
+      </div>
+
+      <div class="shot">
+        <div class="phone"><div class="sb"><span>11:24</span><span>5G ▮▮▮</span></div>
+          <div class="scr">
+            <div class="top"><div class="logo">Q</div><span class="pill ok"><i></i>Queue open</span></div>
+            <div class="hello"><small>Morning, Thabo · Sharp Lines</small>6 waiting</div>
+            <div class="stat3"><div><b>14</b><span class="xs muted">served</span></div><div><b>3/3</b><span class="xs muted">staff in</span></div><div><b>R2.4k</b><span class="xs muted">today</span></div></div>
+            <div class="now">
+              <div class="xs" style="font-weight:700;letter-spacing:.06em;text-transform:uppercase">Called · 9 min left to arrive</div>
+              <div class="big">Lerato M.</div>
+              <div class="s">Fade + beard · Sipho · code 4827</div>
+              <div class="btnrow"><div class="btn">Checked in</div><div class="btn alt" style="background:color-mix(in srgb,var(--alert-ink) 12%,transparent);color:var(--alert-ink)">No-show</div></div>
+            </div>
+            <div class="qhead"><h3 style="font-size:17px">Next up</h3><span class="xs muted">avg 22 min</span></div>
+            <div>
+              <div class="qrow"><span class="n">2</span><div class="m"><b>Musa K.</b><span>Chiskop · anyone · booked</span></div><span class="pill">~11:40</span></div>
+              <div class="qrow"><span class="n">3</span><div class="m"><b>Walk-in</b><span>Fade · Kabelo</span></div><span class="pill">~11:55</span></div>
+              <div class="qrow"><span class="n">4</span><div class="m"><b>Ayanda D.</b><span>Beard trim · Sipho</span></div><span class="pill">~12:05</span></div>
+            </div>
+            <div class="lbl">Chairs</div><div class="list"><div class="li"><span class="av" style="width:28px;height:28px;font-size:10px">SN</span><div class="m"><b>Sipho</b><span>Busy · Lerato M.</span></div><span class="pill">2 next</span></div><div class="li"><span class="av" style="width:28px;height:28px;font-size:10px">KM</span><div class="m"><b>Kabelo</b><span>Free</span></div><span class="pill y">Call</span></div></div>
+            <div class="btn alt">Pause queue</div>
+          </div>
+          <div class="tabbar">
+            <div class="tb on"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Queue</div>
+            <div class="tb"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Summary</div>
+            <div class="tb fab"><span><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>Walk-in</div>
+            <div class="tb"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg>QR</div>
+            <div class="tb"><svg viewBox="0 0 24 24"><path d="M3 9h18l-2-5H5zM5 9v11h14V9"/></svg>Account</div>
+          </div>
+        </div>
+        <div class="cap"><span class="tag">09 · Vendor home</span><b>The queue, greeting the owner</b><p>Who's been called sits in yellow with Checked in and No-show buttons. The owner also sees every chair and can call for any of them.</p></div>
+      </div>
+
+      <div class="shot">
+        <div class="phone"><div class="sb"><span>11:26</span><span>5G ▮▮▮</span></div>
+          <div class="scr">
+            <div class="top"><div class="av">SN</div><span class="pill ok"><i></i>On shift</span></div>
+            <div class="hello"><small>Sipho · Sharp Lines</small>My chair</div>
+            <div class="live">
+              <div class="k">In my chair now · 18 min</div>
+              <div class="big" style="font-size:30px">Lerato M.</div>
+              <span class="s" style="opacity:.8">Fade + beard · R180 · paid R50 deposit</span>
+              <div class="btn y">Done · R130 to collect</div>
+            </div>
+            <div class="qhead"><h3 style="font-size:17px">My next</h3><span class="xs muted">2 waiting for me</span></div>
+            <div>
+              <div class="qrow"><span class="n">1</span><div class="m"><b>Ayanda D.</b><span>Beard trim · asked for Sipho</span></div><span class="pill">booked</span></div>
+              <div class="qrow"><span class="n">2</span><div class="m"><b>Musa K.</b><span>Chiskop · anyone</span></div><span class="pill">booked</span></div>
+            </div>
+            <div class="btn">Call next · Ayanda D.</div>
+            <div class="btnrow"><div class="btn alt">Take a break</div><div class="btn alt">Add walk-in</div></div>
+            <div class="xs muted">Sipho signs in with his own phone number. He only sees his own clients, not the shop's money.</div>
+          </div>
+        </div>
+        <div class="cap"><span class="tag">10 · Staff portal</span><b>Every staff member calls their own next</b><p>Clients who picked Sipho wait for Sipho. "Anyone" clients go to the first chair that taps Call next.</p></div>
+      </div>
+
+      <div class="shot">
+        <div class="phone"><div class="sb"><span>11:30</span><span>5G ▮▮▮</span></div>
+          <div class="scr">
+            <div class="prof"><div class="av" style="background:repeating-linear-gradient(135deg,var(--ink) 0 6px,var(--alert) 6px 9px);color:transparent">SL</div><div style="display:grid;gap:4px"><h3 style="font-size:19px">Sharp Lines Barbers</h3><div style="display:flex;gap:5px;flex-wrap:wrap"><span class="pill ok"><i></i>Verified</span><span class="pill">Plan paid to 12 Nov</span></div></div></div>
+            <div class="lbl">Your business</div>
+            <div class="list">
+              <div class="li"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 9h18l-2-5H5zM5 9v11h14V9"/></svg></span><div class="m"><b>Shop profile</b><span>Name, photos, address, map pin</span></div><span class="chev">›</span></div>
+              <div class="li"><span class="ic"><svg viewBox="0 0 24 24"><path d="M6 4l12 16M18 4 6 20"/></svg></span><div class="m"><b>Services and prices</b><span>8 services · from R80</span></div><span class="chev">›</span></div>
+              <div class="li"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c.5-3 3-5 6-5s5.5 2 6 5M15 15c3 0 5 2 6 5"/></svg></span><div class="m"><b>Staff</b><span>3 staff · each has their own login</span></div><span class="chev">›</span></div>
+              <div class="li"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span><div class="m"><b>Opening hours</b><span>Mon to Sat, 08:00 to 18:00</span></div><span class="chev">›</span></div>
+            </div>
+            <div class="lbl">Money</div>
+            <div class="list">
+              <div class="li"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 10 12 4l9 6M5 10v8M19 10v8M9 10v8M15 10v8M3 20h18"/></svg></span><div class="m"><b>Payouts and bank</b><span>FNB ····4421 · next payout Fri</span></div><span class="chev">›</span></div>
+              <div class="li"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg></span><div class="m"><b>Qless plan</b><span>R149 a month · PayFast</span></div><span class="chev">›</span></div>
+              <div class="li"><span class="ic"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg></span><div class="m"><b>Documents</b><span id="docSummary">4 of 4 approved</span></div><span class="chev">›</span></div>
+            </div>
+            <div class="lbl">You</div>
+            <div class="list">
+              <div class="li"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></span><div class="m"><b>Thabo Nkosi</b><span>thabo@sharplines.co.za</span></div><span class="chev">›</span></div>
+              <div class="li"><span class="ic"><svg viewBox="0 0 24 24"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg></span><div class="m"><b>Switch to customer view</b><span>Book at other shops</span></div><span class="chev">›</span></div>
+            </div>
+            <div class="btn alt">Sign out</div>
+          </div>
+        </div>
+        <div class="cap"><span class="tag">11 · Vendor Account</span><b>A business hub</b><p>Shop details, money, documents and your own profile, in one place.</p></div>
+      </div>
+    </div>
+
+    <div class="answer">
+      <div class="keynote">
+        <h3>What happens today when a vendor taps Account?</h3>
+        <p>It opens the same page customers see: their own name, notification ticks, light or dark mode, privacy, and one button that says "Go to Sharp Lines". Nothing about the business itself (staff, hours, bank, plan, documents) lives there. It's spread over Setup and other pages instead.</p>
+      </div>
+      <div>
+        <h3>What it would do in the new design</h3>
+        <ul>
+          <li>Opens the business hub shown in screen 11</li>
+          <li>Shows approval status and whether the plan is paid</li>
+          <li>Holds payouts, bank details and uploaded documents</li>
+          <li>Keeps personal settings in a "You" section</li>
+          <li>Has a switch to book at other shops as a customer</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ADMIN -->
+  <section class="group" id="admin">
+    <div class="ghead"><h2>Admin</h2><span>Decide what vendors must hand in, then check it</span></div>
+    <div class="row">
+
+      <div class="shot">
+        <div class="phone"><div class="sb"><span>16:40</span><span>5G ▮▮▮</span></div>
+          <div class="scr">
+            <div class="top"><div class="logo">Q</div><span class="pill y">Admin</span></div>
+            <div class="hello" style="font-size:26px"><small>Settings</small>Vendor sign-up rules</div>
+            <p class="s muted" style="margin:0">Tap the switches. The vendor sign-up screen above changes with them.</p>
+            <div class="list">
+              <div class="li"><div class="m"><b>Allow Basic listings</b><span>No documents · no deposits or payouts</span></div><button class="sw" id="swBasic" role="switch" aria-checked="true" aria-label="Allow Basic listings"></button></div>
+              <div class="li"><div class="m"><b>Require CIPC registration</b><span id="cipcState">On · number and certificate needed</span></div><button class="sw" id="swCipc" role="switch" aria-checked="true" aria-label="Require CIPC registration"></button></div>
+              <div class="li"><div class="m"><b>Owner ID, passport or permit</b><span>Always required for Verified</span></div><span class="sw" aria-checked="true" style="opacity:.45"></span></div>
+              <div class="li"><div class="m"><b>Proof of business address</b><span id="addrState">Required</span></div><button class="sw" id="swAddr" role="switch" aria-checked="true" aria-label="Require proof of address"></button></div>
+              <div class="li"><div class="m"><b>Bank confirmation letter</b><span id="bankState">Required</span></div><button class="sw" id="swBank" role="switch" aria-checked="true" aria-label="Require bank letter"></button></div>
+            </div>
+            <div class="lbl">Other switches</div>
+            <div class="list">
+              <div class="li"><div class="m"><b>Customer booking fee</b><span>Off · R5 when on</span></div><span class="chev">›</span></div>
+              <div class="li"><div class="m"><b>Vendor monthly plan</b><span>Off · R149 when on</span></div><span class="chev">›</span></div>
+              <div class="li"><div class="m"><b>Featured listings</b><span>2 featured shops</span></div><span class="chev">›</span></div>
+            </div>
+            <div class="xs muted">Changing these only affects new sign-ups. Approved shops keep their status.</div>
+          </div>
+        </div>
+        <div class="cap"><span class="tag">12 · Admin settings</span><b>CIPC on or off</b><p>The switch works in this mock-up. Turn it off and the CIPC number and certificate disappear from vendor sign-up.</p></div>
+      </div>
+
+      <div class="shot">
+        <div class="phone"><div class="sb"><span>16:42</span><span>5G ▮▮▮</span></div>
+          <div class="scr">
+            <div class="top"><span class="back" style="position:static;background:var(--chip)">‹</span><span class="pill y">3 waiting</span></div>
+            <div class="hello" style="font-size:24px"><small>New vendor · applied today 09:14</small>Nailed It Studio</div>
+            <div style="display:flex;gap:6px"><span class="pill">Applying for Verified</span></div>
+            <div class="s muted">Owner: Zanele Dube · +27 71 234 5678 · Braamfontein</div>
+            <div class="lbl">Documents</div>
+            <div class="list" id="reviewList">
+              <div class="li"><div class="m"><b>Owner ID</b><span>Passport · id_zanele.jpg</span></div><span class="pill ok"><i></i>Looks good</span></div>
+              <div class="li" data-doc="address"><div class="m"><b>Proof of address</b><span>lease_2026.pdf</span></div><span class="pill">View</span></div>
+              <div class="li" data-doc="bank"><div class="m"><b>Bank letter</b><span>capitec_letter.pdf</span></div><span class="pill">View</span></div>
+              <div class="li" id="cipcReview"><div class="m"><b>CIPC</b><span class="mono">2024/118204/07 · cert.pdf</span></div><span class="pill">View</span></div>
+            </div>
+            <div class="sum"><div><span>Category</span><b>Nails</b></div><div><span>Staff</span><b>2</b></div><div><span>Services</span><b>6 · from R150</b></div></div>
+            <div class="field"><label>Note to vendor (if rejecting)</label><div class="in muted">e.g. Proof of address is older than 3 months</div></div>
+            <div class="btnrow"><div class="btn alt" style="color:var(--bad)">Reject</div><div class="btn">Approve</div></div>
+          </div>
+        </div>
+        <div class="cap"><span class="tag">13 · Review a vendor</span><b>Check documents, then approve</b><p>Each document opens full screen. Rejecting sends the note by SMS and email so the vendor can re-upload.</p></div>
+      </div>
+
+      <div class="shot" style="align-self:start">
+        <div class="changes" style="width:300px;max-width:100%">
+          <b>About Google Maps</b>
+          <p class="s muted" style="margin:0">Google Maps needs a Google Maps API key from your Google Cloud account, and Google requires billing to be switched on there. Google gives a free monthly allowance, which a new app usually stays inside, but a card has to be on file. Once you send the key I'll swap the current map for Google Maps.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  function bind(id, fn){
+    var el = document.getElementById(id);
+    el.addEventListener('click', function(){
+      var on = el.getAttribute('aria-checked') !== 'true';
+      el.setAttribute('aria-checked', String(on));
+      fn(on);
+      count();
+    });
+  }
+  function setDoc(key, on){
+    document.querySelectorAll('[data-doc="'+key+'"]').forEach(function(n){ n.hidden = !on; });
+  }
+  function count(){
+    var n = 1 + ['swCipc','swAddr','swBank'].filter(function(id){ return document.getElementById(id).getAttribute('aria-checked') === 'true'; }).length;
+    document.getElementById('docSummary').textContent = n + ' of ' + n + ' approved';
+  }
+  bind('swCipc', function(on){
+    document.getElementById('cipcBlock').hidden = !on;
+    document.getElementById('cipcOff').hidden = on;
+    document.getElementById('cipcReview').hidden = !on;
+    document.getElementById('cipcState').textContent = on ? 'On · number and certificate needed' : 'Off · vendors can skip CIPC';
+  });
+  bind('swAddr', function(on){ setDoc('address', on); document.getElementById('addrState').textContent = on ? 'Required' : 'Not asked for'; });
+  document.getElementById('swBasic').addEventListener('click',function(){var el=this,on=el.getAttribute('aria-checked')!=='true';el.setAttribute('aria-checked',String(on));});
+  bind('swBank', function(on){ setDoc('bank', on); document.getElementById('bankState').textContent = on ? 'Required' : 'Not asked for'; });
+})();
+</script>

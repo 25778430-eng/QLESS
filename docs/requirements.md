@@ -53,10 +53,18 @@ Working requirements for the first version of Qless. Items marked **(proposed)**
 - Rate and review. Reviews only allowed after a completed booking.
 - My bookings: upcoming and past visits, with one-tap rebooking.
 
+- Sign-up (2026-10-13) asks for first name, surname, email and cellphone, plus confirmation the person is 18+ or has a parent's permission (POPIA). Home greets the customer by first name and shows their live ticket.
+- Maps use Google Maps when `NEXT_PUBLIC_GOOGLE_MAPS_KEY` is set, otherwise OpenStreetMap.
+
 ## 3. Vendors
 
 ### Registration and verification
-- Register with business name, type, street address, owner cellphone and **CIPC business registration number** (required).
+- Register with business name, type, street address and owner cellphone, then pick a level (added 2026-10-13):
+  - **Verified**: uploads an owner ID (SA ID, passport, asylum seeker permit or refugee ID), proof of business address, a bank confirmation letter plus bank details, and a CIPC number and certificate. The admin can switch the CIPC, address and bank requirements on or off. Verified shops can take deposits.
+  - **Basic**: no documents, just a selfie and shop photo. Walk-ins and free bookings only, no deposits or booking fee, shown to customers as "Not verified". Can ask to upgrade to Verified later. The admin can switch Basic listings off.
+- Documents are private (admins and the owner only) and the files are deleted 90 days after review.
+- Staff can be given a cellphone number. They sign in with it to their own "My chair" screen, see the clients who picked them plus "anyone" clients, and call their own next client. The owner still sees every chair.
+- Vendor Account is a business hub: shop profile and hours, services, staff, QR, bank and payouts, plan, documents, daily summary, and a switch to customer view.
 - Admin approves each vendor before it goes live.
 
 ### Shop setup
@@ -88,7 +96,8 @@ Working requirements for the first version of Qless. Items marked **(proposed)**
 
 ## 4. Admin
 
-- Vendor approval list: check each CIPC number before approving or rejecting. Rejected vendors get an SMS with the reason.
+- Vendor approval list: open each uploaded document, ask for a single document again, or approve or reject the whole application (or a Basic shop's upgrade). Rejected vendors get an SMS with the reason.
+- Vendor sign-up rules: switches for CIPC, proof of address, bank details, and Basic listings.
 - Customer booking fee: amount, on/off switch, and fees collected in the last 30 days.
 - Vendor monthly plan: price, free-trial length, on/off switch (**off by default**), number of shops subscribed, and per-shop plan status with a waive switch.
 - Money dashboard: Qless income (booking fees, plan payments, featured payments) for this month, per month for the last 12 months and per day for the last 30 days. Deposits owed to each vendor for a chosen month: deposits that came off a customer's bill or were kept for a no-show or late cancel, plus deposits still held and refunded. Featured payments are entered by the admin when featuring a shop.

@@ -7,7 +7,8 @@ import { AdminHeader } from "@/components/AdminHeader";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { getSettings } from "@/lib/settings";
-import { approveVendor, rejectVendor, saveBookingFee, saveFeatured, savePlan, setPlanWaived } from "./actions";
+import { approveVendor, rejectDocument, rejectVendor, saveBookingFee, saveFeatured, savePlan, saveSignupRules, setPlanWaived } from "./actions";
+import { DOC_LABEL, requiredDocs } from "@/lib/verification";
 
 function planLabel(p: PlanState): string {
   switch (p.kind) {
@@ -39,8 +40,8 @@ export default async function Admin({ searchParams }: { searchParams: { error?: 
   const now = new Date();
   const subscribed = await db.vendor.count({ where: { planToken: { not: null } } });
   const vendors = await db.vendor.findMany({
-    where: showAll ? {} : { status: "PENDING" },
-    include: { owner: { select: { name: true } } },
+    where: showAll ? {} : { OR: [{ status: "PENDING" }, { upgradeRequested: true }] },
+    include: { owner: { select: { name: true } }, documents: { select: { id: true, kind: true, status: true, fileName: true, note: true, data: false } } },
     orderBy: { createdAt: "asc" },
     take: 100,
   });
@@ -50,9 +51,19 @@ export default async function Admin({ searchParams }: { searchParams: { error?: 
       <main className="main">
         <div className="row between">
           <h1>Admin</h1>
-          <span className="pill sig">{vendors.filter((v) => v.status === "PENDING").length} pending</span>
+          <span className="pill sig">{vendors.filter((v) => v.status === "PENDING" || v.upgradeRequested).length} waiting</span>
         </div>
         <Messages searchParams={searchParams} />
+        <form action={saveSignupRules} className="card stack">
+          <b>Vendor sign-up rules</b>
+          <span className="small muted">Changes apply to new sign-ups and upgrades. Approved shops keep their status.</span>
+          <label className="check"><input type="checkbox" name="requireCipc" defaultChecked={settings.requireCipc} /> <span><b>Require CIPC registration</b><br />Number and certificate. Switch off to let unregistered businesses become Verified.</span></label>
+          <label className="check"><input type="checkbox" name="requireAddress" defaultChecked={settings.requireAddress} /> <span><b>Require proof of business address</b></span></label>
+          <label className="check"><input type="checkbox" name="requireBank" defaultChecked={settings.requireBank} /> <span><b>Require bank details and letter</b></span></label>
+          <label className="check"><input type="checkbox" name="allowBasic" defaultChecked={settings.allowBasic} /> <span><b>Allow Basic listings</b><br />No documents, no deposits or payouts, shown as &quot;Not verified&quot;.</span></label>
+          <span className="small muted">An owner ID (SA ID, passport, asylum seeker or refugee permit) is always required for Verified.</span>
+          <Submit className="btn sm">Save rules</Submit>
+        </form>
         <form action={saveBookingFee} className="card stack">
           <div className="row between">
             <b>Customer booking fee</b>
@@ -82,15 +93,41 @@ export default async function Admin({ searchParams }: { searchParams: { error?: 
         </form>
         <h2>Vendors</h2>
         <a className="small" href={showAll ? "/admin" : "/admin?show=all"}>{showAll ? "Show pending only" : "Show all vendors (plan and featured settings)"}</a>
-        <p className="small muted">Check each CIPC number on the CIPC BizPortal (bizportal.gov.za) before approving.</p>
+        <p className="small muted">Open each document before approving. Check CIPC numbers on the CIPC BizPortal (bizportal.gov.za).</p>
         {vendors.length === 0 && <p className="muted">Nothing waiting.</p>}
         {vendors.map((v) => (
           <div key={v.id} className="card stack">
             <div className="row between"><b>{v.name}</b><span className="small muted">{shortDate(v.createdAt)}</span></div>
             <span className="small muted">{v.category} · {v.address}</span>
             <span className="small muted">Owner {v.owner.name} · <span className="mono">{prettyPhone(v.phone)}</span></span>
-            <span className="mono small">CIPC {v.cipc}</span>
-            {v.status === "PENDING" ? (
+            <div className="row wrap" style={{ gap: 6 }}>
+              <span className={`pill ${v.level === "VERIFIED" ? "ok" : ""}`}>{v.level === "VERIFIED" ? "Verified" : "Basic"}</span>
+              {v.upgradeRequested && <span className="pill sig">Wants to become Verified</span>}
+              {v.cipc && <span className="mono small">CIPC {v.cipc}</span>}
+            </div>
+            {v.bankAccountNo && <span className="small muted">Bank: {v.bankName} · {v.bankAccountName} · <span className="mono">{v.bankAccountNo}</span></span>}
+            {(v.status === "PENDING" || v.upgradeRequested) && (
+              <div className="stack" style={{ gap: 6 }}>
+                {requiredDocs(v.upgradeRequested ? "VERIFIED" : v.level, settings).filter((k) => !v.documents.some((d) => d.kind === k)).map((k) => (
+                  <span key={k} className="small" style={{ color: "var(--danger)" }}>Missing: {DOC_LABEL[k]}</span>
+                ))}
+                {v.documents.map((d) => (
+                  <div key={d.id} className="row between small">
+                    <a href={`/api/documents/${d.id}`} target="_blank" rel="noopener"><b>{DOC_LABEL[d.kind]}</b> · {d.fileName}</a>
+                    {d.status === "PENDING" ? (
+                      <form action={rejectDocument} className="row">
+                        <input type="hidden" name="id" value={d.id} />
+                        <input className="i" name="note" placeholder="Why (optional)" style={{ padding: 6, width: 130 }} />
+                        <button className="btn sm alt">Ask again</button>
+                      </form>
+                    ) : (
+                      <span className={`pill ${d.status === "APPROVED" ? "ok" : "bad"}`}>{d.status === "APPROVED" ? "OK" : "Asked again"}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {v.status === "PENDING" || v.upgradeRequested ? (
               <>
                 <form action={approveVendor}><input type="hidden" name="id" value={v.id} /><Submit className="btn sm">Approve</Submit></form>
                 <form action={rejectVendor} className="row">

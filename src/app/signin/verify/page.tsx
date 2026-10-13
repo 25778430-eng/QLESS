@@ -4,7 +4,7 @@ import { Submit } from "@/components/Submit";
 import { prettyPhone } from "@/lib/format";
 import { checkCode } from "../actions";
 
-type SP = { phone?: string; next?: string; name?: string; offers?: string; dev?: string; error?: string };
+type SP = { phone?: string; next?: string; name?: string; offers?: string; email?: string; dev?: string; error?: string };
 
 export default function Verify({ searchParams }: { searchParams: SP }) {
   const phone = searchParams.phone ?? "";
@@ -21,6 +21,7 @@ export default function Verify({ searchParams }: { searchParams: SP }) {
         <input type="hidden" name="next" value={searchParams.next ?? "/"} />
         <input type="hidden" name="name" value={searchParams.name ?? ""} />
         <input type="hidden" name="offers" value={searchParams.offers ?? ""} />
+        <input type="hidden" name="email" value={searchParams.email ?? ""} />
         <input className="i otp" name="code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} required autoFocus />
         <Submit>Verify and continue</Submit>
       </form>

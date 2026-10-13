@@ -67,9 +67,12 @@ export default async function VendorPage({ params, searchParams }: { params: { s
           <h2>{vendor.name}</h2>
           <div className="small muted">
             {vendor.reviews.length ? <><b>★ {rating.toFixed(1)}</b> · {vendor.reviews.length} reviews · </> : "New · "}
-            Verified business
+            {vendor.level === "VERIFIED" ? "Verified business" : <span className="pill">Not verified</span>}
           </div>
-          <div className="small muted">{vendor.address}</div>
+          <div className="small muted">
+            {vendor.address}
+            {vendor.lat != null && <> · <a href={`https://www.google.com/maps/dir/?api=1&destination=${vendor.lat},${vendor.lng}`} target="_blank" rel="noopener"><b>Directions</b></a></>}
+          </div>
         </div>
       </div>
       <Messages searchParams={searchParams} />
@@ -135,10 +138,11 @@ export default async function VendorPage({ params, searchParams }: { params: { s
               </label>
             ))}
           </div>
-          {vendor.depositCents > 0 && (
+          {vendor.level === "BASIC" && <p className="small muted">This shop isn&apos;t verified yet, so there&apos;s no deposit. Pay the shop directly.</p>}
+          {vendor.level === "VERIFIED" && vendor.depositCents > 0 && (
             <p className="small muted">A {rand(vendor.depositCents)} deposit holds your spot and comes off the final price.</p>
           )}
-          {feeCents > 0 && (
+          {vendor.level === "VERIFIED" && feeCents > 0 && (
             <p className="small muted">Qless adds a {rand(feeCents)} booking fee, paid with {vendor.depositCents > 0 ? "the deposit" : "your booking"}. It isn&apos;t refunded.</p>
           )}
           <Submit>Join the queue</Submit>

@@ -7,6 +7,7 @@ import { refund } from "./payfast";
 import { bookingFee } from "./fees";
 import { getSettings } from "./settings";
 import { vendorListed } from "./plan-billing";
+import { DOC_KEEP_DAYS, takesDeposits } from "./verification";
 import { rand, sastDate, sastWeekday, time } from "./format";
 import {
   ARRIVAL_WINDOW_MINS,
@@ -150,8 +151,10 @@ export async function createBooking(customer: User, vendorId: string, serviceId:
   if (!service) throw new BookingError("Pick a service.");
   if (staffId && !day.staffIds.includes(staffId)) throw new BookingError("That staff member isn't working today.");
 
-  const depositCents = Math.min(vendor.depositCents, service.priceCents);
-  const feeCents = bookingFee(await getSettings());
+  // Basic (unverified) shops take no money through Qless: no deposit and no booking fee.
+  const paid = takesDeposits(vendor);
+  const depositCents = paid ? Math.min(vendor.depositCents, service.priceCents) : 0;
+  const feeCents = paid ? bookingFee(await getSettings()) : 0;
   const needsPayment = depositCents + feeCents > 0;
   return db.booking.create({
     data: {
@@ -398,6 +401,12 @@ export async function tick(now = new Date()): Promise<{ expired: number; noShows
   const stale = await db.booking.updateMany({
     where: { status: "PENDING_PAYMENT", createdAt: { lt: new Date(now.getTime() - UNPAID_EXPIRY_MINS * 60_000) } },
     data: { status: "CANCELLED", cancelledAt: now },
+  });
+
+  // POPIA: wipe uploaded verification files once they've been reviewed and kept long enough.
+  await db.document.updateMany({
+    where: { data: { not: null }, reviewedAt: { lt: new Date(now.getTime() - DOC_KEEP_DAYS * 86_400_000) } },
+    data: { data: null },
   });
 
   let noShows = 0;
