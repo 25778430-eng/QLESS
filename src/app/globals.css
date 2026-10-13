@@ -8,13 +8,20 @@
   --f-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
   color-scheme: light;
 }
+/* Dark colours: used when the phone is dark (unless the user picked Light), or when the user picked Dark. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #070707; --panel: #131313; --ink: #f2f2f0; --muted: #9b9b97; --line: #2b2b2b;
     --surface: #1c1c1c; --brand: #f2f2f0; --brand-ink: #0b0b0b; --brand-soft: #262626;
     --signal: #ffc929; --signal-ink: #1d1600; --danger: #ff7a63; --danger-soft: #3a1d18; --ok: #4fd08a; --ok-soft: #14321f;
     color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --bg: #070707; --panel: #131313; --ink: #f2f2f0; --muted: #9b9b97; --line: #2b2b2b;
+  --surface: #1c1c1c; --brand: #f2f2f0; --brand-ink: #0b0b0b; --brand-soft: #262626;
+  --signal: #ffc929; --signal-ink: #1d1600; --danger: #ff7a63; --danger-soft: #3a1d18; --ok: #4fd08a; --ok-soft: #14321f;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -136,6 +143,11 @@ details summary { cursor: pointer; font-weight: 600; }
   .topbar, .nav, .noprint { display: none !important; }
   .shell { max-width: none; }
 }
+
+/* Segmented control (appearance switch) */
+.seg { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px; }
+.seg button { flex: 1; border: 0; background: transparent; padding: 8px 6px; border-radius: 9px; font-weight: 600; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--brand); color: var(--brand-ink); }
 
 /* Privacy, terms and account-deletion pages */
 .legal { max-width: 720px; line-height: 1.55; }

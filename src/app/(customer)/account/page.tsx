@@ -5,6 +5,9 @@ import { prettyPhone } from "@/lib/format";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { PushToggle } from "@/components/PushToggle";
+import { ThemeSwitch } from "@/components/ThemeSwitch";
+import { cookies } from "next/headers";
+import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { deleteAccount, signOutAction, updateAccount } from "./actions";
 
 export default async function Account({ searchParams }: { searchParams: { error?: string; notice?: string } }) {
@@ -27,6 +30,8 @@ export default async function Account({ searchParams }: { searchParams: { error?
         </div>
         <Submit>Save</Submit>
       </form>
+      <h3>Appearance</h3>
+      <ThemeSwitch initial={parseTheme(cookies().get(THEME_COOKIE)?.value)} />
       <PushToggle publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ""} />
       <h3>Business</h3>
       {vendor ? (

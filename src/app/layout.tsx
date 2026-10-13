@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
+import { cookies } from "next/headers";
 import "./globals.css";
+import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 
 export const metadata: Metadata = {
   title: "Qless",
@@ -11,8 +13,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0b0b0b" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const theme = parseTheme(cookies().get(THEME_COOKIE)?.value);
   return (
-    <html lang="en-ZA">
+    <html lang="en-ZA" data-theme={theme === "auto" ? undefined : theme}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}

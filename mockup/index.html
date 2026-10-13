@@ -27,6 +27,7 @@
   --map-land:#1d1d1d; --map-road:#2f2f2f; --map-park:#262626; --frame:#000000; color-scheme:dark}
 
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;padding-inline:16px;padding-block:24px}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
@@ -60,6 +61,24 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .bars i.peak{background:var(--signal)}
 .bars span{font-size:11px;color:var(--muted);font-family:var(--f-mono)}
 
+/* Revenue and admin */
+.feat{background:var(--ink);color:var(--panel);font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:6px;margin-left:6px;vertical-align:2px}
+.pin.featured{box-shadow:0 0 0 2px var(--signal)}
+.atabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--surface);border-radius:12px;padding:4px}
+.atabs button{border:0;background:transparent;border-radius:9px;padding:7px 2px;font-size:12px;font-weight:700;color:var(--muted)}
+.atabs button[aria-current="true"]{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.money-big{font-family:var(--f-display);font-weight:800;font-size:40px;letter-spacing:-.02em;line-height:1}
+.split{display:flex;height:10px;border-radius:5px;overflow:hidden;gap:2px}
+.split i{display:block}
+.k{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.c1{background:var(--ink)}.c2{background:var(--signal)}.c3{background:var(--muted)}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;font-weight:600;color:var(--muted);padding:6px 0;border-bottom:1px solid var(--line)}
+.tbl td{padding:8px 0;border-bottom:1px solid var(--line)}
+.tbl td.r,.tbl th.r{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.urow{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+input.sm{padding:8px 10px;font-size:14px;border-radius:10px}
+
 /* Index */
 .index{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);display:flex;flex-direction:column;gap:16px;min-width:0}
 .wordmark{font-family:var(--f-display);font-weight:800;font-size:34px;letter-spacing:-.02em;line-height:1}
@@ -68,6 +87,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .roles{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px}
 .roles button{flex:1;border:0;background:transparent;padding:8px 6px;border-radius:9px;font-weight:600;color:var(--muted)}
 .roles button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink)}
+.themes button{font-size:13px}
 .steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
 .steps button{width:100%;text-align:left;border:0;background:transparent;padding:9px 10px;border-radius:9px;display:flex;gap:10px;align-items:baseline}
 .steps button .n{font-family:var(--f-mono);font-size:12px;color:var(--muted);min-width:18px}
@@ -191,6 +211,11 @@ input.i,select.i{border:1px solid var(--line);background:var(--surface);color:va
       <button id="r-vendor" data-role="vendor" aria-pressed="false">Vendor</button>
       <button id="r-admin" data-role="admin" aria-pressed="false">Admin</button>
     </div>
+    <div class="roles themes" role="group" aria-label="Appearance">
+      <button id="th-auto" data-theme-set="auto" aria-pressed="true">Auto</button>
+      <button id="th-light" data-theme-set="light" aria-pressed="false">☀ Light</button>
+      <button id="th-dark" data-theme-set="dark" aria-pressed="false">☾ Dark</button>
+    </div>
     <ol class="steps" id="steps"></ol>
     <p class="note">Prices in Rand. Deposits through PayFast, reminders by push, SMS and WhatsApp. Nothing on this page is connected to a real system.</p>
   </aside>
@@ -253,11 +278,11 @@ input.i,select.i{border:1px solid var(--line);background:var(--surface);color:va
           <span class="me" style="left:44%;top:56%"></span>
           <button class="pin" style="left:30%;top:40%" data-go="c-vendor">Sharp Lines · 3</button>
           <button class="pin busy" style="left:74%;top:72%" data-toast="Kasi Kutz is full for today">Kasi Kutz · Full</button>
-          <button class="pin" style="left:78%;top:30%" data-toast="Opens the Nailed It profile">Nailed It · 1</button>
+          <button class="pin featured" style="left:78%;top:30%" data-toast="Opens the Nailed It profile">★ Nailed It · 1</button>
         </div>
         <div class="stack" style="gap:0">
+          <button class="vendor" data-toast="Opens the Nailed It profile"><span class="avatar">NI</span><span class="grow"><b>Nailed It Studio</b><span class="feat">Featured</span><br><span class="small muted">Nails · 900 m · ★ 4.9 (87)</span></span><span class="pill"><span class="dot"></span>1 waiting</span></button>
           <button class="vendor" data-go="c-vendor"><span class="avatar">SL</span><span class="grow"><b>Sharp Lines Barbershop</b><br><span class="small muted">Barber · 350 m · ★ 4.8 (212)</span></span><span class="pill"><span class="dot"></span>3 waiting</span></button>
-          <button class="vendor" data-toast="Opens the Nailed It profile"><span class="avatar">NI</span><span class="grow"><b>Nailed It Studio</b><br><span class="small muted">Nails · 900 m · ★ 4.9 (87)</span></span><span class="pill"><span class="dot"></span>1 waiting</span></button>
           <button class="vendor" data-toast="Kasi Kutz is full for today"><span class="avatar">KK</span><span class="grow"><b>Kasi Kutz</b><br><span class="small muted">Barber · 1.4 km · ★ 4.6 (340)</span></span><span class="pill bad">Full today</span></button>
         </div>
       </section>
@@ -299,6 +324,7 @@ input.i,select.i{border:1px solid var(--line);background:var(--surface);color:va
           <label class="svc"><span><input type="radio" name="svc" id="svc4" value="Chiskop|70"> <b>Chiskop</b><br><span class="small muted">15 min</span></span><span class="p">R70</span></label>
         </div>
         <div class="card small"><b>"Quick, clean fade. Was in and out."</b><br><span class="muted">Sipho M. · ★★★★★ · last week</span></div>
+        <p class="small muted fee-note" style="margin:0">A <span class="fee-amt">R5</span> Qless booking fee is added when you pay your deposit.</p>
         <button class="btn" data-go="c-book">Join the queue</button>
       </section>
 
@@ -309,17 +335,23 @@ input.i,select.i{border:1px solid var(--line);background:var(--surface);color:va
           <div class="row between"><span class="muted">Service</span><b id="b-svc">Skin fade</b></div>
           <div class="row between"><span class="muted">Barber</span><b id="b-barber">Anyone available</b></div>
           <div class="row between"><span class="muted">Price</span><b class="mono" id="b-price">R120</b></div>
-          <div class="row between"><span class="muted">Deposit now</span><b class="mono">R50</b></div>
-          <div class="row between" style="border-top:1px solid var(--line);padding-top:8px"><span class="muted">Pay at the shop</span><b class="mono" id="b-rest">R70</b></div>
+          <div class="row between" style="border-top:1px solid var(--line);padding-top:8px"><span class="muted">Pay at the shop later</span><b class="mono" id="b-rest">R70</b></div>
+        </div>
+        <div class="card stack">
+          <b>Pay now</b>
+          <div class="row between"><span class="muted">Deposit (comes off your price)</span><b class="mono">R50</b></div>
+          <div class="row between fee-row"><span class="muted">Qless booking fee</span><b class="mono fee-amt">R5</b></div>
+          <div class="row between" style="border-top:1px solid var(--line);padding-top:8px"><b>Total today</b><b class="mono" id="b-total">R55</b></div>
         </div>
         <div class="fill small stack" style="gap:6px">
           <b>Deposit rules</b>
           <span>The deposit comes off your final price.</span>
           <span>Cancel 2 hours or more before your turn for a full refund.</span>
           <span>If you're called and don't arrive within 15 minutes, you lose your spot and the deposit.</span>
+          <span class="fee-row">The <span class="fee-amt">R5</span> booking fee keeps Qless running and isn't refunded.</span>
         </div>
         <div style="flex:1"></div>
-        <button class="btn" id="pay">Pay R50 with PayFast</button>
+        <button class="btn" id="pay">Pay R55 with PayFast</button>
         <p class="small muted" style="text-align:center;margin:0">Card, Instant EFT, SnapScan or Zapper via PayFast</p>
       </section>
 
@@ -374,6 +406,12 @@ input.i,select.i{border:1px solid var(--line);background:var(--surface);color:va
           <div class="vendor"><span class="avatar">NI</span><span class="grow"><b>Nailed It Studio</b><br><span class="small muted">2 Sep · Gel overlay · R280</span></span><button class="btn sm" data-toast="Opens the Nailed It profile">Book again</button></div>
           <div class="vendor"><span class="avatar">KK</span><span class="grow"><b>Kasi Kutz</b><br><span class="small muted">14 Aug · Chiskop · No-show, deposit kept</span></span><span class="pill bad">Missed</span></div>
         </div>
+        <h3>Appearance</h3>
+        <div class="roles themes" role="group" aria-label="Appearance">
+      <button id="th2-auto" data-theme-set="auto" aria-pressed="true">Auto</button>
+      <button id="th2-light" data-theme-set="light" aria-pressed="false">☀ Light</button>
+      <button id="th2-dark" data-theme-set="dark" aria-pressed="false">☾ Dark</button>
+    </div>
         <h3>Privacy</h3>
         <div class="card stack">
           <div class="row between"><span>Booking reminders</span><button class="toggle" role="switch" aria-checked="true" aria-label="Booking reminders" id="tg-p1"></button></div>
@@ -388,6 +426,7 @@ input.i,select.i{border:1px solid var(--line);background:var(--surface);color:va
         <div class="card stack">
           <span class="pill ok" style="align-self:flex-start">Full refund</span>
           <span>Your turn is more than 2 hours away, so your <b class="mono">R50</b> deposit goes back to your card within 3–5 working days.</span>
+          <span class="small muted fee-row">The <span class="fee-amt">R5</span> booking fee isn't refunded.</span>
         </div>
         <div class="fill small">Inside 2 hours of your turn, the deposit is kept by the vendor.</div>
         <div style="flex:1"></div>
@@ -497,6 +536,7 @@ input.i,select.i{border:1px solid var(--line);background:var(--surface);color:va
       <section class="view" data-view="v-queue" hidden>
         <div class="row between"><h2 style="font-family:var(--f-display);margin:0;font-size:20px">Live queue</h2><span class="pill ok" id="vq-state"><span class="dot"></span>Open · <span id="vq-staff">2</span> staff</span></div>
         <div class="banner" id="vq-paused" hidden></div>
+        <button class="row between card" id="vq-plan" data-go="v-plan" style="width:100%;text-align:left;padding:10px 14px"><span class="small"><b id="vq-plan-t">Free trial: 9 days left</b><br><span class="muted" id="vq-plan-s">Subscribe to stay listed after 20 Oct</span></span><span class="pill sig" id="vq-plan-p">Trial</span></button>
         <div class="stat"><div><b id="vq-count">5</b><span>waiting</span></div><div><b>11</b><span>done today</span></div><div><b class="mono" style="font-size:20px">R1,320</b><span>takings</span></div></div>
         <div class="card" style="padding:12px 14px">
           <div class="small muted">Now serving</div>
@@ -552,6 +592,25 @@ input.i,select.i{border:1px solid var(--line);background:var(--surface);color:va
         </div>
       </section>
 
+      <!-- VENDOR: plan -->
+      <section class="view" data-view="v-plan" hidden>
+        <div class="top"><button class="back" data-go="v-queue" aria-label="Back">‹</button><h2>Your Qless plan</h2></div>
+        <div class="ticket" id="plan-card">
+          <div class="row between"><span>Sharp Lines Barbershop</span><span class="pill sig" id="plan-pill">Free trial</span></div>
+          <div class="row" style="align-items:flex-end;gap:10px"><span class="big" id="plan-big">9</span><span style="padding-bottom:6px;font-weight:600" id="plan-unit">days of your free trial left</span></div>
+          <div class="small" id="plan-sub">Trial started 6 Oct and ends 20 Oct.</div>
+        </div>
+        <div class="card stack">
+          <div class="row between"><b>Qless plan</b><b class="mono">R149 / month</b></div>
+          <span class="small">Your shop shows in search and on the map, customers can book, and you can open your queue every day.</span>
+          <span class="small muted">Each payment keeps you listed for a month, plus 3 extra days if a debit order is late.</span>
+        </div>
+        <div class="fill small">If your trial ends without a plan, customers can't find or book your shop and you can't open the queue until you subscribe.</div>
+        <div style="flex:1"></div>
+        <button class="btn" id="plan-go">Subscribe with PayFast</button>
+        <p class="small muted" style="text-align:center;margin:0" id="plan-foot">Monthly debit through PayFast. Cancel any time.</p>
+      </section>
+
       <!-- VENDOR: QR -->
       <section class="view" data-view="v-qr" hidden>
         <div class="top"><button class="back" data-go="v-queue" aria-label="Back">‹</button><h2>Your QR poster</h2></div>
@@ -567,9 +626,76 @@ input.i,select.i{border:1px solid var(--line);background:var(--surface);color:va
 
       <!-- ADMIN -->
       <section class="view" data-view="a-approvals" hidden>
+        <div class="atabs"><button data-go="a-approvals" aria-current="true">Approvals</button><button data-go="a-settings" aria-current="false">Settings</button><button data-go="a-money" aria-current="false">Money</button><button data-go="a-users" aria-current="false">Users</button></div>
         <div class="row between"><h2 style="font-family:var(--f-display);margin:0;font-size:20px">Vendor approvals</h2><span class="pill sig" id="a-count">3 pending</span></div>
         <div id="a-list" class="stack" style="gap:10px"></div>
         <p class="small muted" style="margin:0">Check each CIPC number on the CIPC BizPortal before approving.</p>
+      </section>
+
+      <!-- ADMIN: settings -->
+      <section class="view" data-view="a-settings" hidden>
+        <div class="atabs"><button data-go="a-approvals" aria-current="false">Approvals</button><button data-go="a-settings" aria-current="true">Settings</button><button data-go="a-money" aria-current="false">Money</button><button data-go="a-users" aria-current="false">Users</button></div>
+        <h2 style="font-family:var(--f-display);margin:0;font-size:20px">Settings</h2>
+        <div class="card stack" style="gap:10px">
+          <div class="row between"><b>Customer booking fee</b><button class="toggle" role="switch" aria-checked="true" aria-label="Charge the booking fee" id="tg-fee"></button></div>
+          <label class="f">Amount (R0 to R50)<div class="row"><span class="mono">R</span><input class="i sm mono" id="fee-in" type="number" min="0" max="50" value="5"></div></label>
+          <span class="small muted">Added to each online booking. Walk-ins don't pay it. Never refunded.</span>
+          <div class="row between small"><span>Last 30 days</span><b class="mono">R1,245 · 249 bookings</b></div>
+        </div>
+        <div class="card stack" style="gap:10px">
+          <div class="row between"><b>Vendor monthly plan</b><button class="toggle" role="switch" aria-checked="true" aria-label="Require the plan" id="tg-plan"></button></div>
+          <div class="row"><label class="f grow">Price per month<input class="i sm mono" id="plan-price" value="R149"></label><label class="f grow">Free trial<input class="i sm mono" id="plan-trial" value="14 days"></label></div>
+          <span class="small muted">Shops without a plan are hidden after their trial. 14 paying · 6 on trial · 2 waived.</span>
+        </div>
+        <div class="card stack" style="gap:6px">
+          <b>Featured shops</b>
+          <span class="small muted">Featured shops show first in search with a badge. Higher rank shows first.</span>
+          <div class="table-wrap" style="overflow-x:auto">
+          <table class="tbl" id="feat-tbl"><thead><tr><th>Shop</th><th>On</th><th>Rank</th><th>Until</th></tr></thead><tbody>
+            <tr><td>Nailed It Studio</td><td><input type="checkbox" id="ft1" checked></td><td><input class="i sm mono" id="fr1" value="10" style="width:52px"></td><td class="mono">31 Oct</td></tr>
+            <tr><td>Kasi Kutz</td><td><input type="checkbox" id="ft2" checked></td><td><input class="i sm mono" id="fr2" value="5" style="width:52px"></td><td class="mono">15 Nov</td></tr>
+            <tr><td>Sharp Lines</td><td><input type="checkbox" id="ft3"></td><td><input class="i sm mono" id="fr3" value="0" style="width:52px"></td><td class="muted">—</td></tr>
+          </tbody></table></div>
+        </div>
+        <button class="btn" data-toast="Settings saved">Save settings</button>
+      </section>
+
+      <!-- ADMIN: money -->
+      <section class="view" data-view="a-money" hidden>
+        <div class="atabs"><button data-go="a-approvals" aria-current="false">Approvals</button><button data-go="a-settings" aria-current="false">Settings</button><button data-go="a-money" aria-current="true">Money</button><button data-go="a-users" aria-current="false">Users</button></div>
+        <h2 style="font-family:var(--f-display);margin:0;font-size:20px">Money</h2>
+        <div class="card stack">
+          <span class="small muted">Qless earned in October so far</span>
+          <span class="money-big mono">R3,931</span>
+          <div class="split" aria-hidden="true"><i class="c1" style="flex:1245"></i><i class="c2" style="flex:2086"></i><i class="c3" style="flex:600"></i></div>
+          <div class="stack small" style="gap:4px">
+            <div class="row between"><span><span class="k c1"></span>Booking fees</span><b class="mono">R1,245</b></div>
+            <div class="row between"><span><span class="k c2"></span>Vendor plans</span><b class="mono">R2,086</b></div>
+            <div class="row between"><span><span class="k c3"></span>Featured spots</span><b class="mono">R600</b></div>
+          </div>
+        </div>
+        <h3>By month</h3>
+        <div class="bars" id="mbars"></div>
+        <h3>Deposits owed to shops</h3>
+        <div class="row"><select class="i sm" id="owed-month"><option>September 2026</option><option>October 2026 (so far)</option></select></div>
+        <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Shop</th><th class="r">Used</th><th class="r">No-shows</th><th class="r">Owed</th></tr></thead><tbody>
+          <tr><td>Sharp Lines</td><td class="r">R3,250</td><td class="r">R200</td><td class="r"><b>R3,450</b></td></tr>
+          <tr><td>Kasi Kutz</td><td class="r">R4,100</td><td class="r">R350</td><td class="r"><b>R4,450</b></td></tr>
+          <tr><td>Nailed It Studio</td><td class="r">R2,800</td><td class="r">R100</td><td class="r"><b>R2,900</b></td></tr>
+          <tr><td><b>Total</b></td><td class="r">R10,150</td><td class="r">R650</td><td class="r"><b>R10,800</b></td></tr>
+        </tbody></table></div>
+        <p class="small muted" style="margin:0">Pay shops by EFT. Payouts aren't tracked in the app yet.</p>
+      </section>
+
+      <!-- ADMIN: users -->
+      <section class="view" data-view="a-users" hidden>
+        <div class="atabs"><button data-go="a-approvals" aria-current="false">Approvals</button><button data-go="a-settings" aria-current="false">Settings</button><button data-go="a-money" aria-current="false">Money</button><button data-go="a-users" aria-current="true">Users</button></div>
+        <h2 style="font-family:var(--f-display);margin:0;font-size:20px">Users</h2>
+        <input class="i" id="u-search" placeholder="Search name, cellphone or shop">
+        <div class="chips" id="u-filter" role="group" aria-label="Filter users">
+          <button class="chip" aria-pressed="true" data-f="all">All</button><button class="chip" aria-pressed="false" data-f="customer">Customers</button><button class="chip" aria-pressed="false" data-f="vendor">Vendors</button><button class="chip" aria-pressed="false" data-f="blocked">Blocked</button>
+        </div>
+        <div id="u-list"></div>
       </section>
 
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -601,9 +727,15 @@ const SCREENS = {
     ["v-queue","Live queue","Call next, walk-ins"],
     ["v-pause","Pause queue","Load-shedding, breaks"],
     ["v-summary","Daily summary","Takings, no-shows"],
+    ["v-plan","Monthly plan","Trial and subscription"],
     ["v-qr","QR poster","For the shop door"]
   ],
-  admin:[["a-approvals","Approvals","Check and approve vendors"]]
+  admin:[
+    ["a-approvals","Approvals","Check and approve vendors"],
+    ["a-settings","Settings","Fee, plan, featured shops"],
+    ["a-money","Money","Income and deposits owed"],
+    ["a-users","Users","Search, block, no-shows"]
+  ]
 };
 let role = "customer", current = "c-signup";
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
@@ -643,7 +775,7 @@ $$('input[name="barber"]').forEach(r=>r.addEventListener("change",syncSvc));
 function barber(){const v=(document.querySelector('input[name="barber"]:checked')||{value:"Anyone|3"}).value.split("|");return {name:v[0],ahead:+v[1]}}
 function syncSvc(){const s=selectedSvc(),b=barber();$("#b-barber").textContent=b.name==="Anyone"?"Anyone available":b.name;$("#b-svc").textContent=s.name;$("#b-price").textContent="R"+s.price;$("#b-rest").textContent="R"+(s.price-50);$("#q-svc").textContent=s.name+(b.name==="Anyone"?"":` with ${b.name}`)}
 syncSvc();
-$("#pay").addEventListener("click",()=>{toast("PayFast: payment of R50 approved");ahead=barber().ahead;moved=false;renderAhead();go("c-queue")});
+$("#pay").addEventListener("click",()=>{toast(`PayFast: payment of R${50+(feeOn?feeAmt:0)} approved`);ahead=barber().ahead;moved=false;renderAhead();go("c-queue")});
 
 // Queue position
 let ahead=3, moved=false, paused=null;
@@ -776,6 +908,71 @@ function drawQR(cv){const x=cv.getContext("2d");x.fillStyle="#fff";x.fillRect(0,
   for(let i=0;i<21;i++)for(let j=0;j<21;j++){s=(s*9301+49297)%233280;if(s/233280>.55)x.fillRect(i,j,1,1)}
   [[0,0],[14,0],[0,14]].forEach(([a,b])=>{x.fillStyle="#fff";x.fillRect(a,b,7,7);x.fillStyle="#000";x.fillRect(a,b,7,7);x.fillStyle="#fff";x.fillRect(a+1,b+1,5,5);x.fillStyle="#000";x.fillRect(a+2,b+2,3,3)})}
 drawQR($("#qrc"));drawQR($("#qrc2"));
+
+// Booking fee (admin setting drives the customer screens)
+let feeOn=true, feeAmt=5;
+function syncFee(){
+  $$(".fee-amt").forEach(e=>e.textContent="R"+feeAmt);
+  $$(".fee-row,.fee-note").forEach(e=>e.hidden=!feeOn||feeAmt===0);
+  const t=50+(feeOn?feeAmt:0); $("#b-total").textContent="R"+t; $("#pay").textContent=`Pay R${t} with PayFast`;
+}
+$("#tg-fee").addEventListener("click",()=>{feeOn=$("#tg-fee").getAttribute("aria-checked")==="true";syncFee();toast(feeOn?"Booking fee on":"Booking fee off. Customers pay the deposit only.")});
+$("#fee-in").addEventListener("input",()=>{feeAmt=Math.max(0,Math.min(50,Math.round(+$("#fee-in").value||0)));syncFee()});
+syncFee();
+
+// Vendor plan
+let planActive=false;
+$("#plan-go").addEventListener("click",()=>{
+  if(planActive){planActive=false;toast("Plan cancelled. You stay listed until 14 Nov.")}else{planActive=true;toast("PayFast: R149 monthly debit set up")}
+  $("#plan-pill").textContent=planActive?"Active":"Free trial";$("#plan-pill").className="pill "+(planActive?"ok":"sig");
+  $("#plan-big").textContent=planActive?"R149":"9";$("#plan-unit").textContent=planActive?"a month":"days of your free trial left";
+  $("#plan-sub").textContent=planActive?"Next payment 11 Nov. Listed until 14 Nov.":"Trial started 6 Oct and ends 20 Oct.";
+  $("#plan-go").textContent=planActive?"Cancel plan":"Subscribe with PayFast";$("#plan-go").className="btn"+(planActive?" warn":"");
+  $("#vq-plan-t").textContent=planActive?"Qless plan active":"Free trial: 9 days left";
+  $("#vq-plan-s").textContent=planActive?"Next payment R149 on 11 Nov":"Subscribe to stay listed after 20 Oct";
+  $("#vq-plan-p").textContent=planActive?"Active":"Trial";$("#vq-plan-p").className="pill "+(planActive?"ok":"sig");
+});
+
+// Admin money chart
+const MONTHS=[["Jun",420],["Jul",980],["Aug",1860],["Sep",3120],["Oct",3931]],MMAX=Math.max(...MONTHS.map(m=>m[1]));
+$("#mbars").innerHTML=MONTHS.map(([m,v],i)=>`<div><b>${v>=1000?"R"+(v/1000).toFixed(1)+"k":"R"+v}</b><i class="${i===MONTHS.length-1?"peak":""}" style="height:${Math.max(2,v/MMAX*80)}%"></i><span>${m}</span></div>`).join("");
+
+// Admin users
+let users=[
+  {n:"Lerato Mokoena",p:"082 555 0147",t:"customer",b:14,ns:0,ns30:0},
+  {n:"Musa Khumalo",p:"073 410 2288",t:"customer",b:9,ns:4,ns30:3,paused:true},
+  {n:"Sharp Lines Barbershop",p:"071 234 5678",t:"vendor",b:312,ns:18,ns30:5},
+  {n:"Ayanda Zulu",p:"060 998 1123",t:"customer",b:6,ns:1,ns30:0},
+  {n:"Quick Kutz",p:"079 220 4411",t:"vendor",b:41,ns:2,ns30:0,blocked:true}
+];
+let uf="all";
+function renderUsers(){
+  const q=($("#u-search").value||"").toLowerCase();
+  const list=users.filter(u=>(uf==="all"||(uf==="blocked"?u.blocked:u.t===uf))&&(u.n.toLowerCase().includes(q)||u.p.replace(/ /g,"").includes(q.replace(/ /g,""))));
+  $("#u-list").innerHTML=list.map(u=>{const i=users.indexOf(u);return `<div class="urow"><span class="avatar" style="width:38px;height:38px;font-size:14px">${u.n.split(" ").map(w=>w[0]).slice(0,2).join("")}</span>
+    <span class="grow"><b>${u.n}</b><br><span class="small muted"><span class="mono">${u.p}</span> · ${u.t==="vendor"?"Vendor":"Customer"} · ${u.b} bookings · ${u.ns} no-shows (${u.ns30} in 30 days)</span>
+    ${u.paused&&!u.blocked?`<br><span class="pill sig" style="margin-top:4px">Booking paused for no-shows</span> <button class="btn sm alt" data-lift="${i}" style="margin-top:4px">Lift pause</button>`:""}</span>
+    ${u.blocked?`<button class="btn sm" data-ub="${i}">Unblock</button>`:`<button class="btn sm warn" data-bl="${i}">Block</button>`}</div>`}).join("")||'<p class="muted">No one matches that search.</p>';
+}
+$("#u-search").addEventListener("input",renderUsers);
+$("#u-filter").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;uf=b.dataset.f;$$("#u-filter .chip").forEach(x=>x.setAttribute("aria-pressed",x===b));renderUsers()});
+$("#u-list").addEventListener("click",e=>{
+  const bl=e.target.closest("[data-bl]"),ub=e.target.closest("[data-ub]"),lf=e.target.closest("[data-lift]");
+  if(bl){const u=users[bl.dataset.bl];u.blocked=true;toast(`${u.n} blocked and signed out`)}
+  if(ub){const u=users[ub.dataset.ub];u.blocked=false;toast(`${u.n} unblocked`)}
+  if(lf){const u=users[lf.dataset.lift];u.paused=false;toast(`${u.n} can book again`)}
+  renderUsers();
+});
+renderUsers();
+
+// Light / dark mode
+function setTheme(t){
+  if(t==="auto") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme",t);
+  $$("[data-theme-set]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.themeSet===t));
+  try{localStorage.setItem("qless-theme",t)}catch(e){}
+}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-theme-set]");if(b){setTheme(b.dataset.themeSet);toast(b.dataset.themeSet==="auto"?"Following your phone's setting":(b.dataset.themeSet==="light"?"Light mode":"Dark mode"))}});
+try{const t=localStorage.getItem("qless-theme");if(t)setTheme(t)}catch(e){}
 
 let start="c-signup"; try{const s=localStorage.getItem("qless-screen"); if(s&&$(`[data-view="${s}"]`)) start=s}catch(e){}
 go(start);

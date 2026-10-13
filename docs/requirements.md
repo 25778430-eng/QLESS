@@ -19,6 +19,7 @@ Working requirements for the first version of Qless. Items marked **(proposed)**
 - Nearby map search with a list sorted by distance, and category filters (barbers, nails, hair).
 - Scan a vendor's QR code at the door to open their queue.
 - Low-data mode that hides the map and photos.
+- Appearance: Auto (follows the phone), Light or Dark, chosen on the Account page and saved on the device.
 
 ### Vendor page
 - Rating and reviews, address, verified-business badge, opening hours.
