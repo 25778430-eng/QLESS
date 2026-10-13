@@ -50,7 +50,7 @@ All keys go in environment variables (see `.env.example`).
 | Reminders and no-shows | `CRON_SECRET` | Any random string. Something must call `GET /api/cron/tick` with header `Authorization: Bearer <CRON_SECRET>` every minute. On Vercel's free plan use a free service like cron-job.org (see below). |
 | Public address | `APP_URL` | The live URL, e.g. `https://qless.co.za`. Used in QR codes and PayFast links. |
 
-Maps use OpenStreetMap and need no key.
+Maps use Google Maps when `NEXT_PUBLIC_GOOGLE_MAPS_KEY` is set (Google Cloud, Maps JavaScript API, billing on; restrict the key to your domain). Without it they fall back to OpenStreetMap, which needs no key.
 
 ## Hosting on Vercel
 

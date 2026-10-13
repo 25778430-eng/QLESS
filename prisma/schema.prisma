@@ -19,6 +19,27 @@ enum VendorStatus {
   REJECTED
 }
 
+// Basic shops list without documents but can't take deposits. Verified shops can.
+enum VendorLevel {
+  BASIC
+  VERIFIED
+}
+
+enum DocKind {
+  ID
+  ADDRESS
+  BANK
+  CIPC
+  SELFIE
+  SHOPFRONT
+}
+
+enum DocStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum QueueStatus {
   OPEN
   PAUSED
@@ -48,6 +69,7 @@ model User {
   id               String    @id @default(cuid())
   phone            String    @unique
   name             String
+  email            String?
   role             Role      @default(CUSTOMER)
   consentReminders Boolean   @default(false)
   consentOffers    Boolean   @default(false)
@@ -105,7 +127,14 @@ model Vendor {
   name             String
   slug             String       @unique
   category         String
-  cipc             String
+  // Optional when the admin has switched the CIPC requirement off.
+  cipc             String?
+  level            VendorLevel  @default(VERIFIED)
+  // A Basic shop that has asked to become Verified.
+  upgradeRequested Boolean      @default(false)
+  bankName         String?
+  bankAccountName  String?
+  bankAccountNo    String?
   address          String
   lat              Float?
   lng              Float?
@@ -138,15 +167,37 @@ model Vendor {
   bookings  Booking[]
   reviews   Review[]
   income    Income[]
+  documents Document[]
 }
 
 model Staff {
   id       String    @id @default(cuid())
   vendorId String
   name     String
+  // Staff sign in with this number to use their own chair screen.
+  phone    String?
   active   Boolean   @default(true)
   vendor   Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   bookings Booking[]
+
+  @@index([phone])
+}
+
+// Files a vendor hands in for verification. The file itself is wiped 90 days after review (POPIA).
+model Document {
+  id         String    @id @default(cuid())
+  vendorId   String
+  kind       DocKind
+  fileName   String
+  mime       String
+  data       Bytes?
+  status     DocStatus @default(PENDING)
+  note       String?
+  createdAt  DateTime  @default(now())
+  reviewedAt DateTime?
+  vendor     Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, kind])
 }
 
 model Service {
@@ -249,6 +300,11 @@ model Setting {
   planOnSince     DateTime?
   planPriceCents  Int       @default(14900)
   planTrialDays   Int       @default(14)
+  // Vendor sign-up rules
+  allowBasic      Boolean   @default(true)
+  requireCipc     Boolean   @default(true)
+  requireAddress  Boolean   @default(true)
+  requireBank     Boolean   @default(true)
   updatedAt       DateTime  @updatedAt
 }
 

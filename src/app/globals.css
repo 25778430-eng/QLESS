@@ -154,3 +154,56 @@ details summary { cursor: pointer; font-weight: 600; }
 .legal h2 { font-size: 18px; margin: 10px 0 0; }
 .legal ul, .legal ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
 .legal a { text-decoration: underline; }
+
+/* 2026-10 redesign */
+.qtile { width: 34px; height: 34px; border-radius: 10px; background: #000; color: #fff; display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 20px; }
+.hello { font-family: var(--f-display); font-weight: 800; font-size: 32px; line-height: 1.02; letter-spacing: -.02em; text-wrap: balance; }
+.hello small { display: block; font-family: var(--f-body); font-size: 14px; font-weight: 500; color: var(--muted); letter-spacing: 0; margin-bottom: 6px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.prefixed { display: flex; align-items: center; gap: 8px; padding: 0 12px; }
+.prefixed .pre { color: var(--muted); border-right: 1px solid var(--line); padding-right: 8px; }
+.prefixed input { border: 0; background: transparent; padding: 12px 0; flex: 1; min-width: 0; font-size: 15px; outline: none; }
+.prefixed:focus-within { outline: 2px solid var(--signal); outline-offset: 2px; }
+.lbl { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: -6px; }
+
+/* Live ticket card on the home screen */
+.live { background: var(--brand); color: var(--brand-ink); border-radius: 22px; padding: 16px; display: flex; flex-direction: column; gap: 10px; text-decoration: none; }
+.live .k { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; opacity: .7; }
+.live .big { font-family: var(--f-display); font-size: 44px; font-weight: 800; line-height: .9; }
+.strip { background: var(--signal); color: var(--signal-ink); border-radius: 12px; padding: 9px 12px; font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; gap: 8px; text-decoration: none; }
+
+/* Grouped settings rows (account hubs) */
+.list { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.li { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--line); text-decoration: none; }
+.li:last-child { border-bottom: 0; }
+.li .grow span { display: block; font-size: 13px; color: var(--muted); }
+.li .chev { color: var(--muted); font-weight: 700; }
+.prof { display: flex; gap: 14px; align-items: center; }
+.prof .avatar { width: 60px; height: 60px; border-radius: 18px; font-size: 22px; background: var(--brand); color: var(--brand-ink); }
+
+/* Document upload rows */
+.doc { border: 1.5px dashed var(--line); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.doc.done { border-style: solid; }
+.doc input[type="file"] { font-size: 13px; color: var(--muted); }
+
+/* Level picker on vendor sign-up: hide the other level's fields */
+.level-verified, .level-basic { display: flex; flex-direction: column; gap: 12px; }
+form:has(input[name="level"][value="BASIC"]:checked) .level-verified { display: none; }
+form:has(input[name="level"][value="VERIFIED"]:checked) .level-basic { display: none; }
+
+/* Bottom tab bar with icons and a raised centre button */
+.nav { align-items: flex-end; padding-top: 4px; }
+.nav a { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px 10px; font-size: 11px; }
+.nav a svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.nav a[aria-current="page"] { box-shadow: none; }
+.nav a.fab .ic { width: 48px; height: 48px; border-radius: 16px; background: var(--brand); color: var(--brand-ink); display: grid; place-items: center; margin-top: -20px; box-shadow: 0 6px 16px -8px rgba(0,0,0,.5); }
+.nav a.fab svg { stroke: var(--brand-ink); }
+
+/* Staff chair screen */
+.now { background: var(--signal); color: var(--signal-ink); border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.now .big { font-family: var(--f-display); font-size: 28px; font-weight: 800; line-height: 1; }
+
+/* Google Maps pins */
+.gpin { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; font: 700 12px var(--f-body); padding: 5px 9px; border-radius: 99px; text-decoration: none; background: #0b0b0b; color: #fff; box-shadow: 0 2px 8px -3px rgba(0,0,0,.5); }
+.gpin.busy { background: #fff; color: #0b0b0b; box-shadow: inset 0 0 0 1px #0b0b0b; }
+.gpin.feat { background: #ffd21f; color: #1d1600; }

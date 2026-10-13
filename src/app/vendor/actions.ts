@@ -18,6 +18,9 @@ import {
 import { geocode } from "@/lib/geocode";
 import { normalisePhone, slugify, validCipc } from "@/lib/format";
 import { back, str } from "@/lib/http";
+import { getSettings } from "@/lib/settings";
+import { DOC_LABEL, DOC_TYPES, MAX_DOC_BYTES, requiredDocs } from "@/lib/verification";
+import type { DocKind, VendorLevel } from "@prisma/client";
 
 const CATEGORIES = ["Barber", "Nail technician", "Hair salon", "Other"];
 
@@ -33,16 +36,26 @@ async function guard<T>(path: string, fn: () => Promise<T>): Promise<T> {
 export async function registerVendor(form: FormData) {
   const user = await requireUser();
   if (await db.vendor.findUnique({ where: { ownerId: user.id } })) redirect("/vendor");
+  const rules = await getSettings();
+  const here = "/vendor/register";
+  const level: VendorLevel = str(form, "level") === "BASIC" ? "BASIC" : "VERIFIED";
+  if (level === "BASIC" && !rules.allowBasic) back(here, { error: "Basic listings are switched off right now. Choose Verified." });
   const name = str(form, "name");
   const category = str(form, "category");
-  const cipc = str(form, "cipc");
+  const cipc = level === "VERIFIED" ? str(form, "cipc") : "";
   const address = str(form, "address");
   const phone = normalisePhone(str(form, "phone")) ?? user.phone;
-  if (!name || !address) back("/vendor/register", { error: "Fill in your business name and address." });
-  if (!CATEGORIES.includes(category)) back("/vendor/register", { error: "Pick a type of business." });
-  if (!validCipc(cipc)) back("/vendor/register", { error: "Enter your CIPC registration number, like 2021/483920/07." });
-  if (await db.vendor.findFirst({ where: { cipc, status: { not: "REJECTED" } } })) {
-    back("/vendor/register", { error: "That CIPC number is already registered on Qless." });
+  if (!name || !address) back(here, { error: "Fill in your business name and address." });
+  if (!CATEGORIES.includes(category)) back(here, { error: "Pick a type of business." });
+  if (level === "VERIFIED" && (rules.requireCipc || cipc)) {
+    if (!validCipc(cipc)) back(here, { error: "Enter your CIPC registration number, like 2021/483920/07." });
+    if (await db.vendor.findFirst({ where: { cipc, status: { not: "REJECTED" } } })) {
+      back(here, { error: "That CIPC number is already registered on Qless." });
+    }
+  }
+  const bank = level === "VERIFIED" ? bankFields(form) : null;
+  if (bank && rules.requireBank && (!bank.bankName || !bank.bankAccountName || !bank.bankAccountNo)) {
+    back(here, { error: "Fill in your bank details so we can pay out your deposits." });
   }
   let slug = slugify(name) || "shop";
   for (let i = 2; await db.vendor.findUnique({ where: { slug } }); i++) slug = `${slugify(name)}-${i}`;
@@ -50,10 +63,63 @@ export async function registerVendor(form: FormData) {
   const lng = Number(str(form, "lng"));
   const where = lat && lng ? { lat, lng } : await geocode(address);
   await db.$transaction([
-    db.vendor.create({ data: { ownerId: user.id, name, slug, category, cipc, address, phone, lat: where?.lat, lng: where?.lng } }),
+    db.vendor.create({
+      data: { ownerId: user.id, name, slug, category, cipc: cipc || null, level, address, phone, lat: where?.lat, lng: where?.lng, ...(bank ?? {}) },
+    }),
     db.user.update({ where: { id: user.id }, data: { role: user.role === "ADMIN" ? "ADMIN" : "VENDOR" } }),
   ]);
-  redirect("/vendor");
+  back("/vendor/documents", { notice: "Business saved. Now upload your documents." });
+}
+
+function bankFields(form: FormData) {
+  return {
+    bankName: str(form, "bankName").slice(0, 60) || null,
+    bankAccountName: str(form, "bankAccountName").slice(0, 80) || null,
+    bankAccountNo: str(form, "bankAccountNo").replace(/\D/g, "").slice(0, 20) || null,
+  };
+}
+
+export async function saveBank(form: FormData) {
+  const { vendor } = await requireVendor();
+  const bank = bankFields(form);
+  if (!bank.bankName || !bank.bankAccountName || !bank.bankAccountNo || bank.bankAccountNo.length < 6) {
+    back("/vendor/account", { error: "Fill in the bank, account holder and account number." });
+  }
+  await db.vendor.update({ where: { id: vendor.id }, data: bank });
+  back("/vendor/account", { notice: "Bank details saved. Upload a new bank letter if the account changed." });
+}
+
+export async function uploadDocument(form: FormData) {
+  const { vendor } = await requireVendor();
+  const here = "/vendor/documents";
+  const kind = str(form, "kind") as DocKind;
+  if (!(kind in DOC_LABEL)) back(here, { error: "Pick which document this is." });
+  const file = form.get("file");
+  if (!(file instanceof File) || file.size === 0) back(here, { error: "Choose a file to upload." });
+  if (!DOC_TYPES.includes(file.type)) back(here, { error: "Upload a photo (JPG, PNG, WebP) or a PDF." });
+  if (file.size > MAX_DOC_BYTES) back(here, { error: "That file is too big. Keep it under 4 MB, or take a smaller photo." });
+  // A new upload replaces the old one of the same kind.
+  await db.$transaction([
+    db.document.deleteMany({ where: { vendorId: vendor.id, kind } }),
+    db.document.create({
+      data: { vendorId: vendor.id, kind, fileName: file.name.slice(0, 120) || kind, mime: file.type, data: Buffer.from(await file.arrayBuffer()) },
+    }),
+  ]);
+  back(here, { notice: `${DOC_LABEL[kind]} uploaded.` });
+}
+
+/** A Basic shop asks to become Verified: it goes back to the admin with the new documents. */
+export async function upgradeToVerified() {
+  const { vendor } = await requireVendor();
+  if (vendor.level === "VERIFIED") redirect("/vendor/account");
+  const rules = await getSettings();
+  const docs = await db.document.findMany({ where: { vendorId: vendor.id } });
+  const missing = requiredDocs("VERIFIED", rules).filter((k) => !docs.some((d) => d.kind === k));
+  if (missing.length) back("/vendor/documents?level=VERIFIED", { error: `Upload these first: ${missing.map((k) => DOC_LABEL[k]).join(", ")}.` });
+  if (rules.requireCipc && !vendor.cipc) back("/vendor/account", { error: "Add your CIPC number in Business details first." });
+  if (rules.requireBank && !vendor.bankAccountNo) back("/vendor/account", { error: "Add your bank details first." });
+  await db.vendor.update({ where: { id: vendor.id }, data: { upgradeRequested: true } });
+  back("/vendor/account", { notice: "Sent to Qless. We'll check your documents and let you know by SMS." });
 }
 
 export async function saveShop(form: FormData) {
@@ -108,8 +174,20 @@ export async function addStaff(form: FormData) {
   const { vendor } = await requireVendor();
   const name = str(form, "name");
   if (!name) back("/vendor/setup", { error: "Enter the staff member's name." });
-  await db.staff.create({ data: { vendorId: vendor.id, name } });
-  back("/vendor/setup", { notice: `Added ${name}.` });
+  const raw = str(form, "phone");
+  const phone = raw ? normalisePhone(raw) : null;
+  if (raw && !phone) back("/vendor/setup", { error: "Enter a valid South African cellphone number for the staff member." });
+  await db.staff.create({ data: { vendorId: vendor.id, name, phone } });
+  back("/vendor/setup", { notice: phone ? `Added ${name}. They can sign in with ${raw} to see their chair.` : `Added ${name}.` });
+}
+
+export async function setStaffPhone(form: FormData) {
+  const { vendor } = await requireVendor();
+  const raw = str(form, "phone");
+  const phone = raw ? normalisePhone(raw) : null;
+  if (raw && !phone) back("/vendor/setup", { error: "Enter a valid South African cellphone number." });
+  await db.staff.updateMany({ where: { id: str(form, "id"), vendorId: vendor.id }, data: { phone } });
+  back("/vendor/setup", { notice: phone ? "Saved. They can now sign in to their own chair screen." : "Staff login removed." });
 }
 
 export async function removeStaff(form: FormData) {

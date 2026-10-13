@@ -9,12 +9,13 @@ export async function GET() {
   const [bookings, reviews, vendor] = await Promise.all([
     db.booking.findMany({ where: { customerId: user.id }, include: { vendor: { select: { name: true } }, service: { select: { name: true } } } }),
     db.review.findMany({ where: { customerId: user.id } }),
-    db.vendor.findUnique({ where: { ownerId: user.id }, include: { services: true, staff: true } }),
+    db.vendor.findUnique({ where: { ownerId: user.id }, include: { services: true, staff: true, documents: { select: { kind: true, fileName: true, status: true, createdAt: true, reviewedAt: true } } } }),
   ]);
   const data = {
     exportedAt: new Date().toISOString(),
     account: {
       name: user.name,
+      email: user.email,
       phone: user.phone,
       createdAt: user.createdAt,
       consentReminders: user.consentReminders,

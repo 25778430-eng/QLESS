@@ -10,4 +10,4 @@ export function operatorName(): string {
   return process.env.OPERATOR_NAME || "Qless";
 }
 
-export const LEGAL_UPDATED = "11 October 2026";
+export const LEGAL_UPDATED = "13 October 2026";

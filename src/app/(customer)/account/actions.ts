@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { currentUser, endSession, requireUser } from "@/lib/auth";
 import { back, str } from "@/lib/http";
+import { validEmail } from "@/lib/verification";
 
 export async function toggleLowData() {
   const user = await currentUser();
@@ -21,11 +22,14 @@ export async function updateAccount(form: FormData) {
   const user = await requireUser();
   const name = str(form, "name");
   if (!name) back("/account", { error: "Enter your name." });
+  const email = str(form, "email").toLowerCase();
+  if (email && !validEmail(email)) back("/account", { error: "Enter a valid email address." });
   const consentReminders = form.get("consentReminders") === "on";
   await db.user.update({
     where: { id: user.id },
     data: {
       name,
+      email: email || null,
       consentReminders,
       consentOffers: form.get("consentOffers") === "on",
       consentAt: consentReminders !== user.consentReminders ? new Date() : user.consentAt,
@@ -50,7 +54,7 @@ export async function deleteAccount(form: FormData) {
     db.pushSubscription.deleteMany({ where: { userId: user.id } }),
     db.user.update({
       where: { id: user.id },
-      data: { name: "Deleted user", phone: `deleted:${user.id}`, consentReminders: false, consentOffers: false, notifySms: false, notifyWhatsapp: false },
+      data: { name: "Deleted user", email: null, phone: `deleted:${user.id}`, consentReminders: false, consentOffers: false, notifySms: false, notifyWhatsapp: false },
     }),
   ]);
   redirect("/");

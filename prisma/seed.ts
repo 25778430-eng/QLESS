@@ -6,7 +6,7 @@ const db = new PrismaClient();
 
 async function vendor(opts: {
   owner: { phone: string; name: string };
-  name: string; slug: string; category: string; cipc: string; address: string; lat: number; lng: number;
+  name: string; slug: string; category: string; cipc: string; level?: "BASIC" | "VERIFIED"; address: string; lat: number; lng: number;
   status: "APPROVED" | "PENDING";
   staff: string[]; services: Array<[string, number, number]>;
 }) {
@@ -19,7 +19,7 @@ async function vendor(opts: {
   if (existing) return existing;
   return db.vendor.create({
     data: {
-      ownerId: owner.id, name: opts.name, slug: opts.slug, category: opts.category, cipc: opts.cipc,
+      ownerId: owner.id, name: opts.name, slug: opts.slug, category: opts.category, cipc: opts.cipc || null, level: opts.level,
       address: opts.address, lat: opts.lat, lng: opts.lng, phone: opts.owner.phone, status: opts.status,
       staff: { create: opts.staff.map((name) => ({ name })) },
       services: { create: opts.services.map(([name, durationMins, rands]) => ({ name, durationMins, priceCents: rands * 100 })) },
@@ -61,7 +61,16 @@ async function main() {
     staff: ["Thandi"],
     services: [["Box braids", 240, 650]],
   });
-  console.log("Seeded. Admin phone +27 82 000 0000; Sharp Lines owner +27 71 234 5678.");
+  // Bongani at Sharp Lines has his own login for the staff chair screen.
+  await db.staff.updateMany({ where: { name: "Bongani", vendor: { slug: "sharp-lines" } }, data: { phone: "+27761234567" } });
+  await vendor({
+    owner: { phone: "+27756789012", name: "Amara Okafor" },
+    name: "Amara Hair Studio", slug: "amara-hair", category: "Hair salon", cipc: "",
+    address: "Rockey St, Yeoville, Johannesburg", lat: -26.1846, lng: 28.0644, status: "APPROVED", level: "BASIC",
+    staff: ["Amara"],
+    services: [["Cornrows", 90, 250], ["Wash & blow-dry", 45, 150]],
+  });
+  console.log("Seeded. Admin +27 82 000 0000; Sharp Lines owner +27 71 234 5678; staff Bongani +27 76 123 4567.");
 }
 
 main().finally(() => db.$disconnect());

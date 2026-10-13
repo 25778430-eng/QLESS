@@ -7,21 +7,75 @@ import { parseFeeRand } from "@/lib/fees";
 import { MAX_PLAN_CENTS } from "@/lib/plans";
 import { getSettings } from "@/lib/settings";
 import { rand } from "@/lib/format";
+import { DOC_LABEL } from "@/lib/verification";
 
 export async function approveVendor(form: FormData) {
   await requireAdmin();
-  const v = await db.vendor.update({ where: { id: str(form, "id") }, data: { status: "APPROVED", rejectReason: null, approvedAt: new Date() } });
-  await sendSms(v.phone, `Qless: ${v.name} is approved and live. Open ${appUrl()}/vendor to start your first queue and print your QR poster.`);
-  back("/admin", { notice: `${v.name} is now live.` });
+  const id = str(form, "id");
+  const before = await db.vendor.findUnique({ where: { id } });
+  if (!before) back("/admin", { error: "Vendor not found." });
+  const upgrade = before.upgradeRequested;
+  const now = new Date();
+  const [v] = await db.$transaction([
+    db.vendor.update({
+      where: { id },
+      data: upgrade
+        ? { level: "VERIFIED", upgradeRequested: false }
+        : { status: "APPROVED", rejectReason: null, approvedAt: now },
+    }),
+    db.document.updateMany({ where: { vendorId: id, status: "PENDING" }, data: { status: "APPROVED", reviewedAt: now } }),
+  ]);
+  await sendSms(
+    v.phone,
+    upgrade
+      ? `Qless: ${v.name} is now Verified. You can set a deposit in ${appUrl()}/vendor/setup.`
+      : `Qless: ${v.name} is approved and live. Open ${appUrl()}/vendor to start your first queue and print your QR poster.`,
+  );
+  back("/admin", { notice: upgrade ? `${v.name} is now Verified.` : `${v.name} is now live.` });
 }
 
 export async function rejectVendor(form: FormData) {
   await requireAdmin();
   const reason = str(form, "reason");
   if (!reason) back("/admin", { error: "Give a reason so the vendor knows what to fix." });
-  const v = await db.vendor.update({ where: { id: str(form, "id") }, data: { status: "REJECTED", rejectReason: reason } });
-  await sendSms(v.phone, `Qless: we couldn't approve ${v.name}. Reason: ${reason}. Reply or contact support to try again.`);
-  back("/admin", { notice: `Rejected. ${v.name} got an SMS with the reason.` });
+  const id = str(form, "id");
+  const before = await db.vendor.findUnique({ where: { id } });
+  if (!before) back("/admin", { error: "Vendor not found." });
+  const now = new Date();
+  // A declined upgrade leaves the shop live as Basic.
+  const [v] = await db.$transaction([
+    db.vendor.update({ where: { id }, data: before.upgradeRequested ? { upgradeRequested: false } : { status: "REJECTED", rejectReason: reason } }),
+    db.document.updateMany({ where: { vendorId: id, status: "PENDING" }, data: { status: "REJECTED", note: reason, reviewedAt: now } }),
+  ]);
+  await sendSms(
+    v.phone,
+    before.upgradeRequested
+      ? `Qless: we couldn't verify ${v.name} yet. Reason: ${reason}. You're still listed as Basic. Upload new documents at ${appUrl()}/vendor/documents.`
+      : `Qless: we couldn't approve ${v.name}. Reason: ${reason}. Upload new documents at ${appUrl()}/vendor/documents or contact support.`,
+  );
+  back("/admin", { notice: `Declined. ${v.name} got an SMS with the reason.` });
+}
+
+/** Sends one document back without rejecting the whole application. */
+export async function rejectDocument(form: FormData) {
+  await requireAdmin();
+  const note = str(form, "note") || "Please upload a clearer copy.";
+  const d = await db.document.update({ where: { id: str(form, "id") }, data: { status: "REJECTED", note, reviewedAt: new Date() }, include: { vendor: true } });
+  await sendSms(d.vendor.phone, `Qless: please upload your ${DOC_LABEL[d.kind].toLowerCase()} again. ${note} ${appUrl()}/vendor/documents`);
+  back("/admin", { notice: `Asked ${d.vendor.name} to upload it again.` });
+}
+
+export async function saveSignupRules(form: FormData) {
+  await requireAdmin();
+  const data = {
+    allowBasic: form.get("allowBasic") === "on",
+    requireCipc: form.get("requireCipc") === "on",
+    requireAddress: form.get("requireAddress") === "on",
+    requireBank: form.get("requireBank") === "on",
+  };
+  await getSettings();
+  await db.setting.update({ where: { id: "global" }, data });
+  back("/admin", { notice: `Sign-up rules saved. CIPC is ${data.requireCipc ? "required" : "not required"} for new vendors.` });
 }
 
 export async function saveBookingFee(form: FormData) {

@@ -105,3 +105,15 @@ export async function requireAdmin(): Promise<User> {
   if (user.role !== "ADMIN") redirect("/");
   return user;
 }
+
+/** Active staff records for this user's phone number, across shops. */
+export async function staffFor(user: Pick<User, "phone">) {
+  return db.staff.findMany({ where: { phone: user.phone, active: true, vendor: { status: "APPROVED" } }, include: { vendor: true } });
+}
+
+export async function requireStaff() {
+  const user = await requireUser();
+  const [staff] = await staffFor(user);
+  if (!staff) redirect("/account");
+  return { user, staff, vendor: staff.vendor };
+}
