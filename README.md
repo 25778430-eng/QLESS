@@ -47,10 +47,21 @@ All keys go in environment variables (see `.env.example`).
 | SMS and WhatsApp | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_SMS_FROM`, `TWILIO_WHATSAPP_FROM` | Twilio console. WhatsApp needs an approved WhatsApp sender, and business-started messages need approved templates. |
 | Deposits and refunds | `PAYFAST_MERCHANT_ID`, `PAYFAST_MERCHANT_KEY`, `PAYFAST_PASSPHRASE`, `PAYFAST_SANDBOX` | PayFast dashboard. Start with sandbox (`true`), then set `false` for real payments. |
 | Push notifications | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Run `npx web-push generate-vapid-keys` |
-| Reminders and no-shows | `CRON_SECRET` | Any random string. Something must call `GET /api/cron/tick` with header `Authorization: Bearer <CRON_SECRET>` every minute. `vercel.json` sets this up on Vercel (per-minute crons need a paid Vercel plan); otherwise use a free service like cron-job.org. |
+| Reminders and no-shows | `CRON_SECRET` | Any random string. Something must call `GET /api/cron/tick` with header `Authorization: Bearer <CRON_SECRET>` every minute. On Vercel's free plan use a free service like cron-job.org (see below). |
 | Public address | `APP_URL` | The live URL, e.g. `https://qless.co.za`. Used in QR codes and PayFast links. |
 
 Maps use OpenStreetMap and need no key.
+
+## Hosting on Vercel
+
+1. In Vercel, **Add New > Project**, import the `QLESS` GitHub repo. Leave the build settings as they are.
+2. Under **Environment Variables**, add at least `DATABASE_URL`, `AUTH_SECRET`, `ADMIN_PHONES` and `CRON_SECRET`, then the Twilio, PayFast and VAPID keys when you have them. Use the database's **direct** connection string (port 5432), not a pooled one, so the tables can be created during the build.
+3. Click **Deploy**. Each build runs `prisma migrate deploy`, so the tables are created on the first deploy and kept up to date after that. If you already ran `database/qless.sql`, nothing is re-created.
+4. Add `APP_URL` with your `https://….vercel.app` address (or your own domain later) and redeploy. Until it's set the app uses the Vercel address automatically.
+5. Reminders: Vercel's free plan only runs crons once a day, so `vercel.json` has a daily safety run. For the every-minute run, create a free job at cron-job.org that calls `https://<your-app>/api/cron/tick` every minute with header `Authorization: Bearer <CRON_SECRET>`. On a paid Vercel plan you can instead change the schedule in `vercel.json` to `* * * * *`.
+6. PayFast needs no extra setup: the app sends `https://<your-app>/api/payfast/notify` with each payment.
+
+Pushing to `main` redeploys automatically.
 
 ## Tech
 
