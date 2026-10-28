@@ -6,7 +6,8 @@ import { checkCode } from "../actions";
 
 type SP = { phone?: string; next?: string; name?: string; offers?: string; email?: string; dev?: string; error?: string };
 
-export default function Verify({ searchParams }: { searchParams: SP }) {
+export default async function Verify(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   const phone = searchParams.phone ?? "";
   return (
     <main className="main">

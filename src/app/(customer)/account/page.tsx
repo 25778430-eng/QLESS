@@ -10,7 +10,8 @@ import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { deleteAccount, signOutAction, updateAccount } from "./actions";
 
-export default async function Account({ searchParams }: { searchParams: { error?: string; notice?: string } }) {
+export default async function Account(props: { searchParams: Promise<{ error?: string; notice?: string }> }) {
+  const searchParams = await props.searchParams;
   const user = await requireUser();
   const vendor = await db.vendor.findUnique({ where: { ownerId: user.id } });
   const staff = await staffFor(user);
@@ -55,7 +56,7 @@ export default async function Account({ searchParams }: { searchParams: { error?
       </form>
       <PushToggle publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ""} />
       <div className="lbl">Appearance</div>
-      <ThemeSwitch initial={parseTheme(cookies().get(THEME_COOKIE)?.value)} />
+      <ThemeSwitch initial={parseTheme((await cookies()).get(THEME_COOKIE)?.value)} />
 
       <div className="lbl">More</div>
       <div className="list">

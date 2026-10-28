@@ -9,7 +9,8 @@ import { addPhoto, addService, addStaff, removePhoto, removeService, removeStaff
 const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-export default async function Setup({ searchParams }: { searchParams: { error?: string; notice?: string } }) {
+export default async function Setup(props: { searchParams: Promise<{ error?: string; notice?: string }> }) {
+  const searchParams = await props.searchParams;
   const { vendor } = await requireVendor();
   const [services, staff, photos] = await Promise.all([
     db.service.findMany({ where: { vendorId: vendor.id, active: true }, orderBy: { priceCents: "asc" } }),

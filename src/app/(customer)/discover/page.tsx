@@ -31,9 +31,10 @@ function ordinal(n: number): string {
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
-export default async function Home({ searchParams }: { searchParams: SP }) {
+export default async function Home(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   const user = await currentUser();
-  const lowData = user ? user.lowData : cookies().get("lowData")?.value === "1";
+  const lowData = user ? user.lowData : (await cookies()).get("lowData")?.value === "1";
   const query = parseShopQuery(searchParams);
   const { q, cat, here } = query;
   const rows = await findShops(query);

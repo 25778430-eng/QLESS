@@ -35,7 +35,7 @@ export async function sendCode(form: FormData) {
     if (form.get("consentReminders") !== "on") back(here, { error: "Tick the first box so we can send your booking reminders." });
   }
   const code = await createOtp(phone);
-  if (!code) back(here, { error: "Too many codes requested. Wait 10 minutes and try again." });
+  if (!code) back(here, { error: "Too many codes requested. Wait a while and try again." });
   await sendSms(phone, `Your Qless code is ${code}. It expires in 10 minutes.`);
   const params = new URLSearchParams({ phone, next });
   if (!existing) {

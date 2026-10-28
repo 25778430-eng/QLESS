@@ -9,7 +9,8 @@ import { walkInAction } from "../actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function WalkIn({ searchParams }: { searchParams: { error?: string } }) {
+export default async function WalkIn(props: { searchParams: Promise<{ error?: string }> }) {
+  const searchParams = await props.searchParams;
   const { vendor } = await requireVendor();
   const day = await todayQueue(vendor.id);
   if (!day || day.status === "CLOSED") {

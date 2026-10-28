@@ -15,7 +15,8 @@ const ROLES = [
   { key: "blocked", label: "Blocked" },
 ];
 
-export default async function Users({ searchParams }: { searchParams: SP }) {
+export default async function Users(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   await requireAdmin();
   const q = (searchParams.q ?? "").trim();
   const role = ROLES.some((r) => r.key === searchParams.role) ? searchParams.role! : "";

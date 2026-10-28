@@ -8,7 +8,8 @@ import { rand } from "@/lib/format";
 import { Submit } from "@/components/Submit";
 import { cancelAction } from "../../actions";
 
-export default async function Cancel({ params }: { params: { id: string } }) {
+export default async function Cancel(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await requireUser();
   const b = await db.booking.findFirst({ where: { id: params.id, customerId: user.id }, include: { queueDay: true, vendor: true } });
   if (!b) notFound();

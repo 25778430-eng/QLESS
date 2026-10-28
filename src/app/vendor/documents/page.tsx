@@ -17,7 +17,8 @@ const STATUS: Record<string, { text: string; kind: string }> = {
   REJECTED: { text: "Upload again", kind: "bad" },
 };
 
-export default async function Documents({ searchParams }: { searchParams: { error?: string; notice?: string; level?: string } }) {
+export default async function Documents(props: { searchParams: Promise<{ error?: string; notice?: string; level?: string }> }) {
+  const searchParams = await props.searchParams;
   const { vendor } = await requireVendor();
   const rules = await getSettings();
   // A Basic shop can preview what Verified needs before asking to upgrade.

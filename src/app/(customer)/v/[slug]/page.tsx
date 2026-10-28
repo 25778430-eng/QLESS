@@ -22,7 +22,9 @@ function openDaysText(openDays: string): string {
   return on.length === 7 ? "Every day" : on.join(", ");
 }
 
-export default async function VendorPage({ params, searchParams }: { params: { slug: string }; searchParams: { error?: string } }) {
+export default async function VendorPage(props: { params: Promise<{ slug: string }>; searchParams: Promise<{ error?: string }> }) {
+  const params = await props.params;
+  const searchParams = await props.searchParams;
   const vendor = await db.vendor.findUnique({
     where: { slug: params.slug },
     include: {
@@ -44,7 +46,7 @@ export default async function VendorPage({ params, searchParams }: { params: { s
   }
   const user = await currentUser();
   const feeCents = bookingFee(await getSettings());
-  const lowData = user ? user.lowData : cookies().get("lowData")?.value === "1";
+  const lowData = user ? user.lowData : (await cookies()).get("lowData")?.value === "1";
 
   const day = await todayQueue(vendor.id);
   const view = day ? await loadQueue(day) : null;

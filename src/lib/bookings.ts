@@ -409,6 +409,10 @@ export async function tick(now = new Date()): Promise<{ expired: number; noShows
     data: { data: null },
   });
 
+  // Housekeeping: old sign-in codes and expired sessions are no longer needed.
+  await db.otpCode.deleteMany({ where: { createdAt: { lt: new Date(now.getTime() - 86_400_000) } } });
+  await db.session.deleteMany({ where: { expiresAt: { lt: now } } });
+
   let noShows = 0;
   const called = await db.booking.findMany({ where: { status: "CALLED", arrived: false, calledAt: { not: null } } });
   for (const b of called) {

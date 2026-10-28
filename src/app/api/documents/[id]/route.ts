@@ -3,7 +3,8 @@ import { currentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 
 /** Verification files are private: only admins and the shop's owner can open them. */
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await currentUser();
   if (!user) return new NextResponse("Sign in first", { status: 401 });
   const doc = await db.document.findUnique({ where: { id: params.id }, include: { vendor: { select: { ownerId: true } } } });

@@ -27,7 +27,8 @@ function dateInput(d: Date | null): string {
 
 export const dynamic = "force-dynamic";
 
-export default async function Admin({ searchParams }: { searchParams: { error?: string; notice?: string; show?: string } }) {
+export default async function Admin(props: { searchParams: Promise<{ error?: string; notice?: string; show?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireAdmin();
   const showAll = searchParams.show === "all";
   const settings = await getSettings();

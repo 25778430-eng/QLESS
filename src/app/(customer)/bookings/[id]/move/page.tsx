@@ -5,7 +5,8 @@ import { loadQueue } from "@/lib/bookings";
 import { Submit } from "@/components/Submit";
 import { moveBackAction } from "../../actions";
 
-export default async function Move({ params }: { params: { id: string } }) {
+export default async function Move(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await requireUser();
   const b = await db.booking.findFirst({ where: { id: params.id, customerId: user.id }, include: { queueDay: true } });
   if (!b) notFound();

@@ -12,8 +12,8 @@ export async function toggleLowData() {
   if (user) {
     await db.user.update({ where: { id: user.id }, data: { lowData: !user.lowData } });
   } else {
-    const on = cookies().get("lowData")?.value === "1";
-    cookies().set("lowData", on ? "0" : "1", { path: "/", maxAge: 365 * 86400 });
+    const on = (await cookies()).get("lowData")?.value === "1";
+    (await cookies()).set("lowData", on ? "0" : "1", { path: "/", maxAge: 365 * 86400 });
   }
   revalidatePath("/", "layout");
 }

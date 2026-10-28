@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { sameSecret } from "@/lib/auth";
 import { tick } from "@/lib/bookings";
 
 export const dynamic = "force-dynamic";
@@ -7,7 +8,7 @@ export const dynamic = "force-dynamic";
 async function handle(req: Request) {
   const secret = process.env.CRON_SECRET;
   const auth = req.headers.get("authorization");
-  if (!secret || auth !== `Bearer ${secret}`) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+  if (!secret || !sameSecret(auth ?? "", `Bearer ${secret}`)) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   return NextResponse.json(await tick());
 }
 

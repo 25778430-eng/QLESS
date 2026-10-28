@@ -10,7 +10,8 @@ import { staffCallNext, staffDone, staffNoShow, staffStart } from "./actions";
 export const dynamic = "force-dynamic";
 
 /** A staff member's own chair: who's in it, who's waiting for them, and their own Call next button. */
-export default async function MyChair({ searchParams }: { searchParams: { error?: string; notice?: string } }) {
+export default async function MyChair(props: { searchParams: Promise<{ error?: string; notice?: string }> }) {
+  const searchParams = await props.searchParams;
   const { user, staff, vendor } = await requireStaff();
   const day = await todayQueue(vendor.id);
   const onShift = !!day && day.status !== "CLOSED" && day.staffIds.includes(staff.id);

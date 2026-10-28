@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0b0b0b" };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const theme = parseTheme(cookies().get(THEME_COOKIE)?.value);
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
   return (
     <html lang="en-ZA" data-theme={theme === "auto" ? undefined : theme}>
       <head>
