@@ -10,7 +10,8 @@ import { testPayAction } from "../../actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function Pay({ params }: { params: { id: string } }) {
+export default async function Pay(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await requireUser();
   const b = await db.booking.findFirst({
     where: { id: params.id, customerId: user.id },

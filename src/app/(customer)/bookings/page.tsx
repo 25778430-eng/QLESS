@@ -13,7 +13,8 @@ const PAST_LABEL: Record<string, { text: string; kind: string }> = {
   CANCELLED: { text: "Cancelled", kind: "" },
 };
 
-export default async function MyBookings({ searchParams }: { searchParams: { error?: string; notice?: string } }) {
+export default async function MyBookings(props: { searchParams: Promise<{ error?: string; notice?: string }> }) {
+  const searchParams = await props.searchParams;
   const user = await requireUser();
   const bookings = await db.booking.findMany({
     where: { customerId: user.id },

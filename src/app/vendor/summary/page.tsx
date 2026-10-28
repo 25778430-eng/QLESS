@@ -5,7 +5,8 @@ import { rand, sastDate, TZ } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-export default async function Summary({ searchParams }: { searchParams: { date?: string } }) {
+export default async function Summary(props: { searchParams: Promise<{ date?: string }> }) {
+  const searchParams = await props.searchParams;
   const { vendor } = await requireVendor();
   const date = /^\d{4}-\d{2}-\d{2}$/.test(searchParams.date ?? "") ? searchParams.date! : sastDate();
   const day = await db.queueDay.findUnique({ where: { vendorId_date: { vendorId: vendor.id, date } } });

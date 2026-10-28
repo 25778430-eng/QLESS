@@ -14,7 +14,9 @@ import { reviewAction } from "../actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function BookingPage({ params, searchParams }: { params: { id: string }; searchParams: { error?: string; notice?: string; paid?: string } }) {
+export default async function BookingPage(props: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; notice?: string; paid?: string }> }) {
+  const params = await props.params;
+  const searchParams = await props.searchParams;
   const user = await requireUser();
   const b = await db.booking.findFirst({
     where: { id: params.id, customerId: user.id },

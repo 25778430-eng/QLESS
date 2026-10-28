@@ -45,7 +45,8 @@ function TotalsTable({ rows, label }: { rows: Array<[string, Totals]>; label: (k
   );
 }
 
-export default async function Money({ searchParams }: { searchParams: { month?: string } }) {
+export default async function Money(props: { searchParams: Promise<{ month?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireAdmin();
   const now = new Date();
   const months = lastMonths(MONTHS, now);

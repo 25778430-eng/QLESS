@@ -97,9 +97,11 @@ model OtpCode {
   attempts  Int       @default(0)
   expiresAt DateTime
   usedAt    DateTime?
+  ip        String?
   createdAt DateTime  @default(now())
 
   @@index([phone, createdAt])
+  @@index([ip, createdAt])
 }
 
 model Session {

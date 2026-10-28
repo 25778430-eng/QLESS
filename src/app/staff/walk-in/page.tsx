@@ -5,7 +5,8 @@ import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { staffWalkIn } from "../actions";
 
-export default async function StaffWalkIn({ searchParams }: { searchParams: { error?: string } }) {
+export default async function StaffWalkIn(props: { searchParams: Promise<{ error?: string }> }) {
+  const searchParams = await props.searchParams;
   const { staff, vendor } = await requireStaff();
   const services = await db.service.findMany({ where: { vendorId: vendor.id, active: true }, orderBy: { name: "asc" } });
   return (

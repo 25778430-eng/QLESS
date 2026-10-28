@@ -1,6 +1,6 @@
 import "server-only";
-import { createHash, createHmac, randomBytes, randomInt } from "node:crypto";
-import { cookies } from "next/headers";
+import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Role, User } from "@prisma/client";
 import { db } from "./db";
@@ -10,6 +10,7 @@ const SESSION_DAYS = 60;
 const OTP_MINUTES = 10;
 const OTP_MAX_ATTEMPTS = 5;
 const OTP_MAX_SENDS = 3; // per phone per 10 minutes
+const OTP_MAX_SENDS_PER_IP = 10; // per hour, so one person can't text hundreds of numbers (SMS pumping)
 
 function secret(): string {
   const s = process.env.AUTH_SECRET;
@@ -21,18 +22,36 @@ function hashOtp(phone: string, code: string): string {
   return createHmac("sha256", secret()).update(`${phone}:${code}`).digest("hex");
 }
 
+/** Compares two strings without leaking how many characters matched. */
+export function sameSecret(a: string, b: string): boolean {
+  const x = Buffer.from(a);
+  const y = Buffer.from(b);
+  return x.length === y.length && timingSafeEqual(x, y);
+}
+
+/** The visitor's IP address. Vercel sets these headers itself, so they can't be faked. */
+async function clientIp(): Promise<string | null> {
+  const h = await headers();
+  return h.get("x-real-ip") || h.get("x-forwarded-for")?.split(",")[0].trim() || null;
+}
+
 function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
-/** Creates a 6-digit code for this phone. Returns null when the phone has asked too often. */
+/** Creates a 6-digit code for this phone. Returns null when the phone or the visitor has asked too often. */
 export async function createOtp(phone: string): Promise<string | null> {
   const since = new Date(Date.now() - 10 * 60_000);
   const recent = await db.otpCode.count({ where: { phone, createdAt: { gte: since } } });
   if (recent >= OTP_MAX_SENDS) return null;
+  const ip = await clientIp();
+  if (ip) {
+    const fromIp = await db.otpCode.count({ where: { ip, createdAt: { gte: new Date(Date.now() - 60 * 60_000) } } });
+    if (fromIp >= OTP_MAX_SENDS_PER_IP) return null;
+  }
   const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
   await db.otpCode.create({
-    data: { phone, codeHash: hashOtp(phone, code), expiresAt: new Date(Date.now() + OTP_MINUTES * 60_000) },
+    data: { phone, ip, codeHash: hashOtp(phone, code), expiresAt: new Date(Date.now() + OTP_MINUTES * 60_000) },
   });
   return code;
 }
@@ -43,7 +62,7 @@ export async function verifyOtp(phone: string, code: string): Promise<boolean> {
     orderBy: { createdAt: "desc" },
   });
   if (!otp || otp.attempts >= OTP_MAX_ATTEMPTS) return false;
-  if (otp.codeHash !== hashOtp(phone, code)) {
+  if (!sameSecret(otp.codeHash, hashOtp(phone, code))) {
     await db.otpCode.update({ where: { id: otp.id }, data: { attempts: { increment: 1 } } });
     return false;
   }
@@ -63,7 +82,7 @@ export async function startSession(userId: string): Promise<void> {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 86_400_000);
   await db.session.create({ data: { userId, tokenHash: hashToken(token), expiresAt } });
-  cookies().set(COOKIE, token, {
+  (await cookies()).set(COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -73,13 +92,13 @@ export async function startSession(userId: string): Promise<void> {
 }
 
 export async function endSession(): Promise<void> {
-  const token = cookies().get(COOKIE)?.value;
+  const token = (await cookies()).get(COOKIE)?.value;
   if (token) await db.session.deleteMany({ where: { tokenHash: hashToken(token) } });
-  cookies().delete(COOKIE);
+  (await cookies()).delete(COOKIE);
 }
 
 export async function currentUser(): Promise<User | null> {
-  const token = cookies().get(COOKIE)?.value;
+  const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
   const session = await db.session.findUnique({ where: { tokenHash: hashToken(token) }, include: { user: true } });
   if (!session || session.expiresAt < new Date() || session.user.banned) return null;

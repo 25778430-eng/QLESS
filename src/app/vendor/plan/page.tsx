@@ -10,7 +10,8 @@ import { cancelPlanAction, testSubscribeAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function Plan({ searchParams }: { searchParams: { error?: string; notice?: string; paid?: string } }) {
+export default async function Plan(props: { searchParams: Promise<{ error?: string; notice?: string; paid?: string }> }) {
+  const searchParams = await props.searchParams;
   const { user, vendor } = await requireVendor();
   const settings = await getSettings();
   const state = planState(vendor, settings);

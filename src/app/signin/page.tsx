@@ -5,7 +5,8 @@ import { sendCode } from "./actions";
 
 type SP = { next?: string; error?: string; mode?: string };
 
-export default function SignIn({ searchParams }: { searchParams: SP }) {
+export default async function SignIn(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   const signIn = searchParams.mode === "in";
   const next = searchParams.next ?? "/";
   const other = `/signin?${new URLSearchParams({ next, ...(signIn ? {} : { mode: "in" }) })}`;

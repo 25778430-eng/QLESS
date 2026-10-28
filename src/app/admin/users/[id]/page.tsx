@@ -21,7 +21,9 @@ const STATUS: Record<string, string> = {
   CANCELLED: "Cancelled",
 };
 
-export default async function UserDetail({ params, searchParams }: { params: { id: string }; searchParams: { error?: string; notice?: string } }) {
+export default async function UserDetail(props: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; notice?: string }> }) {
+  const params = await props.params;
+  const searchParams = await props.searchParams;
   const admin = await requireAdmin();
   const u = await db.user.findUnique({
     where: { id: params.id },

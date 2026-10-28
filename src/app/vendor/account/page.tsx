@@ -17,7 +17,8 @@ function Row({ href, title, sub }: { href: string; title: string; sub: string })
 }
 
 /** The vendor's business hub: shop, money, documents and their own profile in one place. */
-export default async function VendorAccount({ searchParams }: { searchParams: { error?: string; notice?: string } }) {
+export default async function VendorAccount(props: { searchParams: Promise<{ error?: string; notice?: string }> }) {
+  const searchParams = await props.searchParams;
   const { user, vendor } = await requireVendor();
   const settings = await getSettings();
   const [staff, services, docs] = await Promise.all([

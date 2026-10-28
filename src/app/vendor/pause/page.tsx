@@ -8,7 +8,8 @@ import { pauseAction } from "../actions";
 
 const MINUTES = [[15, "15 min"], [30, "30 min"], [60, "1 hour"], [120, "2 hours"]] as const;
 
-export default async function Pause({ searchParams }: { searchParams: { error?: string } }) {
+export default async function Pause(props: { searchParams: Promise<{ error?: string }> }) {
+  const searchParams = await props.searchParams;
   const { vendor } = await requireVendor();
   const day = await todayQueue(vendor.id);
   if (!day || day.status !== "OPEN") redirect("/vendor");

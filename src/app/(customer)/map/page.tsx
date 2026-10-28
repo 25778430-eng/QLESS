@@ -8,9 +8,10 @@ import { LocateMe } from "@/components/LocateMe";
 
 export const dynamic = "force-dynamic";
 
-export default async function MapPage({ searchParams }: { searchParams: { q?: string; cat?: string; lat?: string; lng?: string } }) {
+export default async function MapPage(props: { searchParams: Promise<{ q?: string; cat?: string; lat?: string; lng?: string }> }) {
+  const searchParams = await props.searchParams;
   const user = await currentUser();
-  const lowData = user ? user.lowData : cookies().get("lowData")?.value === "1";
+  const lowData = user ? user.lowData : (await cookies()).get("lowData")?.value === "1";
   const query = parseShopQuery(searchParams);
   const rows = await findShops(query);
   const nearest = rows.find((r) => r.state.kind === "");

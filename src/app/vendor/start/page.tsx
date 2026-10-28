@@ -7,7 +7,8 @@ import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { openToday } from "../actions";
 
-export default async function Start({ searchParams }: { searchParams: { error?: string } }) {
+export default async function Start(props: { searchParams: Promise<{ error?: string }> }) {
+  const searchParams = await props.searchParams;
   const { vendor } = await requireVendor();
   const [staff, services] = await Promise.all([
     db.staff.findMany({ where: { vendorId: vendor.id, active: true }, orderBy: { name: "asc" } }),

@@ -7,7 +7,8 @@ import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { registerVendor } from "../actions";
 
-export default async function Register({ searchParams }: { searchParams: { error?: string } }) {
+export default async function Register(props: { searchParams: Promise<{ error?: string }> }) {
+  const searchParams = await props.searchParams;
   const user = await requireUser();
   if (await db.vendor.findUnique({ where: { ownerId: user.id } })) redirect("/vendor");
   const rules = await getSettings();
