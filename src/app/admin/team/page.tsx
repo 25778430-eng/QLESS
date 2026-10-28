@@ -40,28 +40,30 @@ export default async function Team(props: { searchParams: SP | Promise<SP> }) {
             const fromEnv = isAdminPhone(a.phone);
             const self = a.id === me.id;
             return (
-              <div key={a.id} className="listrow">
-                <span className="grow">
+              <div key={a.id} className="listrow wrap">
+                <span className="grow" style={{ minWidth: 180 }}>
                   <Link href={`/admin/users/${a.id}`}><b>{a.name}</b></Link>
                   {self && <span className="small muted"> (you)</span>}
                   <br />
                   <span className="small muted mono">{prettyPhone(a.phone)}</span>
                   {fromEnv && <span className="small muted"> · in ADMIN_PHONES</span>}
                 </span>
-                <span className={`pill ${sup ? "sig" : ""}`}>{sup ? "Super admin" : "Admin"}</span>
-                {!self && !fromEnv && (
-                  <span className="row" style={{ gap: 6 }}>
-                    <form action={setSuperAdmin}>
-                      <input type="hidden" name="id" value={a.id} />
-                      <input type="hidden" name="on" value={sup ? "0" : "1"} />
-                      <Submit className="btn sm alt">{sup ? "Make admin" : "Make super"}</Submit>
-                    </form>
-                    <form action={removeAdmin}>
-                      <input type="hidden" name="id" value={a.id} />
-                      <Submit className="btn sm warn">Remove</Submit>
-                    </form>
-                  </span>
-                )}
+                <span className="row wrap" style={{ gap: 6 }}>
+                  <span className={`pill ${sup ? "sig" : ""}`}>{sup ? "Super admin" : "Admin"}</span>
+                  {!self && !fromEnv && (
+                    <>
+                      <form action={setSuperAdmin}>
+                        <input type="hidden" name="id" value={a.id} />
+                        <input type="hidden" name="on" value={sup ? "0" : "1"} />
+                        <Submit className="btn sm alt">{sup ? "Make admin" : "Make super"}</Submit>
+                      </form>
+                      <form action={removeAdmin}>
+                        <input type="hidden" name="id" value={a.id} />
+                        <Submit className="btn sm warn">Remove</Submit>
+                      </form>
+                    </>
+                  )}
+                </span>
               </div>
             );
           })}

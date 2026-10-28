@@ -13,9 +13,9 @@ export async function AdminHeader({ current }: { current: string }) {
   const user = await currentUser();
   const superAdmin = !!user && isSuperAdmin(user);
   return (
-    <header className="topbar">
-      <Logo href="/admin" />
-      <nav className="row small" style={{ gap: 14 }} aria-label="Admin">
+    <header className="topbar" style={{ gap: 12 }}>
+      <Logo href="/admin" size={28} />
+      <nav className="row small wrap" style={{ gap: 12, justifyContent: "flex-end" }} aria-label="Admin">
         {LINKS.filter((l) => superAdmin || !l.superOnly).map((l) => (
           <Link key={l.href} href={l.href} aria-current={l.href === current ? "page" : undefined} style={{ fontWeight: l.href === current ? 700 : 400 }}>
             {l.label}
