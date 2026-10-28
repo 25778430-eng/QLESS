@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Prisma } from "@prisma/client";
-import { requireAdmin } from "@/lib/auth";
+import { isSuperAdmin, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { prettyPhone, shortDate } from "@/lib/format";
 import { AdminHeader } from "@/components/AdminHeader";
@@ -75,7 +75,7 @@ export default async function Users({ searchParams }: { searchParams: SP }) {
                     <span className="mono">{prettyPhone(u.phone)}</span> · {u._count.bookings} bookings · {noShowBy.get(u.id) ?? 0} no-shows · joined {shortDate(u.createdAt)}
                   </span>
                 </span>
-                {blocked ? <span className="pill bad">Blocked</span> : u.role === "ADMIN" ? <span className="pill">Admin</span> : u.vendor ? <span className="pill">Vendor</span> : null}
+                {blocked ? <span className="pill bad">Blocked</span> : u.role === "ADMIN" ? <span className="pill">{isSuperAdmin(u) ? "Super admin" : "Admin"}</span> : u.vendor ? <span className="pill">Vendor</span> : null}
               </Link>
             );
           })}

@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireSuperAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { rand } from "@/lib/format";
 import { dayKey, depositsByVendor, lastDays, lastMonths, monthKey, sumTotals, totalsBy, type IncomeLine, type Totals } from "@/lib/money";
@@ -50,6 +50,7 @@ export default async function Money({ searchParams }: { searchParams: { month?: 
   const now = new Date();
   const months = lastMonths(MONTHS, now);
   const days = lastDays(DAYS, now);
+  await requireSuperAdmin(); // Money is for super admins only
   const oldest = months[months.length - 1]!;
   const since = new Date(`${oldest}-01T00:00:00+02:00`);
 

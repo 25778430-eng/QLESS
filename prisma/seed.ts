@@ -30,8 +30,8 @@ async function vendor(opts: {
 async function main() {
   await db.user.upsert({
     where: { phone: "+27820000000" },
-    create: { phone: "+27820000000", name: "Qless Admin", role: "ADMIN", consentReminders: true, consentAt: new Date() },
-    update: { role: "ADMIN" },
+    create: { phone: "+27820000000", name: "Qless Admin", role: "ADMIN", superAdmin: true, consentReminders: true, consentAt: new Date() },
+    update: { role: "ADMIN", superAdmin: true },
   });
   await vendor({
     owner: { phone: "+27712345678", name: "Tshepo Dlamini" },

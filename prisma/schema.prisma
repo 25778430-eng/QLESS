@@ -71,6 +71,9 @@ model User {
   name             String
   email            String?
   role             Role      @default(CUSTOMER)
+  // A super admin is an ADMIN who can also manage other admins, fees, plans, featured listings and Money.
+  // Numbers in ADMIN_PHONES are always super admins.
+  superAdmin       Boolean   @default(false)
   consentReminders Boolean   @default(false)
   consentOffers    Boolean   @default(false)
   consentAt        DateTime?

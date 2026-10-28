@@ -1,5 +1,5 @@
 "use server";
-import { requireAdmin } from "@/lib/auth";
+import { isSuperAdmin, requireAdmin, requireSuperAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sendSms } from "@/lib/notify";
 import { appUrl, back, str } from "@/lib/http";
@@ -66,7 +66,7 @@ export async function rejectDocument(form: FormData) {
 }
 
 export async function saveSignupRules(form: FormData) {
-  await requireAdmin();
+  await requireSuperAdmin();
   const data = {
     allowBasic: form.get("allowBasic") === "on",
     requireCipc: form.get("requireCipc") === "on",
@@ -79,7 +79,7 @@ export async function saveSignupRules(form: FormData) {
 }
 
 export async function saveBookingFee(form: FormData) {
-  await requireAdmin();
+  await requireSuperAdmin();
   const cents = parseFeeRand(str(form, "fee"));
   if (cents === null) back("/admin", { error: "Enter a booking fee between R0 and R50." });
   const on = form.get("on") === "on";
@@ -92,7 +92,7 @@ export async function saveBookingFee(form: FormData) {
 }
 
 export async function savePlan(form: FormData) {
-  await requireAdmin();
+  await requireSuperAdmin();
   const cents = parseFeeRand(str(form, "price"), MAX_PLAN_CENTS);
   if (cents === null || cents === 0) back("/admin", { error: `Enter a monthly price between R1 and ${rand(MAX_PLAN_CENTS)}.` });
   const trialDays = Math.round(Number(str(form, "trial")));
@@ -108,14 +108,14 @@ export async function savePlan(form: FormData) {
 }
 
 export async function setPlanWaived(form: FormData) {
-  await requireAdmin();
+  await requireSuperAdmin();
   const waived = str(form, "waived") === "1";
   const v = await db.vendor.update({ where: { id: str(form, "id") }, data: { planWaived: waived } });
   back("/admin?show=all", { notice: waived ? `${v.name} no longer needs a monthly plan.` : `${v.name} needs a monthly plan again.` });
 }
 
 export async function saveFeatured(form: FormData) {
-  await requireAdmin();
+  await requireSuperAdmin();
   const featured = form.get("featured") === "on";
   const rank = Math.round(Number(str(form, "rank") || "0"));
   if (!(rank >= 0 && rank <= 100)) back("/admin?show=all", { error: "Rank must be 0 to 100." });
@@ -139,7 +139,10 @@ export async function banUser(form: FormData) {
   const id = str(form, "id");
   const target = await db.user.findUnique({ where: { id } });
   if (!target) back("/admin/users", { error: "User not found." });
-  if (target.id === admin.id || target.role === "ADMIN") back(`/admin/users/${id}`, { error: "Admins can't be blocked here." });
+  // Only a super admin can block another admin, and super admins can't be blocked at all.
+  if (target.id === admin.id || isSuperAdmin(target) || (target.role === "ADMIN" && !isSuperAdmin(admin))) {
+    back(`/admin/users/${id}`, { error: "You can't block this admin." });
+  }
   await db.$transaction([
     db.user.update({ where: { id }, data: { banned: true, bannedReason: str(form, "reason").slice(0, 200) || null } }),
     db.session.deleteMany({ where: { userId: id } }),
