@@ -21,7 +21,7 @@ export default async function Types({ searchParams }: { searchParams: { error?: 
       <main className="main">
         <h1>Business types</h1>
         <Messages searchParams={searchParams} />
-        <p className="small muted">Switch a type off to hide its shops from search and stop new sign-ups. Their bookings already made still go ahead. Government is off until you&apos;re ready to take on offices.</p>
+        <p className="small muted">Switch a type off to hide its shops from search and stop new sign-ups. Their bookings already made still go ahead.{settings.disabledTypes.includes("GOVERNMENT") ? " Government is off until you're ready to take on offices." : ""}</p>
         <div className="list">
           {BUSINESS_TYPES.map((t) => {
             const on = !settings.disabledTypes.includes(t);
@@ -29,8 +29,8 @@ export default async function Types({ searchParams }: { searchParams: { error?: 
               <form key={t} action={setTypeEnabled} className="li">
                 <input type="hidden" name="type" value={t} />
                 <input type="hidden" name="on" value={on ? "0" : "1"} />
-                <span className="grow"><b>{TYPES[t].label}</b><span>{TYPES[t].hint} · {shops.get(t) ?? 0} live</span></span>
-                <Submit className={on ? "btn sm" : "btn sm alt"}>{on ? "On" : "Off"}</Submit>
+                <span className="grow"><b>{TYPES[t].label} <span className={`pill ${on ? "ok" : ""}`}>{on ? "On" : "Off"}</span></b><span>{TYPES[t].hint} · {shops.get(t) ?? 0} live</span></span>
+                <Submit className={on ? "btn sm alt" : "btn sm"}>{on ? "Turn off" : "Turn on"}</Submit>
               </form>
             );
           })}
