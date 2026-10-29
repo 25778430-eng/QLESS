@@ -9,7 +9,7 @@ type SP = { phone?: string; next?: string; name?: string; offers?: string; email
 export default function Verify({ searchParams }: { searchParams: SP }) {
   const phone = searchParams.phone ?? "";
   return (
-    <main className="main">
+    <main className="main narrow">
       <div className="row"><Link className="btn sm alt" href="/signin">Back</Link><h2>Enter your code</h2></div>
       <p className="muted">Sent to <b className="mono">{phone ? prettyPhone(phone) : ""}</b></p>
       <Messages searchParams={searchParams} />
