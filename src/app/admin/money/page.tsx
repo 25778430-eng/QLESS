@@ -1,8 +1,10 @@
 import { requireAdmin, requireSuperAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { rand } from "@/lib/format";
-import { dayKey, depositsByVendor, lastDays, lastMonths, monthKey, sumTotals, totalsBy, type IncomeLine, type Totals } from "@/lib/money";
+import { vendorBalance, dayKey, depositsByVendor, lastDays, lastMonths, monthKey, sumTotals, totalsBy, type IncomeLine, type Totals } from "@/lib/money";
 import { AdminHeader } from "@/components/AdminHeader";
+import { Messages } from "@/components/Messages";
+import { recordPayout } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +47,7 @@ function TotalsTable({ rows, label }: { rows: Array<[string, Totals]>; label: (k
   );
 }
 
-export default async function Money({ searchParams }: { searchParams: { month?: string } }) {
+export default async function Money({ searchParams }: { searchParams: { month?: string; error?: string; notice?: string } }) {
   await requireAdmin();
   const now = new Date();
   const months = lastMonths(MONTHS, now);
@@ -85,11 +87,26 @@ export default async function Money({ searchParams }: { searchParams: { month?: 
     .sort((a, b) => b.d.owed - a.d.owed);
   const owedTotal = vendorRows.reduce((s, r) => s + r.d.owed, 0);
 
+  // All-time balance per shop for payouts.
+  const [allDeposits, allPayouts] = await Promise.all([
+    db.booking.findMany({ where: { depositCents: { gt: 0 }, depositStatus: { in: ["APPLIED", "FORFEITED"] } }, select: { vendorId: true, depositCents: true, depositStatus: true } }),
+    db.payout.groupBy({ by: ["vendorId"], _sum: { amountCents: true } }),
+  ]);
+  const paidBy = new Map(allPayouts.map((p) => [p.vendorId, p._sum.amountCents ?? 0]));
+  const byShop = new Map<string, typeof allDeposits>();
+  for (const d of allDeposits) byShop.set(d.vendorId, [...(byShop.get(d.vendorId) ?? []), d]);
+  const dueVendors = await db.vendor.findMany({ where: { id: { in: [...byShop.keys()] } }, select: { id: true, name: true, bankName: true, bankAccountNo: true } });
+  const dueRows = dueVendors
+    .map((v) => ({ v, b: vendorBalance(byShop.get(v.id)!, [paidBy.get(v.id) ?? 0]) }))
+    .filter((r) => r.b.due > 0)
+    .sort((a, b) => b.b.due - a.b.due);
+
   return (
     <>
       <AdminHeader current="/admin/money" />
       <main className="main">
         <h1>Money</h1>
+        <Messages searchParams={searchParams} />
         <div className="stat">
           <div><b className="mono" style={{ fontSize: 20 }}>{rand(thisMonth.total)}</b><span>Qless income this month</span></div>
           <div><b className="mono" style={{ fontSize: 20 }}>{rand(thisMonth.fee)}</b><span>Booking fees</span></div>
@@ -101,6 +118,27 @@ export default async function Money({ searchParams }: { searchParams: { month?: 
 
         <h2>Last {DAYS} days</h2>
         <TotalsTable rows={byDay} label={dayLabel} />
+
+        <h2>Pay out to shops</h2>
+        <p className="small muted">All-time deposits each shop has earned, less what you&apos;ve already paid. Pay by EFT from the Qless account, then record it here so the shop sees it on their Payouts page.</p>
+        <div className="list">
+          {dueRows.length === 0 && <div className="li"><span className="small muted">Nothing due.</span></div>}
+          {dueRows.map(({ v, b }) => (
+            <details key={v.id} className="li" style={{ display: "block" }}>
+              <summary className="row between" style={{ listStyle: "none" }}>
+                <span className="grow"><b>{v.name}</b><span>{v.bankAccountNo ? `${v.bankName} ····${v.bankAccountNo.slice(-4)}` : "No bank details yet"} · paid {rand(b.paidOut)} so far</span></span>
+                <b className="mono">{rand(b.due)}</b>
+              </summary>
+              <form action={recordPayout} className="row wrap" style={{ marginTop: 10 }}>
+                <input type="hidden" name="vendorId" value={v.id} />
+                <input type="hidden" name="month" value={month} />
+                <input className="i mono" name="amount" defaultValue={(b.due / 100).toFixed(2)} style={{ width: 120 }} aria-label="Amount paid (R)" />
+                <input className="i grow" name="reference" placeholder="EFT reference" />
+                <button className="btn sm">Record payout</button>
+              </form>
+            </details>
+          ))}
+        </div>
 
         <h2>Deposits owed to vendors</h2>
         <p className="small muted">

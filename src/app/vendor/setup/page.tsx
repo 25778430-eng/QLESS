@@ -5,7 +5,9 @@ import { rand } from "@/lib/format";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { UseMyLocation } from "@/components/UseMyLocation";
-import { addPhoto, addService, removePhoto, removeService, saveShop } from "../actions";
+import { addPhoto, addService, removePhoto, saveShop } from "../actions";
+import { ServiceFields } from "@/components/ServiceFields";
+import { priceFrom, serviceOptions } from "@/lib/pricing";
 
 const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -58,24 +60,25 @@ export default async function Setup({ searchParams }: { searchParams: { error?: 
       <h3 id="services">Services and prices</h3>
       <div className="card" style={{ padding: "4px 14px" }}>
         {services.length === 0 && <p className="muted" style={{ padding: "10px 0" }}>No services yet.</p>}
-        {services.map((s) => (
-          <div className="svc" key={s.id}>
-            <span><b>{s.name}</b><br /><span className="small muted">{s.durationMins} min</span></span>
-            <span className="row"><span className="p">{rand(s.priceCents)}</span>
-              <form action={removeService}><input type="hidden" name="id" value={s.id} /><button className="btn sm alt" aria-label={`Remove ${s.name}`}>✕</button></form>
-            </span>
-          </div>
-        ))}
+        {services.map((s) => {
+          const p = priceFrom(s);
+          const opts = serviceOptions(s);
+          return (
+            <Link className="svc" key={s.id} href={`/vendor/services/${s.id}`} style={{ textDecoration: "none" }}>
+              <span>
+                <b>{s.isExtra ? `+ ${s.name}` : s.name}</b>{s.ticketLetter && <span className="pill" style={{ marginLeft: 6 }}>{s.ticketLetter}</span>}<br />
+                <span className="small muted">{s.isExtra ? "Extra" : `${s.durationMins} min`}{opts.length ? ` · ${opts.map((o) => o.label).join(", ")}` : ""}</span>
+              </span>
+              <span className="row"><span className="p">{p.from ? "from " : ""}{p.cents === 0 ? "Free" : rand(p.cents)}</span><span className="chev">›</span></span>
+            </Link>
+          );
+        })}
       </div>
       <details className="card">
-        <summary>+ Add service</summary>
+        <summary>+ Add a service, option list or extra</summary>
         <form action={addService} className="stack" style={{ marginTop: 10 }}>
-          <input className="i" name="name" placeholder="Skin fade" required />
-          <div className="row">
-            <label className="f grow">Minutes<input className="i mono" type="number" name="duration" min="5" max="480" defaultValue="30" /></label>
-            <label className="f grow">Price (R)<input className="i mono" type="number" name="price" min="1" step="1" defaultValue="120" /></label>
-          </div>
-          <Submit>Add service</Submit>
+          <ServiceFields businessType={vendor.businessType} />
+          <Submit>Add</Submit>
         </form>
       </details>
 

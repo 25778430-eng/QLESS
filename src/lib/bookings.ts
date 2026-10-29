@@ -2,13 +2,17 @@ import "server-only";
 import { randomInt } from "node:crypto";
 import type { Booking, QueueDay, Service, Staff, User, Vendor } from "@prisma/client";
 import { db } from "./db";
-import { notifyCustomer } from "./notify";
+import { notifyCustomer, sendSms } from "./notify";
 import { refund } from "./payfast";
 import { bookingFee } from "./fees";
 import { getSettings } from "./settings";
 import { vendorListed } from "./plan-billing";
 import { DOC_KEEP_DAYS, takesDeposits } from "./verification";
-import { rand, sastAt, sastDate, sastWeekday, time } from "./format";
+import { rand, sastAt, sastDate, sastWeekday, shortDate, time } from "./format";
+import { appUrl } from "./http";
+import { normalisePlate, typeInfo, type JobStage, JOB_LABEL } from "./business-types";
+import { nextTicketNo, quote } from "./pricing";
+import { cleanupOldData } from "./retention";
 import {
   ARRIVAL_WINDOW_MINS,
   arrivalExpired,
@@ -18,11 +22,14 @@ import {
   peopleAhead,
   positionAfterMoveBack,
   refundOnCancel,
+  slotsFor,
   type ChairHours,
   type QueueEntry,
 } from "./queue";
 
 export const MAX_ACTIVE_BOOKINGS = 2;
+/** How far ahead customers can book a set time. */
+export const BOOK_AHEAD_DAYS = 14;
 export const NO_SHOW_LIMIT = 3; // within 30 days
 export const BLOCK_DAYS = 7;
 const UNPAID_EXPIRY_MINS = 15;
@@ -84,11 +91,12 @@ export async function loadQueue(day: QueueDay, now = new Date()): Promise<QueueV
     .map((b) => ({
       id: b.id,
       position: b.position,
-      durationMins: b.service.durationMins,
+      durationMins: b.durationMins ?? b.service.durationMins,
       staffId: b.staffId,
       status: b.status as QueueEntry["status"],
       startedAt: b.startedAt,
       calledAt: b.calledAt,
+      notBefore: b.scheduledAt,
     }));
   const chairHours = chairHoursFor(await db.staff.findMany({ where: { id: { in: day.staffIds } } }), now);
   const etas = estimateStarts({
@@ -114,7 +122,7 @@ export async function openQueue(vendor: Vendor, staffIds: string[]): Promise<Que
   if (vendor.status !== "APPROVED") throw new BookingError("Your business must be approved before you can open a queue.");
   if (!(await vendorListed(vendor))) throw new BookingError("Your free trial has ended. Subscribe to the monthly plan to open your queue.");
   if (!staffIds.length) throw new BookingError("Pick at least one staff member working today.");
-  const services = await db.service.findMany({ where: { vendorId: vendor.id, active: true } });
+  const services = await db.service.findMany({ where: { vendorId: vendor.id, active: true, isExtra: false } });
   if (!services.length) throw new BookingError("Add at least one service first.");
   const avg = services.reduce((s, x) => s + x.durationMins, 0) / services.length;
   const capacity = dailyCapacity(staffIds.length, vendor.openTime, vendor.closeTime, avg);
@@ -143,8 +151,82 @@ async function uniqueRef(): Promise<string> {
   }
 }
 
-/** Customer joins today's queue. Deposit-free vendors go straight to WAITING. */
-export async function createBooking(customer: User, vendorId: string, serviceId: string, staffId: string | null) {
+export type BookingRequest = {
+  vendorId: string;
+  serviceId: string;
+  staffId: string | null;
+  optionLabel?: string | null;
+  extraIds?: string[];
+  plate?: string;
+  item?: string;
+  /** A later day (YYYY-MM-DD) and time (HH:MM). Without them the customer joins today's queue. */
+  date?: string;
+  slot?: string;
+};
+
+/** Is this business type switched on by the super admin? */
+export async function typeSwitchedOn(businessType: string): Promise<boolean> {
+  return !(await getSettings()).disabledTypes.includes(businessType);
+}
+
+/** Works out the price and time of a service with its option and extras, or refuses. */
+async function priceVisit(vendorId: string, serviceId: string, optionLabel: string | null | undefined, extraIds: string[] = []) {
+  const service = await db.service.findFirst({ where: { id: serviceId, vendorId, active: true, isExtra: false } });
+  if (!service) throw new BookingError("Pick a service.");
+  const extras = extraIds.length ? await db.service.findMany({ where: { id: { in: extraIds }, vendorId, active: true, isExtra: true } }) : [];
+  const q = quote(service, optionLabel || null, extras);
+  if (!q) throw new BookingError("Pick an option for this service.");
+  return { service, q };
+}
+
+async function ticketFor(queueDayId: string, letter: string | null): Promise<string> {
+  const taken = await db.booking.findMany({ where: { queueDayId }, select: { ticketNo: true } });
+  return nextTicketNo(letter, taken.map((t) => t.ticketNo));
+}
+
+/** The date and time a later-day booking is for, checked against the shop's days, hours and free slots. */
+async function checkSlot(vendor: Vendor, date: string, slot: string, durationMins: number, staffId: string | null) {
+  const today = sastDate();
+  const last = sastDate(new Date(Date.now() + BOOK_AHEAD_DAYS * 86_400_000));
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date <= today || date > last) throw new BookingError(`Pick a day in the next ${BOOK_AHEAD_DAYS} days.`);
+  const when = new Date(`${date}T${slot}:00+02:00`);
+  if (!/^\d{2}:\d{2}$/.test(slot) || Number.isNaN(when.getTime())) throw new BookingError("Pick a time.");
+  if (vendor.openDays[sastWeekday(when)] !== "1") throw new BookingError("The shop is closed that day.");
+  const slots = await slotsOn(vendor, date, durationMins, staffId);
+  if (!slots.find((s) => s.at === slot)?.free) throw new BookingError("That time has just been taken. Pick another.");
+  return when;
+}
+
+/** Bookable times on a later day for a service of this length. */
+export async function slotsOn(vendor: Vendor, date: string, durationMins: number, staffId: string | null = null) {
+  const day = await db.queueDay.findUnique({ where: { vendorId_date: { vendorId: vendor.id, date } } });
+  const booked = day
+    ? await db.booking.findMany({
+        where: { queueDayId: day.id, scheduledAt: { not: null }, status: { in: [...ACTIVE_STATUSES] } },
+        include: { service: true },
+      })
+    : [];
+  const weekday = sastWeekday(new Date(`${date}T12:00:00+02:00`));
+  const chairs = await db.staff.count({ where: { vendorId: vendor.id, active: true } });
+  const staffOn = await db.staff.findMany({ where: { vendorId: vendor.id, active: true } });
+  const working = staffOn.filter((s) => (s.workDays || "1111111")[weekday] === "1").length || Math.max(1, chairs);
+  return slotsFor({
+    openTime: vendor.openTime,
+    closeTime: vendor.closeTime,
+    durationMins,
+    chairs: working,
+    staffId,
+    booked: booked.map((b) => ({
+      start: new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Johannesburg", hour: "2-digit", minute: "2-digit", hour12: false }).format(b.scheduledAt!),
+      durationMins: b.durationMins ?? b.service.durationMins,
+      staffId: b.staffId,
+    })),
+  });
+}
+
+/** Customer joins today's queue, or books a set time on a later day. Deposit-free shops go straight to WAITING. */
+export async function createBooking(customer: User, req: BookingRequest) {
+  const { vendorId, staffId } = req;
   const now = new Date();
   if (customer.blockedUntil && customer.blockedUntil > now) {
     throw new BookingError(
@@ -157,26 +239,43 @@ export async function createBooking(customer: User, vendorId: string, serviceId:
   if (active >= MAX_ACTIVE_BOOKINGS) throw new BookingError(`You can only have ${MAX_ACTIVE_BOOKINGS} bookings at a time.`);
 
   const vendor = await db.vendor.findUnique({ where: { id: vendorId } });
-  if (!vendor || !(await vendorListed(vendor))) throw new BookingError("This shop isn't taking bookings.");
-  const day = await todayQueue(vendorId);
-  if (!day || day.status === "CLOSED") throw new BookingError("This shop's queue isn't open right now.");
+  if (!vendor || !(await vendorListed(vendor)) || !(await typeSwitchedOn(vendor.businessType))) throw new BookingError("This shop isn't taking bookings.");
+  const info = typeInfo(vendor.businessType);
+  const { service, q } = await priceVisit(vendorId, req.serviceId, req.optionLabel, req.extraIds);
+  const plate = info.plates ? normalisePlate(req.plate ?? "") : "";
+  if (info.plates && plate.length < 3) throw new BookingError("Enter your car's number plate.");
+  const item = info.jobs ? (req.item ?? "").trim().slice(0, 80) : "";
+  if (info.jobs && !item) throw new BookingError("Tell the shop what needs fixing.");
+
+  let day: QueueDay;
+  let scheduledAt: Date | null = null;
+  if (req.date) {
+    if (staffId && !(await db.staff.findFirst({ where: { id: staffId, vendorId, active: true } }))) throw new BookingError("Pick someone from the team.");
+    scheduledAt = await checkSlot(vendor, req.date, req.slot ?? "", q.durationMins, staffId);
+    // A later day's queue is made now and opened by the shop on the day.
+    day = await db.queueDay.upsert({
+      where: { vendorId_date: { vendorId, date: req.date } },
+      create: { vendorId, date: req.date, staffIds: [], capacity: 0, status: "CLOSED" },
+      update: {},
+    });
+  } else {
+    const today = await todayQueue(vendorId);
+    if (!today || today.status === "CLOSED") throw new BookingError("This shop's queue isn't open right now.");
+    day = today;
+    const all = await db.booking.findMany({ where: { queueDayId: day.id } });
+    if (all.filter(countsTowardCapacity).length >= day.capacity) throw new BookingError("Sorry, the queue is full for today.");
+    if (staffId && !day.staffIds.includes(staffId)) throw new BookingError("That staff member isn't working today.");
+    if (staffId) await checkStaffHasTime(day, staffId, q.durationMins, now);
+  }
 
   const existing = await db.booking.findFirst({
     where: { customerId: customer.id, queueDayId: day.id, status: { in: [...ACTIVE_STATUSES] } },
   });
-  if (existing) throw new BookingError("You're already in this queue.");
+  if (existing) throw new BookingError(req.date ? "You already have a booking with this shop that day." : "You're already in this queue.");
 
-  const all = await db.booking.findMany({ where: { queueDayId: day.id } });
-  if (all.filter(countsTowardCapacity).length >= day.capacity) throw new BookingError("Sorry, the queue is full for today.");
-
-  const service = await db.service.findFirst({ where: { id: serviceId, vendorId, active: true } });
-  if (!service) throw new BookingError("Pick a service.");
-  if (staffId && !day.staffIds.includes(staffId)) throw new BookingError("That staff member isn't working today.");
-  if (staffId) await checkStaffHasTime(day, staffId, service.durationMins, now);
-
-  // Basic (unverified) shops take no money through Qless: no deposit and no booking fee.
-  const paid = takesDeposits(vendor);
-  const depositCents = paid ? Math.min(vendor.depositCents, service.priceCents) : 0;
+  // Basic (unverified) shops and free queues (government) take no money through Qless: no deposit and no booking fee.
+  const paid = takesDeposits(vendor) && !info.free;
+  const depositCents = paid ? Math.min(vendor.depositCents, q.priceCents) : 0;
   const feeCents = paid ? bookingFee(await getSettings()) : 0;
   const needsPayment = depositCents + feeCents > 0;
   return db.booking.create({
@@ -185,12 +284,20 @@ export async function createBooking(customer: User, vendorId: string, serviceId:
       vendorId,
       queueDayId: day.id,
       customerId: customer.id,
-      serviceId,
+      serviceId: service.id,
       staffId,
       position: await nextPosition(day.id),
       status: needsPayment ? "PENDING_PAYMENT" : "WAITING",
       checkInCode: code(4),
-      priceCents: service.priceCents,
+      priceCents: q.priceCents,
+      durationMins: q.durationMins,
+      optionLabel: q.optionLabel,
+      extras: q.extras,
+      extrasCents: q.extrasCents,
+      ticketNo: await ticketFor(day.id, service.ticketLetter),
+      scheduledAt,
+      plate: plate || null,
+      item: item || null,
       depositCents,
       feeCents,
       depositStatus: "NONE",
@@ -302,7 +409,7 @@ export async function callNext(vendor: Vendor, staffId: string | null, bookingId
 export async function startService(vendor: Vendor, bookingId: string): Promise<void> {
   await db.booking.updateMany({
     where: { id: bookingId, vendorId: vendor.id, status: { in: ["CALLED", "WAITING"] } },
-    data: { status: "IN_SERVICE", startedAt: new Date(), arrived: true },
+    data: { status: "IN_SERVICE", startedAt: new Date(), arrived: true, ...(typeInfo(vendor.businessType).jobs ? { jobStage: "RECEIVED" } : {}) },
   });
 }
 
@@ -321,6 +428,54 @@ export async function completeBooking(vendor: Vendor, bookingId: string): Promis
   if (b.customer) {
     await notifyCustomer(b.customer, "Thanks for visiting", `Qless: thanks for visiting ${vendor.name}. Tap to rate your visit.`, `/bookings/${b.id}`);
   }
+}
+
+/** The car is washed or the repair is done: tell the customer to come and collect. */
+export async function markReady(vendor: Vendor, bookingId: string): Promise<void> {
+  const b = await db.booking.findFirst({ where: { id: bookingId, vendorId: vendor.id, status: { in: ["IN_SERVICE", "CALLED"] } }, include: { customer: true } });
+  if (!b) throw new BookingError("That job isn't in progress.");
+  if (b.jobStage === "QUOTE" && b.quoteApproved !== true) throw new BookingError("The customer hasn't approved the quote yet.");
+  await db.booking.update({ where: { id: b.id }, data: { readyAt: new Date(), jobStage: b.jobStage ? "READY" : null, startedAt: b.startedAt ?? new Date() } });
+  const what = b.plate ? `Your car (${b.plate}) is ready` : b.item ? `Your ${b.item} is ready to collect` : "You're ready to collect";
+  const body = `Qless: ${what} at ${vendor.name}.${b.quoteCents ? ` Amount due ${rand(b.quoteCents)}.` : ""}`;
+  if (b.customer) await notifyCustomer(b.customer, what, body, `/bookings/${b.id}`);
+  else if (b.walkInPhone) await sendSms(b.walkInPhone, body);
+}
+
+/** Moves a repair job to its next stage. Sending a quote waits for the customer to say yes. */
+export async function setJobStage(vendor: Vendor, bookingId: string, stage: JobStage, quoteCents?: number, quoteNote?: string): Promise<void> {
+  const b = await db.booking.findFirst({ where: { id: bookingId, vendorId: vendor.id, status: { in: ["IN_SERVICE", "CALLED", "WAITING"] } }, include: { customer: true } });
+  if (!b) throw new BookingError("That job isn't open.");
+  if (stage === "READY") return markReady(vendor, b.id);
+  if (stage === "WORKING" && b.jobStage === "QUOTE" && b.quoteApproved !== true) throw new BookingError("Wait for the customer to approve the quote.");
+  const data: Record<string, unknown> = { jobStage: stage, status: "IN_SERVICE", startedAt: b.startedAt ?? new Date(), arrived: true };
+  if (stage === "QUOTE") {
+    if (!quoteCents || quoteCents <= 0) throw new BookingError("Enter the quote amount.");
+    Object.assign(data, { quoteCents, quoteNote: (quoteNote ?? "").slice(0, 200) || null, quoteApproved: null });
+  }
+  await db.booking.update({ where: { id: b.id }, data });
+  const text =
+    stage === "QUOTE"
+      ? `Qless: ${vendor.name} sent a quote of ${rand(quoteCents!)} for your ${b.item ?? "job"}. Tap to approve or decline.`
+      : `Qless: your ${b.item ?? "job"} at ${vendor.name} is now "${JOB_LABEL[stage].toLowerCase()}".`;
+  if (b.customer) await notifyCustomer(b.customer, JOB_LABEL[stage], text, `/bookings/${b.id}`);
+  else if (b.walkInPhone) await sendSms(b.walkInPhone, stage === "QUOTE" ? `${text.replace("Tap to approve or decline.", "")}Reply to the shop to approve. ${appUrl()}/t/${b.ref}` : text);
+}
+
+/** The customer says yes or no to a repair quote. */
+export async function answerQuote(user: User, bookingId: string, yes: boolean): Promise<void> {
+  const b = await db.booking.findFirst({ where: { id: bookingId, customerId: user.id, jobStage: "QUOTE" } });
+  if (!b) throw new BookingError("There's no quote waiting on this job.");
+  await db.booking.update({ where: { id: b.id }, data: { quoteApproved: yes } });
+}
+
+/** Repair jobs still open at a shop, over all days. */
+export async function openJobs(vendorId: string) {
+  return db.booking.findMany({
+    where: { vendorId, jobStage: { not: null }, status: { in: ["WAITING", "CALLED", "IN_SERVICE"] } },
+    include: { customer: true, service: true },
+    orderBy: { createdAt: "asc" },
+  });
 }
 
 /** No-show: deposit forfeited, and repeat offenders are blocked for a week. */
@@ -347,28 +502,46 @@ export async function markNoShow(bookingId: string, vendorId?: string): Promise<
   }
 }
 
-export async function addWalkIn(vendor: Vendor, name: string, serviceId: string, staffId: string | null) {
+export type WalkInRequest = { name: string; serviceId: string; staffId: string | null; optionLabel?: string | null; phone?: string | null; plate?: string; item?: string };
+
+/** Adds a walk-in to the end of today's queue. With a number, they get their ticket and a live link by SMS. */
+export async function addWalkIn(vendor: Vendor, req: WalkInRequest) {
   const day = await todayQueue(vendor.id);
   if (!day || day.status === "CLOSED") throw new BookingError("Open today's queue first.");
-  const service = await db.service.findFirst({ where: { id: serviceId, vendorId: vendor.id } });
-  if (!service) throw new BookingError("Pick a service.");
-  return db.booking.create({
+  const { service, q } = await priceVisit(vendor.id, req.serviceId, req.optionLabel);
+  const info = typeInfo(vendor.businessType);
+  const b = await db.booking.create({
     data: {
       ref: await uniqueRef(),
       vendorId: vendor.id,
       queueDayId: day.id,
       isWalkIn: true,
-      walkInName: name.trim() || "Walk-in",
-      serviceId,
-      staffId,
+      walkInName: req.name.trim() || "Walk-in",
+      walkInPhone: req.phone ?? null,
+      serviceId: service.id,
+      staffId: req.staffId,
       position: await nextPosition(day.id),
       status: "WAITING",
       checkInCode: code(4),
       arrived: true,
-      priceCents: service.priceCents,
+      priceCents: q.priceCents,
+      durationMins: q.durationMins,
+      optionLabel: q.optionLabel,
+      ticketNo: await ticketFor(day.id, service.ticketLetter),
+      plate: info.plates && req.plate ? normalisePlate(req.plate) || null : null,
+      item: info.jobs && req.item ? req.item.trim().slice(0, 80) : null,
+      jobStage: info.jobs ? "RECEIVED" : null,
       depositCents: 0,
     },
   });
+  if (b.walkInPhone) {
+    const view = await loadQueue(day);
+    await sendSms(
+      b.walkInPhone,
+      `Qless: you're ticket ${b.ticketNo} at ${vendor.name}. ${aheadOf(view, b.id)} ahead of you, about ${time(view.etas.get(b.id))}. Follow your place: ${appUrl()}/t/${b.ref}`,
+    );
+  }
+  return b;
 }
 
 export async function checkIn(vendor: Vendor, checkInCode: string): Promise<FullBooking | null> {
@@ -474,6 +647,8 @@ export async function tick(now = new Date()): Promise<{ expired: number; noShows
     data: { data: null },
   });
 
+  await cleanupOldData(now);
+
   let noShows = 0;
   const called = await db.booking.findMany({ where: { status: "CALLED", arrived: false, calledAt: { not: null } } });
   for (const b of called) {
@@ -515,6 +690,11 @@ export async function tick(now = new Date()): Promise<{ expired: number; noShows
 export async function averageRating(vendorId: string): Promise<{ avg: number; count: number }> {
   const r = await db.review.aggregate({ where: { vendorId }, _avg: { rating: true }, _count: true });
   return { avg: r._avg.rating ?? 0, count: r._count };
+}
+
+/** "Tue 4 Nov at 14:00" for a booking on a later day. */
+export function bookedFor(b: Pick<Booking, "scheduledAt">): string | null {
+  return b.scheduledAt ? `${shortDate(b.scheduledAt)} at ${time(b.scheduledAt)}` : null;
 }
 
 export function depositLine(b: Pick<Booking, "depositCents" | "depositStatus">): string {

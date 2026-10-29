@@ -4,17 +4,20 @@ import { haversineKm, sastDate } from "./format";
 import { getSettings } from "./settings";
 import { featuredOrder, isFeatured, planAllowsListing, planState } from "./plans";
 import { newShopCode, normaliseShopCode } from "./shop-code";
+import { TYPES, enabledTypes, isBusinessType } from "./business-types";
 import type { Vendor } from "@prisma/client";
 
-export const CATEGORIES = ["All", "Barber", "Nail technician", "Hair salon", "Other"];
-export const CATEGORY_LABEL: Record<string, string> = { All: "All", Barber: "Barbers", "Nail technician": "Nails", "Hair salon": "Hair", Other: "Other" };
+/** Chips on Home and the map: "All" plus each business type the super admin hasn't switched off. */
+export function typeChips(disabled: string[]): Array<{ key: string; label: string }> {
+  return [{ key: "All", label: "All" }, ...enabledTypes(disabled).map((t) => ({ key: t, label: TYPES[t].short }))];
+}
 
 export type ShopQuery = { q: string; cat: string; here: { lat: number; lng: number } | null };
 
 export function parseShopQuery(sp: { q?: string; cat?: string; lat?: string; lng?: string }): ShopQuery {
   return {
     q: (sp.q ?? "").trim(),
-    cat: CATEGORIES.includes(sp.cat ?? "") ? sp.cat! : "All",
+    cat: isBusinessType(sp.cat ?? "") ? sp.cat! : "All",
     here: sp.lat && sp.lng && Number.isFinite(Number(sp.lat)) && Number.isFinite(Number(sp.lng)) ? { lat: Number(sp.lat), lng: Number(sp.lng) } : null,
   };
 }
@@ -27,7 +30,8 @@ export async function findShops({ q, cat, here }: ShopQuery) {
     where: {
       status: "APPROVED",
       owner: { banned: false },
-      ...(cat !== "All" ? { category: cat } : {}),
+      businessType: { notIn: settings.disabledTypes },
+      ...(cat !== "All" ? { businessType: { equals: cat, notIn: settings.disabledTypes } } : {}),
       ...(q ? { OR: [{ name: { contains: q, mode: "insensitive" } }, { address: { contains: q, mode: "insensitive" } }, { services: { some: { name: { contains: q, mode: "insensitive" } } } }] } : {}),
     },
     include: {
@@ -50,9 +54,10 @@ export async function findShops({ q, cat, here }: ShopQuery) {
       const day = v.queueDays[0];
       const km = here && v.lat != null && v.lng != null ? haversineKm(here, { lat: v.lat, lng: v.lng }) : null;
       const rating = v.reviews.length ? v.reviews.reduce((s, r) => s + r.rating, 0) / v.reviews.length : 0;
-      let state: { label: string; kind: "" | "bad" } = { label: "Closed now", kind: "bad" };
+      let state: { label: string; kind: "" | "bad"; waiting: number } = { label: "Closed now", kind: "bad", waiting: 0 };
       if (day && day.status !== "CLOSED") {
-        state = (usedBy.get(day.id) ?? 0) >= day.capacity ? { label: "Full today", kind: "bad" } : { label: `${waitingBy.get(day.id) ?? 0} waiting`, kind: "" };
+        const waiting = waitingBy.get(day.id) ?? 0;
+        state = (usedBy.get(day.id) ?? 0) >= day.capacity ? { label: "Full today", kind: "bad", waiting } : { label: `${waiting} waiting`, kind: "", waiting };
       }
       return { v, km, rating, count: v.reviews.length, state, featured: isFeatured(v, now) };
     })
@@ -82,5 +87,6 @@ export async function ensureShopCode(vendor: Pick<Vendor, "id" | "code">): Promi
 export async function shopByCode(input: string) {
   const code = normaliseShopCode(input);
   if (!code) return null;
-  return db.vendor.findFirst({ where: { code, status: "APPROVED" }, select: { slug: true } });
+  const settings = await getSettings();
+  return db.vendor.findFirst({ where: { code, status: "APPROVED", businessType: { notIn: settings.disabledTypes } }, select: { slug: true } });
 }

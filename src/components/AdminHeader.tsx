@@ -7,6 +7,7 @@ const LINKS = [
   { href: "/admin/money", label: "Money", superOnly: true },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/team", label: "Team", superOnly: true },
+  { href: "/admin/types", label: "Types", superOnly: true },
 ];
 
 export async function AdminHeader({ current }: { current: string }) {

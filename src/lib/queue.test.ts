@@ -7,6 +7,7 @@ import {
   peopleAhead,
   positionAfterMoveBack,
   refundOnCancel,
+  slotsFor,
   type QueueEntry,
 } from "./queue";
 
@@ -135,5 +136,43 @@ describe("rules", () => {
     expect(dueReminders(now, at(55), { reminded60: true, reminded20: false })).toEqual([]);
     expect(dueReminders(now, at(18), { reminded60: true, reminded20: false })).toEqual([20]);
     expect(dueReminders(now, at(18), { reminded60: false, reminded20: false })).toEqual([20]);
+  });
+});
+
+describe("booked times", () => {
+  it("keeps a booked visit at its time and fills the gap before it", () => {
+    const entries = [{ ...w("b", 1, 30), notBefore: at(60) }, w("q1", 2, 30), w("q2", 3, 30), w("q3", 4, 30)];
+    const etas = estimateStarts({ now, staffIds: ["s1"], entries });
+    expect(etas.get("b")).toEqual(at(60));
+    expect(etas.get("q1")).toEqual(at(0));
+    expect(etas.get("q2")).toEqual(at(30));
+    // q3 can't start at 60 because the booked visit holds the chair until 90.
+    expect(etas.get("q3")).toEqual(at(90));
+  });
+
+  it("puts a booked visit on the chair that is free at that time", () => {
+    const entries = [{ ...w("b", 1, 30), notBefore: at(0) }, { ...w("b2", 2, 30), notBefore: at(0) }];
+    const etas = estimateStarts({ now, staffIds: ["s1", "s2"], entries });
+    expect(etas.get("b")).toEqual(at(0));
+    expect(etas.get("b2")).toEqual(at(0));
+  });
+});
+
+describe("slots for later days", () => {
+  const base = { openTime: "08:00", closeTime: "10:00", durationMins: 30, chairs: 1 };
+  it("lists times until the service would run past closing", () => {
+    expect(slotsFor({ ...base, booked: [] }).map((s) => s.at)).toEqual(["08:00", "08:30", "09:00", "09:30"]);
+  });
+
+  it("marks taken times", () => {
+    const slots = slotsFor({ ...base, booked: [{ start: "08:30", durationMins: 30, staffId: null }] });
+    expect(slots.filter((s) => !s.free).map((s) => s.at)).toEqual(["08:30"]);
+  });
+
+  it("allows one booking per chair at the same time", () => {
+    const booked = [{ start: "08:00", durationMins: 60, staffId: "a" }];
+    expect(slotsFor({ ...base, chairs: 2, booked })[0]!.free).toBe(true);
+    expect(slotsFor({ ...base, chairs: 2, booked, staffId: "a" })[0]!.free).toBe(false);
+    expect(slotsFor({ ...base, chairs: 2, booked, staffId: "b" })[0]!.free).toBe(true);
   });
 });

@@ -80,6 +80,8 @@ model User {
   notifySms        Boolean   @default(true)
   notifyWhatsapp   Boolean   @default(true)
   lowData          Boolean   @default(false)
+  // App language: en, zu, xh, af, st. See src/lib/i18n.ts.
+  lang             String    @default("en")
   blockedUntil     DateTime?
   // Set by the admin. A banned user is signed out, cannot sign in, and their shop is hidden.
   banned           Boolean   @default(false)
@@ -132,6 +134,8 @@ model Vendor {
   // Short code printed under the QR poster. Customers type it on Scan if their camera won't scan.
   code             String?      @unique
   category         String
+  // SALON, CAR_WASH, CLINIC, REPAIR, PRIVATE or GOVERNMENT. Sets the wording and which tools the shop gets.
+  businessType     String       @default("SALON")
   // Optional when the admin has switched the CIPC requirement off.
   cipc             String?
   level            VendorLevel  @default(VERIFIED)
@@ -163,6 +167,8 @@ model Vendor {
   featured         Boolean      @default(false)
   featuredRank     Int          @default(0)
   featuredUntil    DateTime?
+  // Secret part of the waiting-room TV link. Reset by the owner to stop an old screen.
+  tvKey            String?
 
   owner     User       @relation(fields: [ownerId], references: [id])
   staff     Staff[]
@@ -173,6 +179,7 @@ model Vendor {
   reviews   Review[]
   income    Income[]
   documents Document[]
+  payouts   Payout[]
 }
 
 model Staff {
@@ -219,6 +226,14 @@ model Service {
   name         String
   durationMins Int
   priceCents   Int
+  // Price options, e.g. car sizes: [{ "label": "Small car", "priceCents": 8000, "durationMins": 30 }]. Empty means one price.
+  options      Json      @default("[]")
+  // An extra or product added on to a service (wax, sanitiser, a bottle of oil), not a visit on its own.
+  isExtra      Boolean   @default(false)
+  // Letter in front of ticket numbers for this service, e.g. "A" gives A027.
+  ticketLetter String?
+  // What to bring, shown before joining (mainly government offices).
+  bring        String    @default("")
   active       Boolean   @default(true)
   vendor       Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   bookings     Booking[]
@@ -267,6 +282,26 @@ model Booking {
   arrived          Boolean       @default(false)
   movedBack        Boolean       @default(false)
   priceCents       Int
+  // The chosen price option and add-ons. priceCents already includes them.
+  optionLabel      String?
+  durationMins     Int?
+  extras           String        @default("")
+  extrasCents      Int           @default(0)
+  // Number shown on screens and printed tickets, e.g. A027 or 014.
+  ticketNo         String?
+  // Booked for a set time on a later day instead of joining today's queue.
+  scheduledAt      DateTime?
+  // Walk-ins can leave a number to get their ticket by SMS.
+  walkInPhone      String?
+  // Car washes: number plate. Repairs: what is being fixed.
+  plate            String?
+  item             String?
+  // Repair job stage: RECEIVED, CHECKING, QUOTE, WORKING, READY. A quote needs the customer's yes.
+  jobStage         String?
+  quoteCents       Int?
+  quoteNote        String?
+  quoteApproved    Boolean?
+  readyAt          DateTime?
   depositCents     Int
   depositStatus    DepositStatus @default(NONE)
   // Qless booking fee paid on top of the deposit. Kept by Qless, never refunded.
@@ -318,6 +353,10 @@ model Setting {
   requireCipc     Boolean   @default(true)
   requireAddress  Boolean   @default(true)
   requireBank     Boolean   @default(true)
+  // Business types switched off by the super admin. Their shops are hidden and can't sign up.
+  disabledTypes   String[]  @default(["GOVERNMENT"])
+  // Last run of the daily POPIA clean-up.
+  cleanupAt       DateTime?
   updatedAt       DateTime  @updatedAt
 }
 
@@ -337,4 +376,17 @@ model Income {
   vendor      Vendor     @relation(fields: [vendorId], references: [id])
 
   @@index([createdAt])
+}
+
+// Money Qless paid out to a vendor (deposits it collected for them). Recorded by a super admin.
+model Payout {
+  id          String   @id @default(cuid())
+  vendorId    String
+  amountCents Int
+  reference   String   @default("")
+  createdAt   DateTime @default(now())
+  createdBy   String
+  vendor      Vendor   @relation(fields: [vendorId], references: [id])
+
+  @@index([vendorId, createdAt])
 }

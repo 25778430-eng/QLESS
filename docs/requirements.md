@@ -133,8 +133,30 @@ Working requirements for the first version of Qless. Items marked **(proposed)**
 The first version of the app implements everything above. Decisions taken while building, which can be changed:
 
 - Deposits are collected into one Qless PayFast account. Paying vendors their share (deposits kept from no-shows) is manual for now. Booking fees, plan payments and featuring stay with Qless.
-- Customers join today's live queue only; there is no booking for a future day yet.
+- Customers join today's live queue, or book a set time on a later day (up to 14 days ahead, in 30-minute steps). Booked times hold their chair and the live queue fills the gaps around them.
 - A customer can hold 2 active bookings at once. 3 no-shows in 30 days blocks booking for 7 days.
 - Unpaid bookings are released after 15 minutes.
 - Daily capacity is staff working × opening hours ÷ average service length.
 - Vendor photos are stored in the database (up to 12 per shop, 1.5 MB each).
+
+## 9. Every kind of queue business (October 2026)
+
+Qless is for any business with a queue, not only barbers. Each shop picks a type at sign-up, which sets its wording and tools:
+
+| Type | Served at | Extra tools |
+| --- | --- | --- |
+| Hair and beauty | chair | — |
+| Car wash | bay | price by car size, number plate, "car ready" alert |
+| Clinic or practice | room | — |
+| Repair shop | counter | job card stages, quote the customer approves in the app, "ready to collect" alert |
+| Private clients | desk | — |
+| Government or municipal | counter | free tickets (no deposit or fee), ticket letters like A027, "bring with you" list |
+
+- The super admin switches each type on or off (Admin > Types). Off types are hidden from search and can't sign up. Government starts off.
+- Services can have price options (one per line: name | price | minutes) and extras or products sold on top.
+- Every booking gets a ticket number (per letter per day, e.g. A001, or 001 without a letter).
+- Walk-ins can leave a cellphone number to get their ticket by SMS with a live link (/t/REF), or get a printed ticket with a QR code. The link shows ticket, place and time only.
+- Waiting-room TV screen at a secret link the owner can reset: now serving (ticket and station), next up, and a QR to join. Ticket numbers only, no names.
+- Payouts page for verified shops: deposits earned, paid out and still due. The super admin records each EFT payout in Admin > Money and the shop gets an SMS.
+- Languages: English, isiZulu, isiXhosa, Afrikaans and Sesotho on the main customer screens (tab bar, Home, joining). Translations need checking by native speakers; other screens are still English.
+- POPIA: a daily clean-up deletes sign-in codes after 30 days, anonymises bookings older than 5 years (names, numbers, plates and review text removed) and deletes customer accounts with no sign-in or booking for 5 years. Breach plan: docs/breach-plan.md.

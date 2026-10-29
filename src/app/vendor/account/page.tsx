@@ -9,6 +9,7 @@ import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { signOutAction } from "@/app/(customer)/account/actions";
 import { saveBank, upgradeToVerified } from "../actions";
+import { typeInfo } from "@/lib/business-types";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,7 @@ export default async function VendorAccount({ searchParams }: { searchParams: { 
             ) : (
               <span className={`pill ${vendor.status === "PENDING" ? "sig" : "bad"}`}>{vendor.status === "PENDING" ? "Waiting for approval" : "Not approved"}</span>
             )}
+            <span className="pill">{typeInfo(vendor.businessType).label}</span>
             {plan.kind !== "OFF" && <span className="pill">{plan.kind === "ACTIVE" ? `Plan paid to ${shortDate(plan.until)}` : plan.kind === "TRIAL" ? "Free trial" : plan.kind === "WAIVED" ? "Plan waived" : "Plan needed"}</span>}
           </div>
         </div>
@@ -74,6 +76,8 @@ export default async function VendorAccount({ searchParams }: { searchParams: { 
         <Row href="/vendor/setup#services" title="Services and prices" sub={services.length ? `${services.length} services · from ${rand(cheapest)}` : "Add your first service"} />
         <Row href="/vendor/team" title="My team" sub={staff.length ? `${staff.length} staff · ${staff.filter((s) => s.phone).length} with their own login` : "Add your team"} />
         <Row href="/vendor/qr" title="QR code and poster" sub="Customers scan it to join your queue" />
+        <Row href="/vendor/tv" title="Waiting-room TV screen" sub="Show who's being served and who's next" />
+        {typeInfo(vendor.businessType).jobs && <Row href="/vendor/jobs" title="Job cards" sub="Repairs in progress, quotes and collections" />}
       </div>
 
       <div className="lbl">Money</div>
@@ -92,6 +96,7 @@ export default async function VendorAccount({ searchParams }: { searchParams: { 
             </form>
           </details>
         )}
+        {vendor.level === "VERIFIED" && <Row href="/vendor/payouts" title="Payouts" sub="Deposits earned, paid out and still due" />}
         <Row href="/vendor/plan" title="Qless plan" sub={planText} />
         <Row href="/vendor/documents" title="Documents" sub={`${approvedDocs} of ${needed.length} approved`} />
         <Row href="/vendor/summary" title="Daily summary" sub="Served, no-shows, deposits and takings" />

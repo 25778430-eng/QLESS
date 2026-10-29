@@ -2,8 +2,9 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireStaff } from "@/lib/auth";
-import { BookingError, addWalkIn, todayQueue, callNext, completeBooking, endBreak, markNoShow, startBreak, startService } from "@/lib/bookings";
+import { BookingError, addWalkIn, todayQueue, callNext, completeBooking, endBreak, markNoShow, markReady, startBreak, startService } from "@/lib/bookings";
 import { back, str } from "@/lib/http";
+import { walkInFromForm } from "@/lib/walk-in";
 import { BREAK_MINUTES } from "@/lib/queue";
 
 /** Staff can only act on bookings in their own chair. */
@@ -44,6 +45,17 @@ export async function staffDone(form: FormData) {
   redirect("/staff");
 }
 
+export async function staffReady(form: FormData) {
+  const { vendor, b } = await mine(str(form, "id"));
+  try {
+    await markReady(vendor, b.id);
+  } catch (e) {
+    if (e instanceof BookingError) back("/staff", { error: e.message });
+    throw e;
+  }
+  back("/staff", { notice: "Customer told their car is ready." });
+}
+
 export async function staffNoShow(form: FormData) {
   const { vendor, b } = await mine(str(form, "id"));
   await markNoShow(b.id, vendor.id);
@@ -52,13 +64,17 @@ export async function staffNoShow(form: FormData) {
 
 export async function staffWalkIn(form: FormData) {
   const { staff, vendor } = await requireStaff();
+  const req = walkInFromForm(form, staff.id);
+  if (typeof req === "string") back("/staff/walk-in", { error: req });
+  let b;
   try {
-    await addWalkIn(vendor, str(form, "name"), str(form, "serviceId"), staff.id);
+    b = await addWalkIn(vendor, req);
   } catch (e) {
     if (e instanceof BookingError) back("/staff/walk-in", { error: e.message });
     throw e;
   }
-  back("/staff", { notice: "Walk-in added to your queue." });
+  if (form.get("print")) redirect(`/t/${b.ref}?print=1`);
+  back("/staff", { notice: `Walk-in added to your queue as ticket ${b.ticketNo}.` });
 }
 
 export async function staffBreak(form: FormData) {

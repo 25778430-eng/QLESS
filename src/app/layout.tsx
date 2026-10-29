@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import "./globals.css";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
+import { isLang, LANG_COOKIE } from "@/lib/i18n";
 
 export const metadata: Metadata = {
   title: "Qless",
@@ -14,8 +15,9 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, them
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const theme = parseTheme(cookies().get(THEME_COOKIE)?.value);
+  const lang = cookies().get(LANG_COOKIE)?.value;
   return (
-    <html lang="en-ZA" data-theme={theme === "auto" ? undefined : theme}>
+    <html lang={isLang(lang) && lang !== "en" ? `${lang}-ZA` : "en-ZA"} data-theme={theme === "auto" ? undefined : theme}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}

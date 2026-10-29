@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { aheadOf, depositLine, loadQueue } from "@/lib/bookings";
+import { aheadOf, bookedFor, depositLine, loadQueue } from "@/lib/bookings";
+import { JOB_LABEL, JOB_STAGES, typeInfo, type JobStage } from "@/lib/business-types";
 import { ARRIVAL_WINDOW_MINS, refundOnCancel } from "@/lib/queue";
 import { rand, time } from "@/lib/format";
 import { amountDue } from "@/lib/fees";
@@ -10,7 +11,7 @@ import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { Countdown } from "@/components/Countdown";
-import { reviewAction } from "../actions";
+import { quoteAction, reviewAction } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,9 @@ export default async function BookingPage({ params, searchParams }: { params: { 
   const eta = view.etas.get(b.id);
   const ahead = aheadOf(view, b.id);
   const live = ["PENDING_PAYMENT", "WAITING", "CALLED", "IN_SERVICE"].includes(b.status);
-  const title = `${b.service.name}${b.staff ? ` with ${b.staff.name}` : ""}`;
+  const title = `${b.service.name}${b.optionLabel ? ` (${b.optionLabel})` : ""}${b.staff ? ` with ${b.staff.name}` : ""}`;
+  const info = typeInfo(b.vendor.businessType);
+  const stageAt = JOB_STAGES.indexOf((b.jobStage ?? "") as JobStage);
 
   return (
     <main className="main">
@@ -48,15 +51,32 @@ export default async function BookingPage({ params, searchParams }: { params: { 
           {b.queueDay.status === "PAUSED" && (
             <div className="banner">{b.vendor.name} is paused{b.queueDay.pauseReason ? ` (${b.queueDay.pauseReason.toLowerCase()})` : ""}. Your time has been updated.</div>
           )}
-          <div className="ticket">
-            <div className="row between"><span>{b.vendor.name} · {title}</span><span className="mono" style={{ whiteSpace: "nowrap" }}>#{b.ref}</span></div>
-            <div className="row" style={{ alignItems: "flex-end", gap: 12 }}>
-              <span className="big">{ahead}</span>
-              <span style={{ paddingBottom: 6, fontWeight: 600 }}>{ahead === 1 ? "person" : "people"} ahead of you</span>
+          <div className="tkt">
+            <div className="tkt-top">
+              <div className="row between"><span className="k">{b.vendor.name}</span><span className="k mono">#{b.ref}</span></div>
+              <div className="row between" style={{ alignItems: "flex-end" }}>
+                <div><div className="k">Ticket</div><div className="tkt-no">{b.ticketNo ?? b.ref}</div></div>
+                {b.scheduledAt ? (
+                  <div style={{ textAlign: "right" }}><div className="k">Booked for</div><b style={{ fontSize: 20 }}>{bookedFor(b)}</b></div>
+                ) : (
+                  <div style={{ textAlign: "right" }}><div className="k">Your turn about</div><b className="mono" style={{ fontSize: 26 }}>{time(eta)}</b></div>
+                )}
+              </div>
+              <div className="k">{title}{b.plate ? ` · ${b.plate}` : ""}{b.extras ? ` · + ${b.extras}` : ""}</div>
             </div>
-            <div className="ahead">{Array.from({ length: Math.min(ahead, 12) }, (_, i) => <i key={i} />)}<i className="you" /></div>
-            <div className="row between small"><span>Estimated turn</span><b className="mono">{time(eta)}</b></div>
+            <div className="tkt-cut" aria-hidden />
+            <div className="tkt-bot">
+              {b.scheduledAt ? (
+                <span>Come at your time. The shop will call you when it&apos;s your turn.</span>
+              ) : (
+                <>
+                  <b>{ahead} {ahead === 1 ? "person" : "people"} ahead of you</b>
+                  <div className="ahead">{Array.from({ length: Math.min(ahead, 12) }, (_, i) => <i key={i} />)}<i className="you" /></div>
+                </>
+              )}
+            </div>
           </div>
+          {b.service.bring && <div className="fill small"><b>Bring with you:</b> {b.service.bring}</div>}
           <div className="stack">
             <div className="small muted">Show this code when you arrive</div>
             <div className="code">{b.checkInCode}</div>
@@ -93,15 +113,46 @@ export default async function BookingPage({ params, searchParams }: { params: { 
         </>
       )}
 
-      {b.status === "IN_SERVICE" && (
-        <div className="card stack center"><h2>You&apos;re in the chair</h2><p className="muted">Enjoy your {b.service.name.toLowerCase()}.</p></div>
+      {b.status === "IN_SERVICE" && b.readyAt && (
+        <div className="called">
+          <div className="small" style={{ fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase" }}>Ready</div>
+          <h2 style={{ fontSize: 26 }}>{b.plate ? `Your car (${b.plate}) is ready` : b.item ? `Your ${b.item} is ready to collect` : "Ready to collect"}</h2>
+          <p>{b.vendor.name}{b.quoteCents ? ` · amount due ${rand(b.quoteCents)}` : ""}</p>
+        </div>
+      )}
+
+      {b.status === "IN_SERVICE" && !b.readyAt && b.jobStage && (
+        <>
+          <h2>Your {b.item ?? "repair"}</h2>
+          <div className="steps">{JOB_STAGES.map((st, i) => <span key={st} className={i <= stageAt ? "on" : ""}>{JOB_LABEL[st]}</span>)}</div>
+          {b.jobStage === "QUOTE" && b.quoteCents != null && (
+            <div className="card stack">
+              <div className="row between"><b>Quote from {b.vendor.name}</b><b className="mono">{rand(b.quoteCents)}</b></div>
+              {b.quoteNote && <span className="small muted">{b.quoteNote}</span>}
+              {b.quoteApproved == null ? (
+                <form action={quoteAction} className="two">
+                  <input type="hidden" name="bookingId" value={b.id} />
+                  <button className="btn alt" name="answer" value="no">Decline</button>
+                  <button className="btn" name="answer" value="yes">Approve</button>
+                </form>
+              ) : (
+                <span className={`pill ${b.quoteApproved ? "ok" : "bad"}`}>{b.quoteApproved ? "You approved this quote" : "You declined. Collect your item from the shop."}</span>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {b.status === "IN_SERVICE" && !b.readyAt && !b.jobStage && (
+        <div className="card stack center"><h2>You&apos;re being served</h2><p className="muted">{info.plates ? "We'll let you know the moment your car is ready." : `Enjoy your ${b.service.name.toLowerCase()}.`}</p></div>
       )}
 
       {b.status === "DONE" && (
         <>
           <h2>Your visit to {b.vendor.name}</h2>
           <div className="card stack">
-            <div className="row between"><span>{b.service.name}</span><b className="mono">{rand(b.priceCents)}</b></div>
+            <div className="row between"><span>{b.service.name}{b.optionLabel ? ` (${b.optionLabel})` : ""}</span><b className="mono">{rand(b.priceCents - b.extrasCents)}</b></div>
+            {b.extrasCents > 0 && <div className="row between"><span>+ {b.extras}</span><b className="mono">{rand(b.extrasCents)}</b></div>}
             {b.depositCents > 0 && <div className="row between"><span>Deposit applied</span><b className="mono">−{rand(b.depositCents)}</b></div>}
             <div className="row between" style={{ borderTop: "1px solid var(--line)", paddingTop: 8 }}><span>Paid at shop</span><b className="mono">{rand(b.priceCents - b.depositCents)}</b></div>
           </div>

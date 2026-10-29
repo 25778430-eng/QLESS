@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireVendor } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { todayQueue } from "@/lib/bookings";
-import { rand } from "@/lib/format";
+import { WalkInFields } from "@/components/WalkInFields";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { walkInAction } from "../actions";
@@ -28,8 +28,7 @@ export default async function WalkIn({ searchParams }: { searchParams: { error?:
       <h1>Add a walk-in</h1>
       <Messages searchParams={searchParams} />
       <form action={walkInAction} className="stack" style={{ gap: 12 }}>
-        <label className="f">Name (optional)<input className="i" name="name" placeholder="Walk-in" /></label>
-        <label className="f">Service<select className="i" name="serviceId">{services.map((s) => <option key={s.id} value={s.id}>{s.name} · {rand(s.priceCents)}</option>)}</select></label>
+        <WalkInFields services={services} businessType={vendor.businessType} />
         <label className="f">Who<select className="i" name="staffId"><option value="any">Anyone available</option>{staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
         <Submit>Add to the queue</Submit>
       </form>

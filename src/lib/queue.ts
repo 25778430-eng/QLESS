@@ -13,6 +13,8 @@ export type QueueEntry = {
   status: "WAITING" | "CALLED" | "IN_SERVICE";
   startedAt?: Date | null;
   calledAt?: Date | null;
+  /** Booked for a set time: starts no earlier, and holds its chair at that time. */
+  notBefore?: Date | null;
 };
 
 /** When a chair can take clients: not before `from` (start of shift or end of a break), and never inside a block (lunch). */
@@ -51,12 +53,26 @@ export function estimateStarts({ now, staffIds, entries, pausedUntil, chairHours
   }
 
   const out = new Map<string, Date>();
+  // Booked times go first and hold their chair like lunch does, so the queue fills the gaps around them.
+  const blocks = new Map<string, Array<[Date, Date]>>(chairs.map((c) => [c, [...(chairHours?.get(c)?.blocks ?? [])]]));
+  const booked = entries
+    .filter((e) => e.status === "WAITING" && e.notBefore)
+    .sort((a, b) => a.notBefore!.getTime() - b.notBefore!.getTime());
+  for (const e of booked) {
+    const len = e.durationMins * MIN;
+    const at = (c: string) => fitAround(Math.max(e.notBefore!.getTime(), free.get(c)!), len, blocks.get(c));
+    const chair = e.staffId && free.has(e.staffId) ? e.staffId : chairs.reduce((best, c) => (at(c) < at(best) ? c : best), chairs[0]!);
+    const start = at(chair);
+    out.set(e.id, new Date(start));
+    blocks.get(chair)!.push([new Date(start), new Date(start + len)]);
+  }
+
   const waiting = entries
-    .filter((e) => e.status === "WAITING")
+    .filter((e) => e.status === "WAITING" && !e.notBefore)
     .sort((a, b) => a.position - b.position);
   for (const e of waiting) {
     const chair = pickChair(free, e.staffId);
-    const start = fitAround(free.get(chair)!, e.durationMins * MIN, chairHours?.get(chair)?.blocks);
+    const start = fitAround(free.get(chair)!, e.durationMins * MIN, blocks.get(chair));
     out.set(e.id, new Date(start));
     free.set(chair, start + e.durationMins * MIN);
   }
@@ -70,6 +86,42 @@ function fitAround(start: number, length: number, blocks: Array<[Date, Date]> = 
     if (t < to.getTime() && t + length > from.getTime()) t = to.getTime();
   }
   return t;
+}
+
+export type Slot = { at: string; free: boolean };
+
+/**
+ * Times a customer can book on a later day, every `stepMins` from opening until the service would run past closing.
+ * A time is free while fewer than `chairs` booked visits overlap it (or none, for a chosen staff member).
+ */
+export function slotsFor(opts: {
+  openTime: string;
+  closeTime: string;
+  durationMins: number;
+  chairs: number;
+  booked: Array<{ start: string; durationMins: number; staffId: string | null }>;
+  staffId?: string | null;
+  stepMins?: number;
+}): Slot[] {
+  const step = opts.stepMins ?? 30;
+  const open = toMinutes(opts.openTime);
+  const close = toMinutes(opts.closeTime);
+  const out: Slot[] = [];
+  for (let m = open; m + opts.durationMins <= close; m += step) {
+    const overlapping = opts.booked.filter((b) => {
+      const s = toMinutes(b.start);
+      return s < m + opts.durationMins && m < s + b.durationMins;
+    });
+    const free = opts.staffId
+      ? !overlapping.some((b) => b.staffId === opts.staffId) && overlapping.length < Math.max(1, opts.chairs)
+      : overlapping.length < Math.max(1, opts.chairs);
+    out.push({ at: fromMinutes(m), free });
+  }
+  return out;
+}
+
+export function fromMinutes(m: number): string {
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 }
 
 function pickChair(free: Map<string, number>, staffId: string | null): string {

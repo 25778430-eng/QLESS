@@ -6,6 +6,7 @@ import { getSettings } from "@/lib/settings";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { registerVendor } from "../actions";
+import { TYPES, enabledTypes } from "@/lib/business-types";
 
 export default async function Register({ searchParams }: { searchParams: { error?: string } }) {
   const user = await requireUser();
@@ -37,8 +38,13 @@ export default async function Register({ searchParams }: { searchParams: { error
         <label className="f">Business name<input className="i" name="name" required /></label>
         <label className="f">Type of business
           <select className="i" name="category" defaultValue="Barber">
-            <option>Barber</option><option>Nail technician</option><option>Hair salon</option><option>Other</option>
+            {enabledTypes(rules.disabledTypes).map((t) => (
+              <optgroup key={t} label={TYPES[t].label}>
+                {TYPES[t].categories.map((c) => <option key={c}>{c}</option>)}
+              </optgroup>
+            ))}
           </select>
+          <span className="small muted" style={{ fontWeight: 400 }}>This sets your tools: car washes get number plates and car sizes, repair shops get job cards and quotes{rules.disabledTypes.includes("GOVERNMENT") ? "" : ", government offices get free numbered tickets"}.</span>
         </label>
         <label className="f">Street address<input className="i" name="address" placeholder="12 Jorissen St, Braamfontein, Johannesburg" required /></label>
         <label className="f">Business cellphone<input className="i mono" name="phone" defaultValue={prettyPhone(user.phone)} /></label>

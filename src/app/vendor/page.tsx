@@ -8,7 +8,9 @@ import { Submit } from "@/components/Submit";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { getSettings } from "@/lib/settings";
 import { firstName, greeting, requiredDocs } from "@/lib/verification";
-import { callNextAction, checkInAction, closeToday, doneAction, noShowAction, resumeAction, startAction, walkInAction } from "./actions";
+import { callNextAction, checkInAction, closeToday, doneAction, noShowAction, readyAction, resumeAction, startAction, walkInAction } from "./actions";
+import { WalkInFields } from "@/components/WalkInFields";
+import { typeInfo } from "@/lib/business-types";
 
 export const dynamic = "force-dynamic";
 
@@ -69,13 +71,15 @@ export default async function VendorHome({ searchParams }: { searchParams: SP })
   const done = view.bookings.filter((b) => b.status === "DONE");
   const takings = done.reduce((s, b) => s + b.priceCents, 0);
   const name = (b: (typeof view.bookings)[number]) => b.customer?.name ?? b.walkInName ?? "Walk-in";
+  const info = typeInfo(vendor.businessType);
+  const what = (b: (typeof view.bookings)[number]) => [b.service.name + (b.optionLabel ? ` (${b.optionLabel})` : ""), b.plate, b.item, b.extras && `+ ${b.extras}`].filter(Boolean).join(" · ");
 
   return (
     <main className="main">
       <AutoRefresh seconds={20} />
       <div className="row between" style={{ alignItems: "flex-end" }}>
         <div className="hello"><small>{greeting()}, {firstName(user.name)} · {vendor.name}</small>{waiting.length} waiting</div>
-        <span className={`pill ${day.status === "PAUSED" ? "sig" : "ok"}`}><span className="dot" />{day.status === "PAUSED" ? "Paused" : `Open · ${staff.length} staff`}</span>
+        <span className={`pill ${day.status === "PAUSED" ? "sig" : "ok"}`}><span className="dot" />{day.status === "PAUSED" ? "Paused" : `Open · ${staff.length} ${info.station}${staff.length === 1 ? "" : "s"}`}</span>
       </div>
       <Messages searchParams={searchParams} />
       {day.status === "PAUSED" && (
@@ -93,13 +97,15 @@ export default async function VendorHome({ searchParams }: { searchParams: SP })
       {active.map((b) => (
         <div key={b.id} className="card stack">
           <div className="row between">
-            <span className="small muted">{b.status === "IN_SERVICE" ? "Now serving" : b.arrived ? "Called · here" : `Called at ${time(b.calledAt)} · on the way`}</span>
+            <span className="small muted">{b.readyAt ? `Ready since ${time(b.readyAt)} · waiting to collect` : b.status === "IN_SERVICE" ? (b.jobStage ? `Job · ${b.jobStage.toLowerCase()}` : "Now serving") : b.arrived ? "Called · here" : `Called at ${time(b.calledAt)} · on the way`}</span>
             {b.staff && <span className="pill">{b.staff.name}</span>}
           </div>
-          <b>{name(b)} · {b.service.name}</b>
-          <div className="row">
+          <b><span className="mono">{b.ticketNo}</span> {name(b)} · {what(b)}</b>
+          <div className="row wrap">
             {b.status === "CALLED" && <form action={startAction}><input type="hidden" name="id" value={b.id} /><Submit className="btn sm">Start</Submit></form>}
-            <form action={doneAction}><input type="hidden" name="id" value={b.id} /><Submit className="btn sm alt">Done</Submit></form>
+            {info.plates && b.status === "IN_SERVICE" && !b.readyAt && <form action={readyAction}><input type="hidden" name="id" value={b.id} /><Submit className="btn sm sig">Car ready</Submit></form>}
+            {b.jobStage && <Link className="btn sm alt" href={`/vendor/jobs#${b.id}`}>Job card</Link>}
+            <form action={doneAction}><input type="hidden" name="id" value={b.id} /><Submit className="btn sm alt">{b.readyAt || b.jobStage ? "Collected" : "Done"}</Submit></form>
             {b.status === "CALLED" && !b.arrived && <form action={noShowAction}><input type="hidden" name="id" value={b.id} /><Submit className="btn sm warn">No-show</Submit></form>}
           </div>
         </div>
@@ -109,10 +115,10 @@ export default async function VendorHome({ searchParams }: { searchParams: SP })
         {waiting.length === 0 && <p className="muted">Nobody waiting.</p>}
         {waiting.map((b, i) => (
           <div key={b.id} className="q">
-            <span className="no">{String(i + 1).padStart(2, "0")}</span>
+            <span className="no">{b.ticketNo ?? String(i + 1).padStart(2, "0")}</span>
             <span className="grow">
               <b>{name(b)}</b><br />
-              <span className="small muted">{b.service.name}{b.staff ? ` · ${b.staff.name}` : ""} · ~{time(view.etas.get(b.id))}</span>
+              <span className="small muted">{what(b)}{b.staff ? ` · ${b.staff.name}` : ""} · {b.scheduledAt ? `booked ${time(b.scheduledAt)}` : `~${time(view.etas.get(b.id))}`}</span>
             </span>
             {b.isWalkIn && <span className="pill">Walk-in</span>}
             {b.arrived ? <span className="pill ok">Here</span> : <span className="pill sig">On way</span>}
@@ -139,8 +145,7 @@ export default async function VendorHome({ searchParams }: { searchParams: SP })
       <details className="card">
         <summary>+ Add a walk-in</summary>
         <form action={walkInAction} className="stack" style={{ marginTop: 10 }}>
-          <input className="i" name="name" placeholder="Name (optional)" />
-          <select className="i" name="serviceId">{services.map((s) => <option key={s.id} value={s.id}>{s.name} · {rand(s.priceCents)}</option>)}</select>
+          <WalkInFields services={services} businessType={vendor.businessType} />
           <select className="i" name="staffId"><option value="any">Anyone available</option>{staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
           <Submit>Add walk-in</Submit>
         </form>
@@ -158,7 +163,11 @@ export default async function VendorHome({ searchParams }: { searchParams: SP })
         {day.status === "PAUSED" ? null : <Link className="btn warn" href="/vendor/pause">Pause queue</Link>}
         <Link className="btn alt" href="/vendor/summary">Today&apos;s summary</Link>
       </div>
-      <Link className="btn alt" href="/vendor/qr">Show my QR poster</Link>
+      <div className="two">
+        <Link className="btn alt" href="/vendor/qr">QR poster</Link>
+        <Link className="btn alt" href="/vendor/tv">TV screen</Link>
+      </div>
+      {info.jobs && <Link className="btn alt" href="/vendor/jobs">Open job cards</Link>}
       <form action={closeToday}><Submit className="btn alt">Close the queue for today</Submit></form>
     </main>
   );

@@ -62,3 +62,12 @@ export function depositsByVendor(rows: DepositRow[]): Map<string, VendorDeposits
   }
   return out;
 }
+
+export type Balance = VendorDeposits & { paidOut: number; due: number };
+
+/** What Qless still has to pay a vendor: deposits owed over all time, less payouts already made. */
+export function vendorBalance(rows: DepositRow[], payoutsCents: number[]): Balance {
+  const d = depositsByVendor(rows).get(rows[0]?.vendorId ?? "") ?? { owed: 0, held: 0, refunded: 0 };
+  const paidOut = payoutsCents.reduce((s, c) => s + c, 0);
+  return { ...d, paidOut, due: Math.max(0, d.owed - paidOut) };
+}
