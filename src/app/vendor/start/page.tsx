@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireVendor } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { worksToday } from "@/lib/bookings";
 import { longDate } from "@/lib/format";
 import { dailyCapacity } from "@/lib/queue";
 import { Messages } from "@/components/Messages";
@@ -32,7 +33,7 @@ export default async function Start({ searchParams }: { searchParams: { error?: 
             <div className="chips">
               {staff.map((s) => (
                 <label key={s.id} className="chip" style={{ position: "relative" }}>
-                  <input type="checkbox" name="staffIds" value={s.id} defaultChecked /> {s.name}
+                  <input type="checkbox" name="staffIds" value={s.id} defaultChecked={worksToday(s)} /> {s.name}
                 </label>
               ))}
             </div>

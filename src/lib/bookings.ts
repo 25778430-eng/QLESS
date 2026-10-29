@@ -8,7 +8,7 @@ import { bookingFee } from "./fees";
 import { getSettings } from "./settings";
 import { vendorListed } from "./plan-billing";
 import { DOC_KEEP_DAYS, takesDeposits } from "./verification";
-import { rand, sastDate, sastWeekday, time } from "./format";
+import { rand, sastAt, sastDate, sastWeekday, time } from "./format";
 import {
   ARRIVAL_WINDOW_MINS,
   arrivalExpired,
@@ -18,6 +18,7 @@ import {
   peopleAhead,
   positionAfterMoveBack,
   refundOnCancel,
+  type ChairHours,
   type QueueEntry,
 } from "./queue";
 
@@ -37,6 +38,7 @@ export type QueueView = {
   bookings: FullBooking[];
   etas: Map<string, Date>;
   entries: QueueEntry[];
+  chairHours: Map<string, ChairHours>;
 };
 
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -46,6 +48,24 @@ function code(len: number): string {
 
 export function isOpenToday(vendor: Vendor, now = new Date()): boolean {
   return vendor.openDays[sastWeekday(now)] === "1";
+}
+
+/** Does this staff member work on this day of the week? */
+export function worksToday(s: Pick<Staff, "workDays">, now = new Date()): boolean {
+  return (s.workDays || "1111111")[sastWeekday(now)] === "1";
+}
+
+/** Each chair's own hours today: not before the start of their shift or the end of their break, and not over lunch. */
+export function chairHoursFor(staff: Staff[], now = new Date()): Map<string, ChairHours> {
+  const out = new Map<string, ChairHours>();
+  for (const s of staff) {
+    const starts = s.startTime ? sastAt(s.startTime, now) : null;
+    const back = s.breakUntil && s.breakUntil > now ? s.breakUntil : null;
+    const from = starts && back ? (starts > back ? starts : back) : starts ?? back;
+    const blocks: Array<[Date, Date]> = s.lunchStart && s.lunchEnd ? [[sastAt(s.lunchStart, now), sastAt(s.lunchEnd, now)]] : [];
+    out.set(s.id, { from, blocks });
+  }
+  return out;
 }
 
 export async function todayQueue(vendorId: string): Promise<QueueDay | null> {
@@ -70,13 +90,15 @@ export async function loadQueue(day: QueueDay, now = new Date()): Promise<QueueV
       startedAt: b.startedAt,
       calledAt: b.calledAt,
     }));
+  const chairHours = chairHoursFor(await db.staff.findMany({ where: { id: { in: day.staffIds } } }), now);
   const etas = estimateStarts({
     now,
     staffIds: day.staffIds,
     entries,
     pausedUntil: day.status === "PAUSED" ? day.pausedUntil : null,
+    chairHours,
   });
-  return { day, bookings, etas, entries };
+  return { day, bookings, etas, entries, chairHours };
 }
 
 export function aheadOf(view: QueueView, bookingId: string): number {
@@ -150,6 +172,7 @@ export async function createBooking(customer: User, vendorId: string, serviceId:
   const service = await db.service.findFirst({ where: { id: serviceId, vendorId, active: true } });
   if (!service) throw new BookingError("Pick a service.");
   if (staffId && !day.staffIds.includes(staffId)) throw new BookingError("That staff member isn't working today.");
+  if (staffId) await checkStaffHasTime(day, staffId, service.durationMins, now);
 
   // Basic (unverified) shops take no money through Qless: no deposit and no booking fee.
   const paid = takesDeposits(vendor);
@@ -173,6 +196,19 @@ export async function createBooking(customer: User, vendorId: string, serviceId:
       depositStatus: "NONE",
     },
   });
+}
+
+/** Refuses a booking for a staff member whose day would end before they could finish it. */
+async function checkStaffHasTime(day: QueueDay, staffId: string, durationMins: number, now: Date) {
+  const staff = await db.staff.findUnique({ where: { id: staffId } });
+  if (!staff?.endTime) return;
+  const view = await loadQueue(day, now);
+  const last = view.entries.reduce((m, e) => Math.max(m, e.position), 0);
+  const entries: QueueEntry[] = [...view.entries, { id: "_new", position: last + 1, durationMins, staffId, status: "WAITING" }];
+  const start = estimateStarts({ now, staffIds: day.staffIds, entries, chairHours: view.chairHours, pausedUntil: day.status === "PAUSED" ? day.pausedUntil : null }).get("_new");
+  if (start && start.getTime() + durationMins * 60_000 > sastAt(staff.endTime, now).getTime()) {
+    throw new BookingError(`${staff.name} finishes at ${staff.endTime} and is fully booked for today. Pick someone else or "anyone".`);
+  }
 }
 
 /** Deposit confirmed (PayFast ITN, or the test payment in development). */
@@ -230,20 +266,23 @@ export async function moveBack(user: User, bookingId: string, places: number): P
   await db.booking.update({ where: { id: b.id }, data: { position, movedBack: true, reminded60: false, reminded20: false } });
 }
 
-/** Vendor calls the next waiting customer for a chair. */
-export async function callNext(vendor: Vendor, staffId: string | null): Promise<FullBooking | null> {
+/** Calls the next waiting customer for a chair, or a chosen one when `bookingId` is given. */
+export async function callNext(vendor: Vendor, staffId: string | null, bookingId?: string): Promise<FullBooking | null> {
   const day = await todayQueue(vendor.id);
   if (!day) throw new BookingError("Open today's queue first.");
   const next = await db.booking.findFirst({
     where: {
       queueDayId: day.id,
       status: "WAITING",
+      ...(bookingId ? { id: bookingId } : {}),
       ...(staffId ? { OR: [{ staffId }, { staffId: null }] } : {}),
     },
     orderBy: { position: "asc" },
     include: { service: true, staff: true, customer: true },
   });
   if (!next) return null;
+  // Calling a client ends the staff member's break.
+  if (staffId) await db.staff.updateMany({ where: { id: staffId, breakUntil: { not: null } }, data: { breakUntil: null } });
   const updated = await db.booking.update({
     where: { id: next.id },
     data: { status: "CALLED", calledAt: new Date(), staffId: next.staffId ?? staffId },
@@ -371,6 +410,32 @@ export async function pauseQueue(vendor: Vendor, reason: string, minutes: number
   // Reminders should fire against the new times.
   await db.booking.updateMany({ where: { id: { in: waiting.map((b) => b.id) } }, data: { reminded60: false, reminded20: false } });
   return waiting.length;
+}
+
+/** One staff member takes a break. Their own clients get new times; "anyone" clients move to other chairs. */
+export async function startBreak(vendor: Vendor, staff: Staff, minutes: number): Promise<number> {
+  const day = await todayQueue(vendor.id);
+  if (!day || day.status === "CLOSED" || !day.staffIds.includes(staff.id)) throw new BookingError("You're not on today's queue.");
+  const breakUntil = new Date(Date.now() + minutes * 60_000);
+  await db.staff.update({ where: { id: staff.id }, data: { breakUntil } });
+  const view = await loadQueue(day);
+  const mine = view.bookings.filter((b) => b.status === "WAITING" && b.staffId === staff.id && b.customer);
+  await Promise.allSettled(
+    mine.map((b) =>
+      notifyCustomer(
+        b.customer!,
+        `${staff.name} is on a short break`,
+        `Qless: ${staff.name} at ${vendor.name} is on a short break until ${time(breakUntil)}. Your new estimated time is ${time(view.etas.get(b.id))}. You keep your spot and deposit.`,
+        `/bookings/${b.id}`,
+      ),
+    ),
+  );
+  await db.booking.updateMany({ where: { id: { in: mine.map((b) => b.id) } }, data: { reminded60: false, reminded20: false } });
+  return mine.length;
+}
+
+export async function endBreak(staff: Staff): Promise<void> {
+  await db.staff.update({ where: { id: staff.id }, data: { breakUntil: null } });
 }
 
 export async function resumeQueue(vendor: Vendor, notify = true): Promise<void> {

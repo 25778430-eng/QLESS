@@ -3,6 +3,7 @@
 
 export const ARRIVAL_WINDOW_MINS = 15;
 export const REMINDER_MINS = [60, 20] as const;
+export const BREAK_MINUTES = [10, 15, 30];
 
 export type QueueEntry = {
   id: string;
@@ -14,11 +15,15 @@ export type QueueEntry = {
   calledAt?: Date | null;
 };
 
+/** When a chair can take clients: not before `from` (start of shift or end of a break), and never inside a block (lunch). */
+export type ChairHours = { from?: Date | null; blocks?: Array<[Date, Date]> };
+
 export type EtaInput = {
   now: Date;
   staffIds: string[];
   entries: QueueEntry[];
   pausedUntil?: Date | null;
+  chairHours?: Map<string, ChairHours>;
 };
 
 const MIN = 60_000;
@@ -29,10 +34,10 @@ const MIN = 60_000;
  * customer is done. Customers who picked a staff member wait for that chair;
  * "anyone" customers take whichever chair frees up first.
  */
-export function estimateStarts({ now, staffIds, entries, pausedUntil }: EtaInput): Map<string, Date> {
+export function estimateStarts({ now, staffIds, entries, pausedUntil, chairHours }: EtaInput): Map<string, Date> {
   const chairs = staffIds.length ? staffIds : ["_default"];
   const base = pausedUntil && pausedUntil > now ? pausedUntil.getTime() : now.getTime();
-  const free = new Map<string, number>(chairs.map((c) => [c, base]));
+  const free = new Map<string, number>(chairs.map((c) => [c, Math.max(base, chairHours?.get(c)?.from?.getTime() ?? 0)]));
 
   // Customers already in the chair or called keep their chair busy.
   const active = entries
@@ -51,11 +56,20 @@ export function estimateStarts({ now, staffIds, entries, pausedUntil }: EtaInput
     .sort((a, b) => a.position - b.position);
   for (const e of waiting) {
     const chair = pickChair(free, e.staffId);
-    const start = free.get(chair)!;
+    const start = fitAround(free.get(chair)!, e.durationMins * MIN, chairHours?.get(chair)?.blocks);
     out.set(e.id, new Date(start));
     free.set(chair, start + e.durationMins * MIN);
   }
   return out;
+}
+
+/** Moves a start time past any block (like lunch) that the service would run into. */
+function fitAround(start: number, length: number, blocks: Array<[Date, Date]> = []): number {
+  let t = start;
+  for (const [from, to] of [...blocks].sort((a, b) => a[0].getTime() - b[0].getTime())) {
+    if (t < to.getTime() && t + length > from.getTime()) t = to.getTime();
+  }
+  return t;
 }
 
 function pickChair(free: Map<string, number>, staffId: string | null): string {

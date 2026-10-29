@@ -16,6 +16,7 @@ import {
   startService,
 } from "@/lib/bookings";
 import { geocode } from "@/lib/geocode";
+import { newShopCode } from "@/lib/shop-code";
 import { normalisePhone, slugify, validCipc } from "@/lib/format";
 import { back, str } from "@/lib/http";
 import { getSettings } from "@/lib/settings";
@@ -65,11 +66,18 @@ export async function registerVendor(form: FormData) {
   const where = lat && lng ? { lat, lng } : await geocode(address);
   await db.$transaction([
     db.vendor.create({
-      data: { ownerId: user.id, name, slug, category, cipc: cipc || null, level, address, phone, lat: where?.lat, lng: where?.lng, ...(bank ?? {}) },
+      data: { ownerId: user.id, name, slug, code: await freeShopCode(), category, cipc: cipc || null, level, address, phone, lat: where?.lat, lng: where?.lng, ...(bank ?? {}) },
     }),
     db.user.update({ where: { id: user.id }, data: { role: user.role === "ADMIN" ? "ADMIN" : "VENDOR" } }),
   ]);
   back("/vendor/documents", { notice: "Business saved. Now upload your documents." });
+}
+
+async function freeShopCode(): Promise<string> {
+  for (;;) {
+    const code = newShopCode();
+    if (!(await db.vendor.findUnique({ where: { code } }))) return code;
+  }
 }
 
 function bankFields(form: FormData) {
@@ -174,27 +182,46 @@ export async function removeService(form: FormData) {
 export async function addStaff(form: FormData) {
   const { vendor } = await requireVendor();
   const name = str(form, "name");
-  if (!name) back("/vendor/setup", { error: "Enter the staff member's name." });
+  if (!name) back("/vendor/team", { error: "Enter the staff member's name." });
   const raw = str(form, "phone");
   const phone = raw ? normalisePhone(raw) : null;
-  if (raw && !phone) back("/vendor/setup", { error: "Enter a valid South African cellphone number for the staff member." });
+  if (raw && !phone) back("/vendor/team", { error: "Enter a valid South African cellphone number for the staff member." });
   await db.staff.create({ data: { vendorId: vendor.id, name, phone } });
-  back("/vendor/setup", { notice: phone ? `Added ${name}. They can sign in with ${raw} to see their chair.` : `Added ${name}.` });
+  back("/vendor/team", { notice: phone ? `Added ${name}. They can sign in with ${raw} to see their chair.` : `Added ${name}.` });
 }
 
 export async function setStaffPhone(form: FormData) {
   const { vendor } = await requireVendor();
   const raw = str(form, "phone");
   const phone = raw ? normalisePhone(raw) : null;
-  if (raw && !phone) back("/vendor/setup", { error: "Enter a valid South African cellphone number." });
+  if (raw && !phone) back("/vendor/team", { error: "Enter a valid South African cellphone number." });
   await db.staff.updateMany({ where: { id: str(form, "id"), vendorId: vendor.id }, data: { phone } });
-  back("/vendor/setup", { notice: phone ? "Saved. They can now sign in to their own chair screen." : "Staff login removed." });
+  back("/vendor/team", { notice: phone ? "Saved. They can now sign in to their own chair screen." : "Staff login removed." });
 }
 
 export async function removeStaff(form: FormData) {
   const { vendor } = await requireVendor();
   await db.staff.updateMany({ where: { id: str(form, "id"), vendorId: vendor.id }, data: { active: false } });
-  back("/vendor/setup", { notice: "Staff member removed." });
+  back("/vendor/team", { notice: "Staff member removed." });
+}
+
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** The owner sets one staff member's working days, hours and lunch. Blank times mean the shop's hours. */
+export async function saveStaffHours(form: FormData) {
+  const { vendor } = await requireVendor();
+  const here = "/vendor/team";
+  const workDays = [0, 1, 2, 3, 4, 5, 6].map((i) => (form.get(`day${i}`) === "on" ? "1" : "0")).join("");
+  const t = (k: string) => str(form, k) || null;
+  const [startTime, endTime, lunchStart, lunchEnd] = [t("startTime"), t("endTime"), t("lunchStart"), t("lunchEnd")];
+  if ([startTime, endTime, lunchStart, lunchEnd].some((v) => v && !HHMM.test(v))) back(here, { error: "Use times like 09:00." });
+  if (!startTime !== !endTime) back(here, { error: "Fill in both the start and finish time, or leave both blank." });
+  if (startTime && endTime && startTime >= endTime) back(here, { error: "The finish time must be after the start time." });
+  if (!lunchStart !== !lunchEnd) back(here, { error: "Fill in both lunch times, or leave both blank." });
+  if (lunchStart && lunchEnd && lunchStart >= lunchEnd) back(here, { error: "Lunch must end after it starts." });
+  const res = await db.staff.updateMany({ where: { id: str(form, "id"), vendorId: vendor.id }, data: { workDays, startTime, endTime, lunchStart, lunchEnd } });
+  if (!res.count) back(here, { error: "Staff member not found." });
+  back(here, { notice: "Hours saved." });
 }
 
 const MAX_PHOTO_BYTES = 1_500_000;

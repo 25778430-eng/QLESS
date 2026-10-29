@@ -72,7 +72,7 @@ export default async function VendorAccount({ searchParams }: { searchParams: { 
       <div className="list">
         <Row href="/vendor/setup" title="Shop profile and hours" sub={`${vendor.address} · ${vendor.openTime} to ${vendor.closeTime}`} />
         <Row href="/vendor/setup#services" title="Services and prices" sub={services.length ? `${services.length} services · from ${rand(cheapest)}` : "Add your first service"} />
-        <Row href="/vendor/setup#staff" title="Staff" sub={staff.length ? `${staff.length} staff · ${staff.filter((s) => s.phone).length} with their own login` : "Add your team"} />
+        <Row href="/vendor/team" title="My team" sub={staff.length ? `${staff.length} staff · ${staff.filter((s) => s.phone).length} with their own login` : "Add your team"} />
         <Row href="/vendor/qr" title="QR code and poster" sub="Customers scan it to join your queue" />
       </div>
 

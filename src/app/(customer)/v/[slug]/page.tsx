@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { isOpenToday, loadQueue, todayQueue } from "@/lib/bookings";
-import { initials, rand, shortDate } from "@/lib/format";
+import { initials, rand, shortDate, time } from "@/lib/format";
 import { bookingFee } from "@/lib/fees";
 import { getSettings } from "@/lib/settings";
 import { vendorListed } from "@/lib/plan-billing";
@@ -126,7 +126,7 @@ export default async function VendorPage({ params, searchParams }: { params: { s
             <label className="opt" key={s.id}>
               <input type="radio" name="staffId" value={s.id} />
               <span className="avatar sm">{initials(s.name)}</span>
-              <span className="grow"><b>{s.name}</b><br /><span className="small muted">{waitingFor(s.id)} waiting for {s.name}</span></span>
+              <span className="grow"><b>{s.name}</b><br /><span className="small muted">{s.breakUntil && s.breakUntil > new Date() ? `On a break until ${time(s.breakUntil)} · ` : ""}{waitingFor(s.id)} waiting for {s.name}{s.endTime ? ` · until ${s.endTime}` : ""}</span></span>
             </label>
           ))}
           <h3>Choose a service</h3>

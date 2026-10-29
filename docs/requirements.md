@@ -17,7 +17,8 @@ Working requirements for the first version of Qless. Items marked **(proposed)**
 
 ### Finding a vendor
 - Nearby map search with a list sorted by distance, and category filters (barbers, nails, hair).
-- Scan a vendor's QR code at the door to open their queue.
+- Scan a vendor's QR code at the door to open their queue, or type the shop code printed under it.
+- Search shops by name, area or service on Home and on the Map.
 - Low-data mode that hides the map and photos.
 - Appearance: Auto (follows the phone), Light or Dark, chosen on the Account page and saved on the device.
 
@@ -71,6 +72,7 @@ Working requirements for the first version of Qless. Items marked **(proposed)**
 - Vendor sets own open days and hours.
 - Services with name, duration and price.
 - Booking deposit amount and refund window.
+- **My team** page: the owner adds and removes staff, gives each one a login cellphone, and sets each person's working days, start and finish times and lunch (blank times mean the shop's hours). Staff who don't work today aren't ticked when the queue opens. A customer can't book a staff member whose day would end before the service finishes, and nobody is booked into a lunch.
 
 ### Monthly plan
 - When the admin switches the plan on, vendors pay a monthly price (default **R149**) through a PayFast subscription (card or debit order), billed monthly until cancelled.
@@ -87,7 +89,8 @@ Working requirements for the first version of Qless. Items marked **(proposed)**
 - Call next (notifies the customer, who then has 15 minutes to arrive).
 - Check in arrivals with their code.
 - Pause the queue (load-shedding, staff break, running late, other) for a set time; everyone waiting is notified with a new estimated time and nobody loses their deposit.
-- QR poster to print for the shop door.
+- QR poster to print for the shop door, with a 6-character shop code under the QR (no 0, O, 1 or I). Customers whose camera won't scan type the code on the Scan screen.
+- Staff chair screen: a Call button on every waiting client so staff can pick who's next (for example a walk-in who is already there), plus a 10, 15 or 30 minute break for one chair. During a break that chair's own clients get new times and a message and keep their deposits, "anyone" clients move to other chairs, and customers see the staff member as on a break. Calling a client ends the break.
 
 ### Daily summary
 - Customers served, no-shows, walk-ins.
@@ -102,7 +105,7 @@ Working requirements for the first version of Qless. Items marked **(proposed)**
 - Customer booking fee: amount, on/off switch, and fees collected in the last 30 days.
 - Vendor monthly plan: price, free-trial length, on/off switch (**off by default**), number of shops subscribed, and per-shop plan status with a waive switch.
 - Money dashboard: Qless income (booking fees, plan payments, featured payments) for this month, per month for the last 12 months and per day for the last 30 days. Deposits owed to each vendor for a chosen month: deposits that came off a customer's bill or were kept for a no-show or late cancel, plus deposits still held and refunded. Featured payments are entered by the admin when featuring a shop.
-- Users page: search customers and vendors by name, cellphone or shop name; filter by customers, vendors or blocked. Each user shows their bookings, no-shows (all time and last 30 days) and fees. The admin can block a user (signed out, can't sign in or book, and their shop is hidden) with a private reason, unblock them, or lift an automatic no-show booking pause. Only a super admin can block a regular admin; super admins can't be blocked.
+- Users page: search customers and vendors by name, cellphone or shop name; filter by customers, vendors or blocked. Each user shows their bookings, no-shows (all time and last 30 days) and fees. The admin can block a user (signed out, can't sign in or book, and their shop is hidden) with a private reason, unblock them, or lift an automatic no-show booking pause. Only a super admin can block a regular admin; super admins can't be blocked. A super admin can also remove a user for good (type REMOVE to confirm): their name, number and email are wiped, they can't sign in again and any shop they own is taken off Qless; booking and payment records stay without their details. Not allowed while they're in a queue, for yourself, or for ADMIN_PHONES numbers.
 - Featured listings: per shop, the admin switches featuring on or off, sets a rank (higher shows first) and an optional end date. Featured shops show first in search with a "Featured" badge. A featured shop still needs its plan to be listed. Admin-controlled only for now; vendors can't buy featuring themselves yet.
 
 ## 5. Security and abuse (proposed set)

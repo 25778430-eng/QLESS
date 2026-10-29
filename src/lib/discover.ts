@@ -3,6 +3,8 @@ import { db } from "./db";
 import { haversineKm, sastDate } from "./format";
 import { getSettings } from "./settings";
 import { featuredOrder, isFeatured, planAllowsListing, planState } from "./plans";
+import { newShopCode, normaliseShopCode } from "./shop-code";
+import type { Vendor } from "@prisma/client";
 
 export const CATEGORIES = ["All", "Barber", "Nail technician", "Hair salon", "Other"];
 export const CATEGORY_LABEL: Record<string, string> = { All: "All", Barber: "Barbers", "Nail technician": "Nails", "Hair salon": "Hair", Other: "Other" };
@@ -63,4 +65,22 @@ export function mapPins(rows: ShopRow[]) {
   return rows
     .filter((r) => r.v.lat != null && r.v.lng != null)
     .map((r) => ({ lat: r.v.lat!, lng: r.v.lng!, label: `${r.v.name} · ${r.state.label}`, href: `/v/${r.v.slug}`, busy: r.state.kind === "bad", featured: r.featured }));
+}
+
+/** The shop's poster code, made on first use for shops created before codes existed. */
+export async function ensureShopCode(vendor: Pick<Vendor, "id" | "code">): Promise<string> {
+  if (vendor.code) return vendor.code;
+  for (;;) {
+    const code = newShopCode();
+    if (await db.vendor.findUnique({ where: { code } })) continue;
+    await db.vendor.update({ where: { id: vendor.id }, data: { code } });
+    return code;
+  }
+}
+
+/** Finds a listed shop by the code a customer typed. */
+export async function shopByCode(input: string) {
+  const code = normaliseShopCode(input);
+  if (!code) return null;
+  return db.vendor.findFirst({ where: { code, status: "APPROVED" }, select: { slug: true } });
 }

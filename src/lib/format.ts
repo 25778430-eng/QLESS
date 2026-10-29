@@ -16,6 +16,11 @@ export function sastClock(d = new Date()): string {
   return new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
 }
 
+/** A clock time ("13:30") on today's date in South Africa (UTC+2, no daylight saving). */
+export function sastAt(hhmm: string, d = new Date()): Date {
+  return new Date(`${sastDate(d)}T${hhmm}:00+02:00`);
+}
+
 export function time(d: Date | null | undefined): string {
   return d ? sastClock(d) : "";
 }

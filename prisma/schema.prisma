@@ -129,6 +129,8 @@ model Vendor {
   ownerId          String       @unique
   name             String
   slug             String       @unique
+  // Short code printed under the QR poster. Customers type it on Scan if their camera won't scan.
+  code             String?      @unique
   category         String
   // Optional when the admin has switched the CIPC requirement off.
   cipc             String?
@@ -180,6 +182,14 @@ model Staff {
   // Staff sign in with this number to use their own chair screen.
   phone    String?
   active   Boolean   @default(true)
+  // Own working hours, set by the owner. Same format as Vendor.openDays; blank times mean the shop's hours.
+  workDays   String    @default("1111111")
+  startTime  String?
+  endTime    String?
+  lunchStart String?
+  lunchEnd   String?
+  // Set while this staff member is on a short break. Their chair's clients move back until then.
+  breakUntil DateTime?
   vendor   Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   bookings Booking[]
 

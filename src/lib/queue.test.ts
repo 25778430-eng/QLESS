@@ -60,6 +60,40 @@ describe("estimateStarts", () => {
   });
 });
 
+describe("estimateStarts with staff hours and breaks", () => {
+  it("holds a chair until its staff member is back from a break", () => {
+    const s = estimateStarts({
+      now,
+      staffIds: ["a"],
+      entries: [w("1", 1, 30, "a"), w("2", 2, 30, "a")],
+      chairHours: new Map([["a", { from: at(15) }]]),
+    });
+    expect(s.get("1")).toEqual(at(15));
+    expect(s.get("2")).toEqual(at(45));
+  });
+
+  it("sends anyone clients to the chair that is not on a break", () => {
+    const s = estimateStarts({
+      now,
+      staffIds: ["a", "b"],
+      entries: [w("1", 1, 30)],
+      chairHours: new Map([["a", { from: at(20) }]]),
+    });
+    expect(s.get("1")).toEqual(at(0));
+  });
+
+  it("moves a service that would run into lunch to after lunch", () => {
+    const s = estimateStarts({
+      now,
+      staffIds: ["a"],
+      entries: [w("1", 1, 30, "a"), w("2", 2, 30, "a")],
+      chairHours: new Map([["a", { blocks: [[at(40), at(70)]] }]]),
+    });
+    expect(s.get("1")).toEqual(at(0));
+    expect(s.get("2")).toEqual(at(70));
+  });
+});
+
 describe("moving back", () => {
   const entries = [w("1", 1, 30), w("2", 2, 30), w("3", 3, 30), w("4", 4, 30)];
 

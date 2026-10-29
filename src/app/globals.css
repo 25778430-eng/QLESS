@@ -210,3 +210,5 @@ form:has(input[name="level"][value="VERIFIED"]:checked) .level-basic { display: 
 .legal .legal-foot { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 12px; }
 .oops { justify-content: center; text-align: center; align-items: center; }
 .oops .big { font-family: var(--f-display); font-weight: 800; font-size: 72px; line-height: 1; letter-spacing: -.03em; }
+.shopcode { font-family: var(--f-mono); font-weight: 800; font-size: 34px; letter-spacing: .14em; border: 2px dashed var(--line); border-radius: 14px; padding: 6px 14px; align-self: center; }
+.shopcode-in { text-transform: uppercase; letter-spacing: .14em; font-weight: 700; }

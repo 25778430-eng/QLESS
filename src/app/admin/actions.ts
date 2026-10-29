@@ -1,5 +1,5 @@
 "use server";
-import { isSuperAdmin, requireAdmin, requireSuperAdmin } from "@/lib/auth";
+import { isAdminPhone, isSuperAdmin, requireAdmin, requireSuperAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sendSms } from "@/lib/notify";
 import { appUrl, back, str } from "@/lib/http";
@@ -148,6 +148,36 @@ export async function banUser(form: FormData) {
     db.session.deleteMany({ where: { userId: id } }),
   ]);
   back(`/admin/users/${id}`, { notice: `${target.name} is blocked and signed out.` });
+}
+
+/**
+ * Super admins only: removes a user for good. Their name, number and email are wiped, they can never sign in
+ * again, and a shop they own is taken off Qless. Booking and payment records stay, without their details.
+ */
+export async function removeUser(form: FormData) {
+  const admin = await requireSuperAdmin();
+  const id = str(form, "id");
+  const here = `/admin/users/${id}`;
+  if (str(form, "confirm").toUpperCase() !== "REMOVE") back(here, { error: "Type REMOVE to confirm." });
+  const target = await db.user.findUnique({ where: { id }, include: { vendor: { select: { id: true } } } });
+  if (!target) back("/admin/users", { error: "User not found." });
+  if (target.id === admin.id) back(here, { error: "You can't remove yourself." });
+  if (isAdminPhone(target.phone)) back(here, { error: "This number is in ADMIN_PHONES on Vercel. Remove it there first." });
+  const active = await db.booking.count({ where: { customerId: id, status: { in: ["PENDING_PAYMENT", "WAITING", "CALLED", "IN_SERVICE"] } } });
+  if (active) back(here, { error: "They're in a queue right now. Wait until the booking is finished or cancelled." });
+  await db.$transaction([
+    db.session.deleteMany({ where: { userId: id } }),
+    db.pushSubscription.deleteMany({ where: { userId: id } }),
+    ...(target.vendor ? [db.vendor.update({ where: { id: target.vendor.id }, data: { status: "REJECTED", rejectReason: "Removed by Qless" } })] : []),
+    db.user.update({
+      where: { id },
+      data: {
+        name: "Removed user", email: null, phone: `removed:${id}`, role: target.vendor ? "VENDOR" : "CUSTOMER", superAdmin: false,
+        banned: true, bannedReason: "Removed by a super admin", consentReminders: false, consentOffers: false, notifySms: false, notifyWhatsapp: false,
+      },
+    }),
+  ]);
+  back("/admin/users", { notice: `${target.name} has been removed${target.vendor ? " and their shop taken off Qless" : ""}.` });
 }
 
 export async function unbanUser(form: FormData) {

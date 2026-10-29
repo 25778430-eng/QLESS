@@ -1,10 +1,11 @@
+import Link from "next/link";
 import { requireVendor } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { prettyPhone, rand } from "@/lib/format";
+import { rand } from "@/lib/format";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { UseMyLocation } from "@/components/UseMyLocation";
-import { addPhoto, addService, addStaff, removePhoto, removeService, removeStaff, saveShop, setStaffPhone } from "../actions";
+import { addPhoto, addService, removePhoto, removeService, saveShop } from "../actions";
 
 const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -79,26 +80,7 @@ export default async function Setup({ searchParams }: { searchParams: { error?: 
       </details>
 
       <h3 id="staff">Staff</h3>
-      <p className="small muted">Add a staff member&apos;s cellphone and they can sign in to their own chair screen and call their own next client.</p>
-      <div className="card" style={{ padding: "4px 14px" }}>
-        {staff.length === 0 && <p className="muted" style={{ padding: "10px 0" }}>No staff yet. Add yourself if you work alone.</p>}
-        {staff.map((s) => (
-          <div className="svc" key={s.id}>
-            <span className="grow"><b>{s.name}</b><br /><span className="small muted mono">{s.phone ? prettyPhone(s.phone) : "No login"}</span></span>
-            <form action={setStaffPhone} className="row">
-              <input type="hidden" name="id" value={s.id} />
-              <input className="i mono" name="phone" placeholder="082 555 0147" defaultValue={s.phone ? prettyPhone(s.phone) : ""} style={{ width: 140, padding: 8 }} aria-label={`${s.name}'s cellphone`} />
-              <button className="btn sm alt">Save</button>
-            </form>
-            <form action={removeStaff}><input type="hidden" name="id" value={s.id} /><button className="btn sm alt" aria-label={`Remove ${s.name}`}>✕</button></form>
-          </div>
-        ))}
-      </div>
-      <form action={addStaff} className="row">
-        <input className="i grow" name="name" placeholder="Staff name" required />
-        <input className="i mono" name="phone" placeholder="Cellphone (optional)" style={{ width: 170 }} />
-        <Submit className="btn sm">Add</Submit>
-      </form>
+      <Link className="li card" href="/vendor/team"><span className="grow"><b>My team</b><span>{staff.length ? `${staff.length} on the team · ` : ""}Add or remove people, logins and hours</span></span><span className="chev">›</span></Link>
 
       <h3>Photo gallery</h3>
       {photos.length > 0 && (
