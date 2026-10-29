@@ -102,6 +102,12 @@ export default async function VendorAccount({ searchParams }: { searchParams: { 
         <Row href="/account" title={user.name} sub={user.email ?? prettyPhone(user.phone)} />
         <Row href="/discover" title="Switch to customer view" sub="Book at other shops" />
       </div>
+
+      <div className="lbl">Help</div>
+      <div className="list">
+        <Row href="/help" title="Help and contact" sub="Payouts, staff logins and listings" />
+        <Row href="/vendor-agreement" title="Vendor data agreement" sub="How to handle your customers' details" />
+      </div>
       <form action={signOutAction}><Submit className="btn alt">Sign out</Submit></form>
     </main>
   );

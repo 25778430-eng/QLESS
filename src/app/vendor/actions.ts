@@ -40,6 +40,7 @@ export async function registerVendor(form: FormData) {
   const here = "/vendor/register";
   const level: VendorLevel = str(form, "level") === "BASIC" ? "BASIC" : "VERIFIED";
   if (level === "BASIC" && !rules.allowBasic) back(here, { error: "Basic listings are switched off right now. Choose Verified." });
+  if (!form.get("agree")) back(here, { error: "Please agree to the terms and the vendor data agreement." });
   const name = str(form, "name");
   const category = str(form, "category");
   const cipc = level === "VERIFIED" ? str(form, "cipc") : "";

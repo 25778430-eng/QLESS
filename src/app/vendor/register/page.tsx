@@ -54,6 +54,10 @@ export default async function Register({ searchParams }: { searchParams: { error
           <label className="f">Account number<input className="i mono" name="bankAccountNo" inputMode="numeric" /></label>
         </div>
 
+        <label className="check">
+          <input type="checkbox" name="agree" required />
+          <span>I agree to the <a href="/terms" target="_blank">terms of use</a> and the <a href="/vendor-agreement" target="_blank">vendor data agreement</a>, and will only use customer details for their bookings.</span>
+        </label>
         <div className="fill small">Next you&apos;ll upload your documents. We check every business before it goes live, usually within 1 working day.</div>
         <Submit>Continue to documents</Submit>
       </form>

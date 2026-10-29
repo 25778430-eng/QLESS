@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { LEGAL_UPDATED, operatorName, supportEmail } from "@/lib/legal";
+import { LEGAL_UPDATED, infoOfficer, operatorName, supportEmail } from "@/lib/legal";
 
 export const metadata: Metadata = { title: "Privacy policy · Qless" };
 
 export default function Privacy() {
   const email = supportEmail();
+  const officer = infoOfficer();
   return (
     <>
       <h1>Privacy policy</h1>
@@ -79,7 +80,9 @@ export default function Privacy() {
 
       <h2>Contact</h2>
       <p>
-        Information Officer, {operatorName()}: <a href={`mailto:${email}`}>{email}</a>
+        Information Officer: {officer.name}, <a href={`mailto:${officer.email}`}>{officer.email}</a>
+        {officer.phone && <>, <span className="mono">{officer.phone}</span></>}. To ask for records we hold, see our{" "}
+        <a href="/paia">PAIA manual</a>. Shops that see your details are bound by our <a href="/vendor-agreement">vendor data agreement</a>.
       </p>
     </>
   );

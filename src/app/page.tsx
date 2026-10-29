@@ -21,7 +21,7 @@ export default async function Home() {
       <Link className="btn alt" href="/signin?mode=in">Sign in</Link>
       <Link className="btn alt" href="/signin?next=/vendor/register">I&apos;m a vendor</Link>
       <p className="small muted" style={{ textAlign: "center" }}>
-        <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a>
+        <a href="/help">Help</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/paia">PAIA</a>
       </p>
     </main>
   );

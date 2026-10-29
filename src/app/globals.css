@@ -207,3 +207,6 @@ form:has(input[name="level"][value="VERIFIED"]:checked) .level-basic { display: 
 .gpin { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; font: 700 12px var(--f-body); padding: 5px 9px; border-radius: 99px; text-decoration: none; background: #0b0b0b; color: #fff; box-shadow: 0 2px 8px -3px rgba(0,0,0,.5); }
 .gpin.busy { background: #fff; color: #0b0b0b; box-shadow: inset 0 0 0 1px #0b0b0b; }
 .gpin.feat { background: #ffd21f; color: #1d1600; }
+.legal .legal-foot { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 12px; }
+.oops { justify-content: center; text-align: center; align-items: center; }
+.oops .big { font-family: var(--f-display); font-weight: 800; font-size: 72px; line-height: 1; letter-spacing: -.03em; }
