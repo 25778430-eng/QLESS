@@ -43,7 +43,7 @@ All keys go in environment variables (see `.env.example`).
 | --- | --- | --- |
 | Database | `DATABASE_URL` | Any PostgreSQL host (Supabase, Neon, Railway, etc.) |
 | Sessions | `AUTH_SECRET` | Any long random string, e.g. `openssl rand -hex 32` |
-| Your admin number | `ADMIN_PHONES` | Your cellphone in `+27…` form |
+| Your admin number | `ADMIN_PHONES` | Your cellphone in `+27…` form. These numbers are super admins and can add other admins on Admin → Team |
 | SMS and WhatsApp | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_SMS_FROM`, `TWILIO_WHATSAPP_FROM` | Twilio console. WhatsApp needs an approved WhatsApp sender, and business-started messages need approved templates. |
 | Deposits and refunds | `PAYFAST_MERCHANT_ID`, `PAYFAST_MERCHANT_KEY`, `PAYFAST_PASSPHRASE`, `PAYFAST_SANDBOX` | PayFast dashboard. Start with sandbox (`true`), then set `false` for real payments. |
 | Push notifications | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Run `npx web-push generate-vapid-keys` |
