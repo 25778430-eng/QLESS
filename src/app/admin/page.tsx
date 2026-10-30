@@ -76,7 +76,6 @@ export default async function Admin({ searchParams }: { searchParams: { error?: 
           {superAdmin && <SetRow icon="admin" title="Admin team" sub="Who can use this page" href="/admin/team" />}
         </SetGroup>
         </div>
-        {!superAdmin && <p className="small muted">Fees, the monthly plan, sign-up rules and featured listings are set by a super admin.</p>}
       </main>
     </>
   );

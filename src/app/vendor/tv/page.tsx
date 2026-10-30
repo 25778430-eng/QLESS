@@ -27,7 +27,6 @@ export default async function TvSetup({ searchParams }: { searchParams: { error?
       ) : (
         <form action={resetTvLink}><Submit>Make my TV link</Submit></form>
       )}
-      <p className="small muted">Keep the link private. Anyone with it can see your queue numbers.</p>
     </main>
   );
 }

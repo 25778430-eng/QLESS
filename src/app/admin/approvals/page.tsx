@@ -30,7 +30,6 @@ export default async function Approvals({ searchParams }: { searchParams: { erro
           <span className={`pill ${vendors.length ? "sig" : "ok"}`}>{vendors.length} waiting</span>
         </div>
         <Messages searchParams={searchParams} />
-        <p className="small muted">Open each document before approving. Check CIPC numbers on bizportal.gov.za.</p>
         {vendors.length === 0 && <p className="muted">Nothing waiting. Nice.</p>}
         <div className="cardgrid">
         {vendors.map((v) => {

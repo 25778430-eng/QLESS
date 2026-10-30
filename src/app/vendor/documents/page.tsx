@@ -60,7 +60,6 @@ export default async function Documents({ searchParams }: { searchParams: { erro
       <SubHead back="/vendor/account" backLabel="Account" title="Documents" />
       <p className="small muted">{vendor.name} · {level === "BASIC" ? "Basic" : "Verified"}</p>
       <Messages searchParams={searchParams} />
-      <p className="small muted">Photos or PDFs up to 4 MB each (big phone photos are made smaller for you). Only Qless admins can see them, and we delete the files 90 days after we&apos;ve checked them.</p>
       {required.map((k) => row(k, true))}
       {optional.map((k) => row(k, false))}
       {missing.length === 0 ? (

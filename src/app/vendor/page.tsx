@@ -41,7 +41,6 @@ export default async function VendorHome({ searchParams }: { searchParams: SP })
           <li>{vendor.status === "PENDING" ? "…" : "✗"} Qless checks your documents</li>
           <li>○ Go live and print your QR code</li>
         </ul>
-        <p className="small muted">You can set up your hours, services and staff while you wait.</p>
         {missing.length > 0 && <Link className="btn" href="/vendor/documents">Upload documents ({missing.length} to go)</Link>}
         <Link className={missing.length ? "btn alt" : "btn"} href="/vendor/account">Set up my shop</Link>
       </main>
@@ -76,6 +75,9 @@ export default async function VendorHome({ searchParams }: { searchParams: SP })
   const unassigned = active.filter((b) => !b.staffId || !staff.some((s) => s.id === b.staffId));
   const nextFor = (staffId: string) => waiting.find((b) => b.staffId === staffId || b.staffId === null);
 
+  // More than 2 bays: small blocks in a grid so the waiting list stays on screen.
+  const compact = staff.length > 2;
+
   // One black "now serving" card per bay. Free bays show a lighter card with their own Call next.
   const bayCard = (b: (typeof active)[number] | undefined, s: (typeof staff)[number] | null, key: string) => {
     const next = s ? nextFor(s.id) : undefined;
@@ -85,6 +87,26 @@ export default async function VendorHome({ searchParams }: { searchParams: SP })
         <Submit className="btn sig">{next ? `Call next · ${next.ticketNo ?? name(next)}` : "Call next"}</Submit>
       </form>
     );
+    if (compact) {
+      const callMini = s && day.status !== "PAUSED" && (!b || b.status === "IN_SERVICE") && (
+        <form action={callNextAction}><input type="hidden" name="staffId" value={s.id} /><Submit className="btn sig sm">{next ? `Call ${next.ticketNo ?? "next"}` : "Call next"}</Submit></form>
+      );
+      return (
+        <div key={key} className={`serve mini${b ? "" : " free"}`}>
+          <span className="lab ell">{b?.staff?.name ?? s?.name ?? "Anyone"}</span>
+          {b ? (
+            <>
+              <span className="nm ell">{b.ticketNo ? `${b.ticketNo} · ` : ""}{name(b)}</span>
+              <span className="lab ell">{b.status === "IN_SERVICE" ? `since ${time(b.startedAt)}` : b.arrived ? "called · here" : `called ${time(b.calledAt)}`}</span>
+              {b.status === "CALLED"
+                ? <form action={startAction}><input type="hidden" name="id" value={b.id} /><Submit className="btn ghost sm">Start</Submit></form>
+                : <form action={doneAction}><input type="hidden" name="id" value={b.id} /><Submit className="btn ghost sm">{b.readyAt || b.jobStage ? "Collected" : "Done"}</Submit></form>}
+            </>
+          ) : <span className="nm">Free</span>}
+          {callMini}
+        </div>
+      );
+    }
     if (!b) {
       return (
         <div key={key} className="serve free">
@@ -128,8 +150,10 @@ export default async function VendorHome({ searchParams }: { searchParams: SP })
         </form>
       )}
 
-      {staff.map((s) => bayCard(inBay(s.id), s, s.id))}
-      {unassigned.map((b) => bayCard(b, null, b.id))}
+      <div className={compact ? "bays" : "stack"} style={compact ? undefined : { gap: 14 }}>
+        {staff.map((s) => bayCard(inBay(s.id), s, s.id))}
+        {unassigned.map((b) => bayCard(b, null, b.id))}
+      </div>
 
       <div className="row between"><b>Waiting</b><span className="small muted">{waiting.length} · {done.length} done · {rand(takings)} today</span></div>
       <div>

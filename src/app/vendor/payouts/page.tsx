@@ -37,7 +37,6 @@ export default async function Payouts() {
             <div><b className="mono" style={{ fontSize: 18 }}>{rand(bal.paidOut)}</b><span>paid out</span></div>
             <div><b className="mono" style={{ fontSize: 18 }}>{rand(bal.held)}</b><span>held for visits</span></div>
           </div>
-          <p className="small muted">Customers pay deposits into the Qless account. Once the visit happens (or a no-show keeps the deposit), it&apos;s yours, and Qless pays it into your bank. Held deposits become yours after the visit.</p>
 
           <h3>Paid to you</h3>
           {payouts.length === 0 && <p className="muted">No payouts yet.</p>}

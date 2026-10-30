@@ -29,7 +29,6 @@ export default async function Move({ params }: { params: { id: string } }) {
               <span className="grow"><b>{n} place{n > 1 ? "s" : ""} back</b><br /><span className="small muted">About {Math.round(minsFor(n))} minutes later</span></span>
             </label>
           ))}
-          <div className="fill small">You can move back once per booking. It&apos;s free, and the shop sees it straight away.</div>
           <Submit>Move me back</Submit>
         </form>
       )}

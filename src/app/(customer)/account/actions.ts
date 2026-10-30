@@ -48,6 +48,20 @@ export async function updateNotifications(form: FormData) {
   back("/account/notifications", { notice: "Saved." });
 }
 
+const SWITCHES = ["consentReminders", "consentOffers", "notifySms", "notifyWhatsapp", "lowData"] as const;
+
+/** One tap on a switch on the Account page flips that setting. */
+export async function flipSetting(form: FormData) {
+  const user = await requireUser();
+  const key = SWITCHES.find((k) => k === str(form, "key"));
+  if (key) {
+    const on = !user[key];
+    await db.user.update({ where: { id: user.id }, data: { [key]: on, ...(key === "consentReminders" ? { consentAt: new Date() } : {}) } });
+  }
+  revalidatePath("/", "layout");
+  redirect("/account?tab=me");
+}
+
 /** Staff switch between their bay (staff mode) and booking like any customer (client mode). */
 export async function switchMode(form: FormData) {
   const client = str(form, "mode") === "client";

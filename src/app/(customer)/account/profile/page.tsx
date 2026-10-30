@@ -16,13 +16,11 @@ export default async function Profile({ searchParams }: { searchParams: { error?
       <form action={updateProfile} className="stack" style={{ gap: 12 }}>
         <label className="f">Full name<input className="i" name="name" defaultValue={user.name} autoComplete="name" /></label>
         <label className="f">Email<input className="i" type="email" name="email" defaultValue={user.email ?? ""} autoComplete="email" placeholder="you@example.com" /></label>
-        <div className="small muted">Cellphone <span className="mono">{prettyPhone(user.phone)}</span> is how you sign in.</div>
         <Submit>Save</Submit>
       </form>
-      <details className="card">
+      <details className="card" id="delete">
         <summary>Delete my account</summary>
         <form action={deleteAccount} className="stack" style={{ marginTop: 10 }}>
-          <p className="small muted">This removes your name, email and number. Past visits stay on the shops&apos; records without your details.</p>
           <input className="i" name="confirm" placeholder="Type DELETE" />
           <Submit className="btn warn">Delete my account</Submit>
         </form>

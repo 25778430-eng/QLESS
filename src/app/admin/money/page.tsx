@@ -120,7 +120,6 @@ export default async function Money({ searchParams }: { searchParams: { month?: 
         <TotalsTable rows={byDay} label={dayLabel} />
 
         <h2>Pay out to shops</h2>
-        <p className="small muted">All-time deposits each shop has earned, less what you&apos;ve already paid. Pay by EFT from the Qless account, then record it here so the shop sees it on their Payouts page.</p>
         <div className="list">
           {dueRows.length === 0 && <div className="li"><span className="small muted">Nothing due.</span></div>}
           {dueRows.map(({ v, b }) => (
@@ -141,9 +140,6 @@ export default async function Money({ searchParams }: { searchParams: { month?: 
         </div>
 
         <h2>Deposits owed to vendors</h2>
-        <p className="small muted">
-          Deposits are paid into the Qless PayFast account. You owe each shop the deposits that came off a customer&apos;s bill and the ones kept for no-shows or late cancels. &quot;Still held&quot; are deposits for visits that haven&apos;t happened yet. Counted by the day the booking was made.
-        </p>
         <form className="row" action="/admin/money">
           <select className="i grow" name="month" defaultValue={month}>
             {months.map((k) => <option key={k} value={k}>{monthLabel(k)}</option>)}
