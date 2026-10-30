@@ -487,3 +487,4 @@ details.who:has(input[name="staffId"]:not([value="any"]):checked) .who-any { dis
 .serve.mini .btn { width: 100%; padding: 8px 10px; }
 .serve.mini form { width: 100%; }
 @media (min-width: 960px) { .main.app:has(.bays) { max-width: 1100px; } .bays { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+nav.seg.two { grid-template-columns: repeat(2, 1fr); }
