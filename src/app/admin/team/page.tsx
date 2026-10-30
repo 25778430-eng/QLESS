@@ -24,7 +24,6 @@ export default async function Team(props: { searchParams: SP | Promise<SP> }) {
         <Messages searchParams={searchParams} />
         <form action={addAdmin} className="card stack">
           <b>Add an admin</b>
-          <span className="small muted">They need to sign in to Qless once first, so their account exists.</span>
           <input className="i mono" name="phone" inputMode="tel" placeholder="082 123 4567" required />
           <label className="row small"><input type="checkbox" name="super" /> Make them a super admin</label>
           <Submit className="btn sm">Add admin</Submit>

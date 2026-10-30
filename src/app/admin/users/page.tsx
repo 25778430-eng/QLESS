@@ -80,7 +80,6 @@ export default async function Users({ searchParams }: { searchParams: SP }) {
             );
           })}
         </div>
-        {users.length === 50 && <p className="small muted">Showing the newest 50. Search to narrow it down.</p>}
       </main>
     </>
   );

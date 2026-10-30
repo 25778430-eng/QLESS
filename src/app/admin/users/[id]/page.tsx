@@ -64,7 +64,6 @@ export default async function UserDetail({ params, searchParams }: { params: { i
             <input type="hidden" name="id" value={u.id} />
             <span className="pill bad" style={{ alignSelf: "flex-start" }}>Blocked by admin</span>
             {u.bannedReason && <span className="small">Reason: {u.bannedReason}</span>}
-            <span className="small muted">They can&apos;t sign in{u.vendor ? " and their shop is hidden" : ""}.</span>
             <Submit className="btn sm">Unblock</Submit>
           </form>
         ) : self || isSuperAdmin(u) || (u.role === "ADMIN" && !isSuperAdmin(admin)) ? (
@@ -73,7 +72,6 @@ export default async function UserDetail({ params, searchParams }: { params: { i
           <form action={banUser} className="card stack">
             <input type="hidden" name="id" value={u.id} />
             <b>Block this user</b>
-            <span className="small muted">They&apos;re signed out and can&apos;t sign in or book{u.vendor ? ", and their shop is hidden from customers" : ""}. Bookings already made stay as they are.</span>
             <input className="i" name="reason" placeholder="Reason (only admins see this)" />
             <Submit className="btn sm warn">Block</Submit>
           </form>
@@ -84,9 +82,7 @@ export default async function UserDetail({ params, searchParams }: { params: { i
             <summary>Remove this user for good</summary>
             <form action={removeUser} className="stack" style={{ marginTop: 10 }}>
               <input type="hidden" name="id" value={u.id} />
-              <span className="small muted">
-                Wipes their name, number and email and stops them signing in{u.vendor ? ". Their shop is taken off Qless" : ""}. Past bookings and payments stay, without their details. This can&apos;t be undone.
-              </span>
+              <span className="small muted">This can&apos;t be undone.</span>
               <input className="i" name="confirm" placeholder="Type REMOVE" autoComplete="off" />
               <Submit className="btn sm warn">Remove user</Submit>
             </form>
