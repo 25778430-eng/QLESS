@@ -40,7 +40,8 @@ export default async function Account({ searchParams }: { searchParams: { error?
   const tab: Tab = TABS.some(([t]) => t === searchParams.tab) ? (searchParams.tab as Tab) : "me";
 
   return (
-    <main className="main app">
+    <main className="main app acct">
+      <aside className="acct-side">
       <div className="idbar">
         <span className="sq">{(user.name.trim()[0] ?? "Q").toUpperCase()}</span>
         <div className="grow" style={{ minWidth: 0 }}>
@@ -52,6 +53,8 @@ export default async function Account({ searchParams }: { searchParams: { error?
       <nav className="seg" aria-label="Account sections">
         {TABS.map(([t, label]) => <Link key={t} href={`/account?tab=${t}`} aria-current={tab === t ? "page" : undefined}>{label}</Link>)}
       </nav>
+      </aside>
+      <div className="acct-body">
       <Messages searchParams={searchParams} />
 
       {tab === "me" && (
@@ -102,6 +105,7 @@ export default async function Account({ searchParams }: { searchParams: { error?
       )}
 
       <form action={signOutAction}><Submit className="btn alt">Sign out</Submit></form>
+      </div>
     </main>
   );
 }

@@ -64,8 +64,9 @@ export default async function VendorPage({ params, searchParams }: { params: { s
   const waitingFor = (staffId: string | null) => waiting.filter((b) => (staffId ? b.staffId === staffId : true)).length;
 
   return (
-    <main className="main">
+    <main className="main shop">
       {open && <AutoRefresh seconds={30} />}
+      <div className="shop-info stack" style={{ gap: 14 }}>
       <div className="row">
         <span className="avatar" style={{ width: 58, height: 58, fontSize: 22 }}>{initials(vendor.name)}</span>
         <div className="grow">
@@ -104,6 +105,8 @@ export default async function VendorPage({ params, searchParams }: { params: { s
         </div>
       )}
 
+      </div>
+      <div className="book stack" style={{ gap: 14 }}>
       {!user ? (
         <>
           <ServiceList services={vendor.services} free={info.free} />
@@ -152,7 +155,9 @@ export default async function VendorPage({ params, searchParams }: { params: { s
         </form>
       )}
 
+      </div>
       {vendor.reviews.length > 0 && (
+        <div className="shop-rev stack" style={{ gap: 10 }}>
         <>
           <h3>Reviews</h3>
           {vendor.reviews.slice(0, 10).map((r) => (
@@ -162,6 +167,7 @@ export default async function VendorPage({ params, searchParams }: { params: { s
             </div>
           ))}
         </>
+        </div>
       )}
     </main>
   );
