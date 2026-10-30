@@ -24,7 +24,10 @@ export default async function Start({ searchParams }: { searchParams: { error?: 
       {staff.length === 0 || services.length === 0 ? (
         <>
           <div className="fill">Add your staff and services before you open a queue.</div>
-          <Link className="btn" href="/vendor/setup">Go to setup</Link>
+          <div className="two">
+            <Link className="btn alt" href="/vendor/team">My team</Link>
+            <Link className="btn" href="/vendor/services">Services</Link>
+          </div>
         </>
       ) : (
         <form action={openToday} className="stack" style={{ gap: 12 }}>

@@ -44,7 +44,7 @@ export default async function VendorHome({ searchParams }: { searchParams: SP })
         </ul>
         <p className="small muted">You can set up your hours, services and staff while you wait.</p>
         {missing.length > 0 && <Link className="btn" href="/vendor/documents">Upload documents ({missing.length} to go)</Link>}
-        <Link className={missing.length ? "btn alt" : "btn"} href="/vendor/setup">Set up my shop</Link>
+        <Link className={missing.length ? "btn alt" : "btn"} href="/vendor/account">Set up my shop</Link>
       </main>
     );
   }

@@ -1,4 +1,5 @@
 import { requireVendor } from "@/lib/auth";
+import { SubHead } from "@/components/SetRow";
 import { db } from "@/lib/db";
 import { prettyPhone, time } from "@/lib/format";
 import { worksToday } from "@/lib/bookings";
@@ -18,7 +19,7 @@ export default async function Team({ searchParams }: { searchParams: { error?: s
   const now = new Date();
   return (
     <main className="main">
-      <h1>My team</h1>
+      <SubHead back="/vendor/account" backLabel="Account" title="My team" />
       <Messages searchParams={searchParams} />
 
       <form action={addStaff} className="card stack">

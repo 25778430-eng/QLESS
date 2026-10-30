@@ -1,4 +1,5 @@
 import { requireVendor } from "@/lib/auth";
+import { SubHead } from "@/components/SetRow";
 import { appUrl } from "@/lib/http";
 import { ensureShopCode } from "@/lib/discover";
 import { Messages } from "@/components/Messages";
@@ -11,7 +12,7 @@ export default async function TvSetup({ searchParams }: { searchParams: { error?
   const link = vendor.tvKey ? `${appUrl()}/tv/${code}?k=${vendor.tvKey}` : null;
   return (
     <main className="main">
-      <h1>Waiting-room screen</h1>
+      <SubHead back="/vendor/account" backLabel="Account" title="Waiting-room screen" />
       <Messages searchParams={searchParams} />
       <p className="muted">Put a TV or an old tablet in your waiting area. It shows the ticket being served and who&apos;s next, plus a QR code so walk-ins can join. It shows ticket numbers only, never names.</p>
       {link ? (

@@ -2,16 +2,15 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireStaff } from "@/lib/auth";
-import { BookingError, addWalkIn, todayQueue, callNext, completeBooking, endBreak, markNoShow, markReady, startBreak, startService } from "@/lib/bookings";
+import { BookingError, todayQueue, callNext, completeBooking, endBreak, markNoShow, markReady, startBreak, startService } from "@/lib/bookings";
 import { back, str } from "@/lib/http";
-import { walkInFromForm } from "@/lib/walk-in";
 import { BREAK_MINUTES } from "@/lib/queue";
 
 /** Staff can only act on bookings in their own chair. */
 async function mine(id: string) {
   const { staff, vendor } = await requireStaff();
   const b = await db.booking.findFirst({ where: { id, vendorId: vendor.id, staffId: staff.id } });
-  if (!b) back("/staff", { error: "That client isn't in your chair." });
+  if (!b) back("/staff", { error: "That client isn't in your bay." });
   return { staff, vendor, b };
 }
 
@@ -60,21 +59,6 @@ export async function staffNoShow(form: FormData) {
   const { vendor, b } = await mine(str(form, "id"));
   await markNoShow(b.id, vendor.id);
   back("/staff", { notice: "Marked as a no-show." });
-}
-
-export async function staffWalkIn(form: FormData) {
-  const { staff, vendor } = await requireStaff();
-  const req = walkInFromForm(form, staff.id);
-  if (typeof req === "string") back("/staff/walk-in", { error: req });
-  let b;
-  try {
-    b = await addWalkIn(vendor, req);
-  } catch (e) {
-    if (e instanceof BookingError) back("/staff/walk-in", { error: e.message });
-    throw e;
-  }
-  if (form.get("print")) redirect(`/t/${b.ref}?print=1`);
-  back("/staff", { notice: `Walk-in added to your queue as ticket ${b.ticketNo}.` });
 }
 
 export async function staffBreak(form: FormData) {

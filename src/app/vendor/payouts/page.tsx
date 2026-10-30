@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SubHead } from "@/components/SetRow";
 import { requireVendor } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { rand, shortDate } from "@/lib/format";
@@ -22,7 +23,7 @@ export default async function Payouts() {
   const bal = vendorBalance(deposits, payouts.map((p) => p.amountCents));
   return (
     <main className="main">
-      <h1>Payouts</h1>
+      <SubHead back="/vendor/money" backLabel="Money" title="Payouts" />
       {vendor.level === "BASIC" ? (
         <div className="fill">Basic shops don&apos;t take deposits, so there&apos;s nothing to pay out. <Link href="/vendor/account"><b>Become Verified</b></Link> to take deposits.</div>
       ) : (

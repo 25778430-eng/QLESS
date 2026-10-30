@@ -9,7 +9,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   const { user, vendor } = await requireStaff();
   return (
     <>
-      <header className="topbar">
+      <header className="topbar applike">
         <Logo href="/staff" />
         <span className="row small muted">{vendor.name}<Link className="avatar sm" href="/account" aria-label="Account">{initials(user.name)}</Link></span>
       </header>

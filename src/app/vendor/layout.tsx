@@ -14,7 +14,7 @@ export default async function VendorLayout({ children }: { children: React.React
   const plan = vendor?.status === "APPROVED" ? planState(vendor, await getSettings()) : null;
   return (
     <>
-      <header className="topbar">
+      <header className="topbar applike">
         <Logo href="/vendor" />
         <span className="small muted">{vendor?.name ?? "New business"}</span>
       </header>

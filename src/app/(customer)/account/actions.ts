@@ -7,6 +7,7 @@ import { currentUser, endSession, requireUser } from "@/lib/auth";
 import { back, str } from "@/lib/http";
 import { validEmail } from "@/lib/verification";
 import { isLang, LANG_COOKIE } from "@/lib/i18n";
+import { MODE_COOKIE } from "@/lib/mode";
 
 export async function toggleLowData() {
   const user = await currentUser();
@@ -19,18 +20,23 @@ export async function toggleLowData() {
   revalidatePath("/", "layout");
 }
 
-export async function updateAccount(form: FormData) {
+export async function updateProfile(form: FormData) {
   const user = await requireUser();
+  const here = "/account/profile";
   const name = str(form, "name");
-  if (!name) back("/account", { error: "Enter your name." });
+  if (!name) back(here, { error: "Enter your name." });
   const email = str(form, "email").toLowerCase();
-  if (email && !validEmail(email)) back("/account", { error: "Enter a valid email address." });
+  if (email && !validEmail(email)) back(here, { error: "Enter a valid email address." });
+  await db.user.update({ where: { id: user.id }, data: { name, email: email || null } });
+  back(here, { notice: "Saved." });
+}
+
+export async function updateNotifications(form: FormData) {
+  const user = await requireUser();
   const consentReminders = form.get("consentReminders") === "on";
   await db.user.update({
     where: { id: user.id },
     data: {
-      name,
-      email: email || null,
       consentReminders,
       consentOffers: form.get("consentOffers") === "on",
       consentAt: consentReminders !== user.consentReminders ? new Date() : user.consentAt,
@@ -39,16 +45,23 @@ export async function updateAccount(form: FormData) {
       lowData: form.get("lowData") === "on",
     },
   });
-  back("/account", { notice: "Saved." });
+  back("/account/notifications", { notice: "Saved." });
+}
+
+/** Staff switch between their bay (staff mode) and booking like any customer (client mode). */
+export async function switchMode(form: FormData) {
+  const client = str(form, "mode") === "client";
+  cookies().set(MODE_COOKIE, client ? "client" : "staff", { path: "/", maxAge: 365 * 86400 });
+  redirect(client ? "/discover" : "/staff");
 }
 
 /** POPIA: removes personal details but keeps anonymous booking records for the vendors' books. */
 export async function deleteAccount(form: FormData) {
   const user = await requireUser();
-  if (str(form, "confirm").toUpperCase() !== "DELETE") back("/account", { error: "Type DELETE to confirm." });
+  if (str(form, "confirm").toUpperCase() !== "DELETE") back("/account/profile", { error: "Type DELETE to confirm." });
   const active = await db.booking.count({ where: { customerId: user.id, status: { in: ["PENDING_PAYMENT", "WAITING", "CALLED", "IN_SERVICE"] } } });
-  if (active) back("/account", { error: "Cancel or finish your current bookings first." });
-  if (await db.vendor.findUnique({ where: { ownerId: user.id } })) back("/account", { error: "Vendor accounts are closed by Qless support. Contact us to close your shop." });
+  if (active) back("/account/profile", { error: "Cancel or finish your current bookings first." });
+  if (await db.vendor.findUnique({ where: { ownerId: user.id } })) back("/account/profile", { error: "Vendor accounts are closed by Qless support. Contact us to close your shop." });
   await endSession();
   await db.$transaction([
     db.session.deleteMany({ where: { userId: user.id } }),

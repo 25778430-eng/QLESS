@@ -11,8 +11,8 @@ import { typeInfo } from "@/lib/business-types";
 
 export const dynamic = "force-dynamic";
 
-/** A staff member's own chair: who's in it, who's waiting for them, and their own Call next button. */
-export default async function MyChair({ searchParams }: { searchParams: { error?: string; notice?: string } }) {
+/** A staff member's own bay: who's in it, who's waiting for them, and their own Call next button. */
+export default async function MyBay({ searchParams }: { searchParams: { error?: string; notice?: string } }) {
   const { user, staff, vendor } = await requireStaff();
   const day = await todayQueue(vendor.id);
   const onShift = !!day && day.status !== "CLOSED" && day.staffIds.includes(staff.id);
@@ -30,7 +30,7 @@ export default async function MyChair({ searchParams }: { searchParams: { error?
     <main className="main">
       <AutoRefresh seconds={20} />
       <div className="row between" style={{ alignItems: "flex-end" }}>
-        <div className="hello"><small>{firstName(user.name)} · {vendor.name}</small>My {info.station}</div>
+        <div className="hello"><small>{firstName(user.name)} · {vendor.name}</small>My bay</div>
         <span className={`pill ${onShift ? (day!.status === "PAUSED" ? "sig" : "ok") : ""}`}><span className="dot" />{!onShift ? "Not on today" : day!.status === "PAUSED" ? "Paused" : "On shift"}</span>
       </div>
       <Messages searchParams={searchParams} />
@@ -45,7 +45,7 @@ export default async function MyChair({ searchParams }: { searchParams: { error?
       {inChair.map((b) => (
         <div key={b.id} className={b.status === "IN_SERVICE" ? "live" : "now"}>
           <span className="small" style={{ fontWeight: 700, opacity: 0.8 }}>
-            {b.status === "IN_SERVICE" ? `In my chair since ${time(b.startedAt)}` : b.arrived ? "Called · here" : `Called at ${time(b.calledAt)} · on the way`}
+            {b.status === "IN_SERVICE" ? `In my bay since ${time(b.startedAt)}` : b.arrived ? "Called · here" : `Called at ${time(b.calledAt)} · on the way`}
           </span>
           <span className="big" style={{ fontFamily: "var(--f-display)", fontSize: 30, fontWeight: 800, lineHeight: 1 }}>{name(b)}</span>
           <span className="small">{b.ticketNo ? `Ticket ${b.ticketNo} · ` : ""}{b.service.name}{b.optionLabel ? ` (${b.optionLabel})` : ""}{b.plate ? ` · ${b.plate}` : ""} · {rand(b.priceCents)} · {depositLine(b)} · code {b.checkInCode}</span>
@@ -79,25 +79,27 @@ export default async function MyChair({ searchParams }: { searchParams: { error?
         ))}
       </div>
       {onShift && (
-        <form action={staffCallNext}>
-          <Submit>{next[0] ? `Call next · ${name(next[0])}` : "Call next"}</Submit>
-        </form>
-      )}
-      {next.length > 1 && onShift && <p className="small muted">Tap Call next to someone to take them out of order, for example a walk-in who is already here.</p>}
-      {onShift && !onBreak && (
-        <div className="card stack">
-          <b>Take a break</b>
-          <span className="small muted">Your waiting clients get a new time and keep their spot and deposit. &quot;Anyone&quot; clients go to other chairs.</span>
-          <div className="row">
-            {BREAK_MINUTES.map((m) => (
-              <form key={m} action={staffBreak} className="grow">
-                <input type="hidden" name="minutes" value={m} />
-                <Submit className="btn alt">{m} min</Submit>
-              </form>
-            ))}
-          </div>
+        <div className="stack" style={{ gap: 10 }}>
+          <form action={staffCallNext}>
+            <Submit>{next[0] ? `Call next · ${name(next[0])}` : "Call next"}</Submit>
+          </form>
+          {!onBreak && (
+            <details className="brk">
+              <summary className="btn alt">Break</summary>
+              <div className="row" style={{ marginTop: 10 }}>
+                {BREAK_MINUTES.map((m) => (
+                  <form key={m} action={staffBreak} className="grow">
+                    <input type="hidden" name="minutes" value={m} />
+                    <Submit className="btn alt">{m} min</Submit>
+                  </form>
+                ))}
+              </div>
+              <p className="small muted" style={{ marginTop: 8 }}>Your waiting clients get a new time and keep their spot and deposit.</p>
+            </details>
+          )}
         </div>
       )}
+      {next.length > 1 && onShift && <p className="small muted">Tap Call next to someone to take them out of order, for example a walk-in who is already here.</p>}
       <p className="small muted">You only see your own clients. The owner sees the whole shop.</p>
     </main>
   );
