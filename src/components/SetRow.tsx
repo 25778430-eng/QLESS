@@ -61,7 +61,7 @@ export function SetRow({ icon, title, sub, href, external, badge }: RowProps) {
 }
 
 /** The big round avatar, name and lines at the top of an account page. */
-export function ProfileHead({ letter, name, lines, pills }: { letter: string; name: string; lines: string[]; pills: React.ReactNode }) {
+export function ProfileHead({ letter, name, lines, pills, corner }: { letter: string; name: string; lines: string[]; pills: React.ReactNode; corner?: React.ReactNode }) {
   return (
     <div className="phead">
       <span className="pav">{letter}</span>
@@ -70,6 +70,7 @@ export function ProfileHead({ letter, name, lines, pills }: { letter: string; na
         {lines.map((l) => <span key={l} className="muted ell">{l}</span>)}
         <div className="row wrap" style={{ gap: 6, marginTop: 6 }}>{pills}</div>
       </div>
+      {corner && <div className="pcorner">{corner}</div>}
     </div>
   );
 }

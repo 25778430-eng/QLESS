@@ -399,3 +399,8 @@ body { overscroll-behavior-y: none; }
 details.brk > summary { list-style: none; text-align: center; }
 details.brk > summary::-webkit-details-marker { display: none; }
 details.brk[open] > summary { background: var(--brand); color: var(--brand-ink); }
+.phead { position: relative; }
+.phead .pcorner { position: absolute; top: 0; right: 0; }
+.phead h2 { padding-right: 48px; }
+.themebtn { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; }
+.themebtn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }

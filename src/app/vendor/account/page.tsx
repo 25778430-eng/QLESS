@@ -11,6 +11,9 @@ import { Submit } from "@/components/Submit";
 import { signOutAction } from "@/app/(customer)/account/actions";
 import { upgradeToVerified } from "../actions";
 import { typeInfo } from "@/lib/business-types";
+import { ThemeButton } from "@/components/ThemeButton";
+import { cookies } from "next/headers";
+import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +42,7 @@ export default async function VendorAccount({ searchParams }: { searchParams: { 
         letter={(vendor.name.trim()[0] ?? "Q").toUpperCase()}
         name={vendor.name}
         lines={[vendor.address, `${user.name} · ${prettyPhone(user.phone)}`]}
+        corner={<ThemeButton initial={parseTheme(cookies().get(THEME_COOKIE)?.value)} />}
         pills={<>
           {vendor.status === "APPROVED" ? (
             <span className={`pill ${vendor.level === "VERIFIED" ? "ok" : ""}`}>{vendor.level === "VERIFIED" ? "Verified" : "Basic"}</span>

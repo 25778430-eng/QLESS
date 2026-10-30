@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { prettyPhone } from "@/lib/format";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
-import { ThemeSwitch } from "@/components/ThemeSwitch";
+import { ThemeButton } from "@/components/ThemeButton";
 import { ProfileHead, SetGroup, SetRow, Icon } from "@/components/SetRow";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { LANGS } from "@/lib/i18n";
@@ -28,6 +28,7 @@ export default async function Account({ searchParams }: { searchParams: { error?
         letter={(user.name.trim()[0] ?? "Q").toUpperCase()}
         name={user.name}
         lines={[prettyPhone(user.phone), user.email ?? "No email yet"]}
+        corner={<ThemeButton initial={parseTheme(cookies().get(THEME_COOKIE)?.value)} />}
         pills={<><span className="pill">{role}</span><span className="pill ok">Active</span></>}
       />
       <Messages searchParams={searchParams} />
@@ -58,10 +59,6 @@ export default async function Account({ searchParams }: { searchParams: { error?
         <SetRow icon="person" title="Profile" sub="Name, email and cellphone" href="/account/profile" />
         <SetRow icon="bell" title="Notifications" sub="SMS, WhatsApp and data saver" href="/account/notifications" />
         <SetRow icon="globe" title="Language" sub={LANGS[lang]} href="/account/language" />
-      </SetGroup>
-
-      <SetGroup title="Look">
-        <div className="setpad"><ThemeSwitch initial={parseTheme(cookies().get(THEME_COOKIE)?.value)} /></div>
       </SetGroup>
 
       <SetGroup title="More">
