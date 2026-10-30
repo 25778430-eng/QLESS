@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { rand } from "@/lib/format";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
+import { PhotoInput } from "@/components/PhotoInput";
 import { UseMyLocation } from "@/components/UseMyLocation";
 import { addPhoto, addService, removePhoto, saveShop } from "../actions";
 import { ServiceFields } from "@/components/ServiceFields";
@@ -101,10 +102,10 @@ export default async function Setup({ searchParams }: { searchParams: { error?: 
         </div>
       )}
       <form action={addPhoto} className="card stack">
-        <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required />
+        <PhotoInput name="photo" accept="image/jpeg,image/png,image/webp" required />
         <input className="i" name="caption" placeholder="Caption, e.g. Skin fade" maxLength={40} />
         <Submit className="btn alt">Upload photo</Submit>
-        <span className="small muted">JPG, PNG or WebP, up to 1.5 MB. Up to 12 photos.</span>
+        <span className="small muted">JPG, PNG or WebP. Big phone photos are made smaller for you. Up to 12 photos.</span>
       </form>
     </main>
   );

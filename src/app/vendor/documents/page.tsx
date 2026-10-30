@@ -6,6 +6,7 @@ import { getSettings } from "@/lib/settings";
 import { DOC_HINT, DOC_LABEL, optionalDocs, requiredDocs } from "@/lib/verification";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
+import { PhotoInput } from "@/components/PhotoInput";
 import { uploadDocument } from "../actions";
 import type { DocKind } from "@prisma/client";
 
@@ -40,7 +41,7 @@ export default async function Documents({ searchParams }: { searchParams: { erro
         {d && <span className="small muted">{d.fileName} · {shortDate(d.createdAt)}{d.note ? ` · ${d.note}` : ""}</span>}
         {d?.status !== "APPROVED" && (
           <div className="row">
-            <input type="file" name="file" accept="image/jpeg,image/png,image/webp,application/pdf" capture={kind === "SELFIE" ? "user" : undefined} required className="grow" />
+            <PhotoInput name="file" accept="image/jpeg,image/png,image/webp,application/pdf" capture={kind === "SELFIE" ? "user" : undefined} required className="grow" />
             <Submit className="btn sm">{d ? "Replace" : "Upload"}</Submit>
           </div>
         )}
@@ -52,7 +53,7 @@ export default async function Documents({ searchParams }: { searchParams: { erro
     <main className="main">
       <div className="hello"><small>{vendor.name} · {level === "BASIC" ? "Basic" : "Verified"}</small>Your documents</div>
       <Messages searchParams={searchParams} />
-      <p className="small muted">Photos or PDFs up to 4 MB each. Only Qless admins can see them, and we delete the files 90 days after we&apos;ve checked them.</p>
+      <p className="small muted">Photos or PDFs up to 4 MB each (big phone photos are made smaller for you). Only Qless admins can see them, and we delete the files 90 days after we&apos;ve checked them.</p>
       {required.map((k) => row(k, true))}
       {optional.map((k) => row(k, false))}
       {missing.length === 0 ? (
