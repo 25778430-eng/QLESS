@@ -404,3 +404,38 @@ details.brk[open] > summary { background: var(--brand); color: var(--brand-ink);
 .phead h2 { padding-right: 48px; }
 .themebtn { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; }
 .themebtn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+/* Queue page, layout A: one "now serving" card per bay */
+.serve { background: var(--brand); color: var(--brand-ink); border-radius: 22px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.serve .lab { font: 700 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; opacity: .7; }
+.serve .tk { font: 800 54px/0.9 var(--f-mono); letter-spacing: -.03em; }
+.serve .nm { font: 800 19px/1.2 var(--f-display); }
+.serve .btn.sig { background: var(--signal); color: var(--signal-ink); }
+.serve .btn.ghost { background: transparent; color: inherit; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); }
+.serve.free { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+details.more { position: relative; flex: 0 0 auto; }
+details.more > summary { list-style: none; width: 52px; height: 100%; padding: 0; }
+details.more > summary::-webkit-details-marker { display: none; }
+.moremenu { position: absolute; right: 0; bottom: calc(100% + 8px); background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 6px; min-width: 230px; display: flex; flex-direction: column; box-shadow: 0 16px 40px -16px rgba(0,0,0,.4); z-index: 20; }
+.moremenu a, .moremenu button { text-align: left; padding: 11px 12px; border-radius: 10px; text-decoration: none; border: 0; background: transparent; font-weight: 600; width: 100%; }
+.moremenu a:active, .moremenu button:active { background: var(--surface); }
+.moremenu form:last-child button { color: var(--danger); }
+/* Admin dashboard and approvals */
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tiles a { border-radius: 18px; padding: 14px; background: var(--surface); text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 2px; }
+.tiles a.hot { background: var(--signal); color: var(--signal-ink); }
+.tiles b { font: 800 24px/1.1 var(--f-mono); }
+.tiles span { font-size: 12px; opacity: .75; }
+.sw { width: 40px; height: 24px; border-radius: 99px; background: var(--line); position: relative; flex: 0 0 auto; }
+.sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--panel); transition: left .15s; }
+.sw.on { background: var(--ok); } .sw.on::after { left: 19px; }
+.acard { border: 1px solid var(--line); border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 8px; background: var(--panel); }
+.doctiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.doct { border: 1px solid var(--line); border-radius: 14px; padding: 6px; display: flex; flex-direction: column; gap: 4px; background: var(--surface); font-size: 12px; min-width: 0; }
+.doct a { text-decoration: none; display: flex; flex-direction: column; gap: 4px; }
+.doct img, .doct .pdf { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; background: var(--line); display: grid; place-items: center; font: 700 12px var(--f-mono); color: var(--muted); }
+.doct b { font-size: 12px; line-height: 1.2; }
+.doct.ok { border-color: var(--ok); } .doct.bad { border-color: var(--danger); }
+.doct.miss { border-style: dashed; border-color: var(--danger); background: transparent; color: var(--danger); }
+.doct.miss .pdf { background: transparent; border: 1px dashed var(--danger); color: var(--danger); }
+.linkbtn { border: 0; background: transparent; padding: 2px 0; font-size: 12px; font-weight: 700; text-decoration: underline; color: var(--muted); }
+.serve .nm.big { font-size: 30px; margin: 4px 0 2px; }

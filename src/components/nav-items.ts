@@ -24,3 +24,10 @@ export const STAFF_NAV: NavItem[] = [
   { href: "/staff/bookings", label: "Bookings", icon: "bookings" },
   { href: "/account", label: "Account", icon: "person" },
 ];
+
+export const ADMIN_NAV: NavItem[] = [
+  { href: "/admin", label: "Home", icon: "summary" },
+  { href: "/admin/approvals", label: "Approvals", icon: "bookings" },
+  { href: "/admin/users", label: "Users", icon: "queue" },
+  { href: "/account", label: "Account", icon: "person" },
+];
