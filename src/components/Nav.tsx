@@ -25,7 +25,7 @@ export function Nav({ items }: { items: NavItem[] }) {
   return (
     <nav className="nav" aria-label="Main">
       {items.map((i) => {
-        const current = path === i.href || (i.href !== "/vendor" && path.startsWith(i.href + "/"));
+        const current = path === i.href || (i.href !== "/vendor" && i.href !== "/admin" && path.startsWith(i.href + "/"));
         const icon = <svg viewBox="0 0 24 24" aria-hidden>{ICONS[i.icon]}</svg>;
         return (
           <Link key={i.href + i.label} href={i.href} className={i.fab ? "fab" : undefined} aria-current={current ? "page" : undefined}>
