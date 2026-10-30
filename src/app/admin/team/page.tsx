@@ -19,7 +19,7 @@ export default async function Team(props: { searchParams: SP | Promise<SP> }) {
   return (
     <>
       <AdminHeader current="/admin/team" />
-      <main className="main">
+      <main className="main wide">
         <h1>Team</h1>
         <Messages searchParams={searchParams} />
         <p className="small muted">

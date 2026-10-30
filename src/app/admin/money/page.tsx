@@ -104,7 +104,7 @@ export default async function Money({ searchParams }: { searchParams: { month?: 
   return (
     <>
       <AdminHeader current="/admin/money" />
-      <main className="main">
+      <main className="main wide">
         <h1>Money</h1>
         <Messages searchParams={searchParams} />
         <div className="stat">

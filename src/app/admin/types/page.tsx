@@ -18,7 +18,7 @@ export default async function Types({ searchParams }: { searchParams: { error?: 
   return (
     <>
       <AdminHeader current="/admin/types" />
-      <main className="main">
+      <main className="main wide">
         <h1>Business types</h1>
         <Messages searchParams={searchParams} />
         <p className="small muted">Switch a type off to hide its shops from search and stop new sign-ups. Their bookings already made still go ahead.{settings.disabledTypes.includes("GOVERNMENT") ? " Government is off until you're ready to take on offices." : ""}</p>

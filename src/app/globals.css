@@ -439,3 +439,25 @@ details.more > summary::-webkit-details-marker { display: none; }
 .doct.miss .pdf { background: transparent; border: 1px dashed var(--danger); color: var(--danger); }
 .linkbtn { border: 0; background: transparent; padding: 2px 0; font-size: 12px; font-weight: 700; text-decoration: underline; color: var(--muted); }
 .serve .nm.big { font-size: 30px; margin: 4px 0 2px; }
+
+/* Admin on laptops: use the screen width, tiles in one row, groups and cards side by side */
+.cols, .cardgrid { display: flex; flex-direction: column; gap: 18px; }
+@media (min-width: 960px) {
+  .main.wide { max-width: 1240px; }
+  .wide .tiles { grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .wide .tiles a { padding: 20px; }
+  .wide .tiles b { font-size: 32px; }
+  .wide .cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 40px; align-items: start; }
+  .wide .cardgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+  .wide .doctiles { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* A touch of yellow: tab marker, switches that are on, ring round the profile letter */
+.nav a { position: relative; }
+.nav a:not(.fab)[aria-current="page"]::before { content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 24px; height: 3px; border-radius: 0 0 3px 3px; background: var(--signal); }
+@media (min-width: 960px) {
+  .nav a:not(.fab)[aria-current="page"]::before { top: auto; bottom: 2px; border-radius: 3px; }
+}
+.sw.on { background: var(--signal); }
+.sw.on::after { background: var(--signal-ink); }
+.phead .pav { box-shadow: 0 0 0 3px var(--panel), 0 0 0 5px var(--signal); }
