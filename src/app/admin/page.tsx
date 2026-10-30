@@ -61,7 +61,7 @@ export default async function Admin({ searchParams }: { searchParams: { error?: 
             <SetGroup title="Money">
               <SetRow icon="card" title="Booking fee" sub={`${rand(settings.bookingFeeCents)} per booking`} href="/admin/fee" badge={<OnOff on={settings.bookingFeeOn} />} />
               <SetRow icon="calendar" title="Monthly plan" sub={`${rand(settings.planPriceCents)} · ${settings.planTrialDays}-day trial`} href="/admin/plan" badge={<OnOff on={settings.planOn} />} />
-              <SetRow icon="chart" title="Money and payouts" sub="Income, deposits and what shops are owed" href="/admin/money" />
+              <SetRow icon="chart" title="Money and payouts" href="/admin/money" />
             </SetGroup>
             <SetGroup title="Rules">
               <SetRow icon="shield" title="Sign-up rules" sub={[settings.requireCipc && "CIPC", settings.requireAddress && "address", settings.requireBank && "bank", settings.allowBasic && "Basic shops allowed"].filter(Boolean).join(", ") || "Owner ID only"} href="/admin/rules" />
@@ -72,8 +72,8 @@ export default async function Admin({ searchParams }: { searchParams: { error?: 
         )}
 
         <SetGroup title="People">
-          <SetRow icon="person" title="Users" sub={`${users} people · block or remove`} href="/admin/users" />
-          {superAdmin && <SetRow icon="admin" title="Admin team" sub="Who can use this page" href="/admin/team" />}
+          <SetRow icon="person" title="Users" sub={`${users} people`} href="/admin/users" />
+          {superAdmin && <SetRow icon="admin" title="Admin team" href="/admin/team" />}
         </SetGroup>
         </div>
       </main>
