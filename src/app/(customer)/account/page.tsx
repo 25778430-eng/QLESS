@@ -9,6 +9,8 @@ import { PushToggle } from "@/components/PushToggle";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { deleteAccount, signOutAction, updateAccount } from "./actions";
+import { LanguagePicker } from "@/components/LanguagePicker";
+import { langFor } from "@/lib/lang";
 
 export default async function Account({ searchParams }: { searchParams: { error?: string; notice?: string } }) {
   const user = await requireUser();
@@ -54,14 +56,18 @@ export default async function Account({ searchParams }: { searchParams: { error?
         <Submit>Save</Submit>
       </form>
       <PushToggle publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ""} />
+      <LanguagePicker lang={langFor(user)} />
       <div className="lbl">Appearance</div>
       <ThemeSwitch initial={parseTheme(cookies().get(THEME_COOKIE)?.value)} />
 
       <div className="lbl">More</div>
       <div className="list">
-        {!vendor && <Link className="li" href="/vendor/register"><span className="grow"><b>List your business</b><span>Barbers, nails, salons and more</span></span><span className="chev">›</span></Link>}
+        {!vendor && <Link className="li" href="/vendor/register"><span className="grow"><b>List your business</b><span>Barbers, car washes, clinics, repairs and more</span></span><span className="chev">›</span></Link>}
+        <a className="li" href="/help"><span className="grow"><b>Help and contact</b><span>Questions, deposits and refunds</span></span><span className="chev">›</span></a>
+        <a className="li" href="/terms"><span className="grow"><b>Terms of use</b><span>Bookings, deposits and no-shows</span></span><span className="chev">›</span></a>
         <a className="li" href="/privacy"><span className="grow"><b>Privacy policy</b><span>How we protect your details under POPIA</span></span><span className="chev">›</span></a>
         <a className="li" href="/api/me/export"><span className="grow"><b>Download my data</b><span>Everything we hold about you</span></span><span className="chev">›</span></a>
+        <a className="li" href="/paia"><span className="grow"><b>PAIA manual</b><span>Information Officer and how to request records</span></span><span className="chev">›</span></a>
       </div>
       <details className="card">
         <summary>Delete my account</summary>

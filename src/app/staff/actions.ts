@@ -2,8 +2,10 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireStaff } from "@/lib/auth";
-import { BookingError, addWalkIn, todayQueue, callNext, completeBooking, markNoShow, startService } from "@/lib/bookings";
+import { BookingError, addWalkIn, todayQueue, callNext, completeBooking, endBreak, markNoShow, markReady, startBreak, startService } from "@/lib/bookings";
 import { back, str } from "@/lib/http";
+import { walkInFromForm } from "@/lib/walk-in";
+import { BREAK_MINUTES } from "@/lib/queue";
 
 /** Staff can only act on bookings in their own chair. */
 async function mine(id: string) {
@@ -13,18 +15,20 @@ async function mine(id: string) {
   return { staff, vendor, b };
 }
 
-export async function staffCallNext() {
+/** Calls the next client in line, or the one the staff member picked from their list. */
+export async function staffCallNext(form?: FormData) {
   const { staff, vendor } = await requireStaff();
+  const picked = form ? str(form, "id") || undefined : undefined;
   const day = await todayQueue(vendor.id);
   if (!day || day.status === "CLOSED" || !day.staffIds.includes(staff.id)) back("/staff", { error: "You're not on today's queue. Ask the owner to add you when they open it." });
   let b;
   try {
-    b = await callNext(vendor, staff.id);
+    b = await callNext(vendor, staff.id, picked);
   } catch (e) {
     if (e instanceof BookingError) back("/staff", { error: e.message });
     throw e;
   }
-  if (!b) back("/staff", { notice: "Nobody is waiting for you." });
+  if (!b) back("/staff", picked ? { error: "That client has already been called or left the queue." } : { notice: "Nobody is waiting for you." });
   const name = b.customer?.name ?? b.walkInName ?? "Next client";
   back("/staff", { notice: b.arrived ? `${name} called to your chair.` : `${name} notified. They have 15 minutes to arrive.` });
 }
@@ -41,6 +45,17 @@ export async function staffDone(form: FormData) {
   redirect("/staff");
 }
 
+export async function staffReady(form: FormData) {
+  const { vendor, b } = await mine(str(form, "id"));
+  try {
+    await markReady(vendor, b.id);
+  } catch (e) {
+    if (e instanceof BookingError) back("/staff", { error: e.message });
+    throw e;
+  }
+  back("/staff", { notice: "Customer told their car is ready." });
+}
+
 export async function staffNoShow(form: FormData) {
   const { vendor, b } = await mine(str(form, "id"));
   await markNoShow(b.id, vendor.id);
@@ -49,11 +64,35 @@ export async function staffNoShow(form: FormData) {
 
 export async function staffWalkIn(form: FormData) {
   const { staff, vendor } = await requireStaff();
+  const req = walkInFromForm(form, staff.id);
+  if (typeof req === "string") back("/staff/walk-in", { error: req });
+  let b;
   try {
-    await addWalkIn(vendor, str(form, "name"), str(form, "serviceId"), staff.id);
+    b = await addWalkIn(vendor, req);
   } catch (e) {
     if (e instanceof BookingError) back("/staff/walk-in", { error: e.message });
     throw e;
   }
-  back("/staff", { notice: "Walk-in added to your queue." });
+  if (form.get("print")) redirect(`/t/${b.ref}?print=1`);
+  back("/staff", { notice: `Walk-in added to your queue as ticket ${b.ticketNo}.` });
+}
+
+export async function staffBreak(form: FormData) {
+  const { staff, vendor } = await requireStaff();
+  const minutes = Number(str(form, "minutes"));
+  if (!BREAK_MINUTES.includes(minutes)) back("/staff", { error: "Pick 10, 15 or 30 minutes." });
+  let told = 0;
+  try {
+    told = await startBreak(vendor, staff, minutes);
+  } catch (e) {
+    if (e instanceof BookingError) back("/staff", { error: e.message });
+    throw e;
+  }
+  back("/staff", { notice: told ? `Enjoy your break. Your ${told} waiting client${told === 1 ? " was" : "s were"} told their new time.` : "Enjoy your break." });
+}
+
+export async function staffBack() {
+  const { staff } = await requireStaff();
+  await endBreak(staff);
+  back("/staff", { notice: "Welcome back." });
 }

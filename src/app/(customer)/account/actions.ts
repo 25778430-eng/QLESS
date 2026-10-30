@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { currentUser, endSession, requireUser } from "@/lib/auth";
 import { back, str } from "@/lib/http";
 import { validEmail } from "@/lib/verification";
+import { isLang, LANG_COOKIE } from "@/lib/i18n";
 
 export async function toggleLowData() {
   const user = await currentUser();
@@ -63,4 +64,16 @@ export async function deleteAccount(form: FormData) {
 export async function signOutAction() {
   await endSession();
   redirect("/");
+}
+
+/** Saves the app language on the account and in a cookie, so it also works before signing in. */
+export async function setLanguage(form: FormData) {
+  const lang = str(form, "lang");
+  if (!isLang(lang)) back("/account", { error: "Pick a language." });
+  cookies().set(LANG_COOKIE, lang, { path: "/", maxAge: 365 * 86400 });
+  const user = await currentUser();
+  if (user) await db.user.update({ where: { id: user.id }, data: { lang } });
+  revalidatePath("/", "layout");
+  const next = str(form, "next");
+  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/account");
 }

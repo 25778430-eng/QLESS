@@ -10,7 +10,7 @@ export default function SignIn({ searchParams }: { searchParams: SP }) {
   const next = searchParams.next ?? "/";
   const other = `/signin?${new URLSearchParams({ next, ...(signIn ? {} : { mode: "in" }) })}`;
   return (
-    <main className="main">
+    <main className="main narrow">
       <div className="row between">
         <span className="qtile" aria-hidden>Q</span>
         <span className="small muted">

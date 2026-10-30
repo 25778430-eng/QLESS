@@ -3,8 +3,8 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
 import { cookies } from "next/headers";
-import { isOpenToday, loadQueue, todayQueue } from "@/lib/bookings";
-import { initials, rand, shortDate } from "@/lib/format";
+import { isOpenToday, loadQueue, todayQueue, typeSwitchedOn } from "@/lib/bookings";
+import { initials, rand, shortDate, time } from "@/lib/format";
 import { bookingFee } from "@/lib/fees";
 import { getSettings } from "@/lib/settings";
 import { vendorListed } from "@/lib/plan-billing";
@@ -12,6 +12,10 @@ import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { joinQueue } from "./actions";
+import { ServicePicker } from "@/components/ServicePicker";
+import { priceFrom } from "@/lib/pricing";
+import { typeInfo } from "@/lib/business-types";
+import type { Service } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +37,7 @@ export default async function VendorPage({ params, searchParams }: { params: { s
     },
   });
   if (!vendor || vendor.status !== "APPROVED") notFound();
-  if (!(await vendorListed(vendor))) {
+  if (!(await vendorListed(vendor)) || !(await typeSwitchedOn(vendor.businessType))) {
     return (
       <main className="main">
         <h2>{vendor.name}</h2>
@@ -42,6 +46,7 @@ export default async function VendorPage({ params, searchParams }: { params: { s
       </main>
     );
   }
+  const info = typeInfo(vendor.businessType);
   const user = await currentUser();
   const feeCents = bookingFee(await getSettings());
   const lowData = user ? user.lowData : cookies().get("lowData")?.value === "1";
@@ -67,7 +72,7 @@ export default async function VendorPage({ params, searchParams }: { params: { s
           <h2>{vendor.name}</h2>
           <div className="small muted">
             {vendor.reviews.length ? <><b>★ {rating.toFixed(1)}</b> · {vendor.reviews.length} reviews · </> : "New · "}
-            {vendor.level === "VERIFIED" ? "Verified business" : <span className="pill">Not verified</span>}
+            {info.free ? "Free queue" : vendor.level === "VERIFIED" ? "Verified business" : <span className="pill">Not verified</span>}
           </div>
           <div className="small muted">
             {vendor.address}
@@ -80,7 +85,7 @@ export default async function VendorPage({ params, searchParams }: { params: { s
       <div className="stat">
         <div><b>{waiting.length}</b><span>in queue</span></div>
         <div><b>{open ? `~${waitMins}` : "–"}</b><span>min wait</span></div>
-        <div><b>{working.length}</b><span>staff on</span></div>
+        <div><b>{working.length}</b><span>{info.station}s open</span></div>
       </div>
       <div className="small muted">
         Open {vendor.openTime}–{vendor.closeTime} · {openDaysText(vendor.openDays)}
@@ -101,23 +106,25 @@ export default async function VendorPage({ params, searchParams }: { params: { s
 
       {!user ? (
         <>
-          <ServiceList services={vendor.services} />
+          <ServiceList services={vendor.services} free={info.free} />
           <Link className="btn" href={`/signin?next=/v/${vendor.slug}`}>Sign in to join the queue</Link>
         </>
       ) : !open ? (
         <>
-          <ServiceList services={vendor.services} />
-          <div className="fill">The queue isn&apos;t open right now. Check back when the shop opens.</div>
+          <ServiceList services={vendor.services} free={info.free} />
+          <div className="fill">The queue isn&apos;t open right now. Check back when the shop opens, or book a time on another day.</div>
+          <Link className="btn" href={`/v/${vendor.slug}/book`}>Book a later day</Link>
         </>
       ) : full ? (
         <>
-          <ServiceList services={vendor.services} />
+          <ServiceList services={vendor.services} free={info.free} />
           <div className="fill">The queue is full for today.</div>
+          <Link className="btn" href={`/v/${vendor.slug}/book`}>Book a later day</Link>
         </>
       ) : (
         <form action={joinQueue} className="stack" style={{ gap: 12 }}>
           <input type="hidden" name="vendorId" value={vendor.id} />
-          <h3>Choose who serves you</h3>
+          <h3>{info.free ? "Which counter" : "Choose who serves you"}</h3>
           <label className="opt">
             <input type="radio" name="staffId" value="any" defaultChecked />
             <span className="grow"><b>Anyone available</b><br /><span className="small muted">Fastest · {waitingFor(null)} waiting</span></span>
@@ -126,26 +133,20 @@ export default async function VendorPage({ params, searchParams }: { params: { s
             <label className="opt" key={s.id}>
               <input type="radio" name="staffId" value={s.id} />
               <span className="avatar sm">{initials(s.name)}</span>
-              <span className="grow"><b>{s.name}</b><br /><span className="small muted">{waitingFor(s.id)} waiting for {s.name}</span></span>
+              <span className="grow"><b>{s.name}</b><br /><span className="small muted">{s.breakUntil && s.breakUntil > new Date() ? `On a break until ${time(s.breakUntil)} · ` : ""}{waitingFor(s.id)} waiting for {s.name}{s.endTime ? ` · until ${s.endTime}` : ""}</span></span>
             </label>
           ))}
-          <h3>Choose a service</h3>
-          <div className="card" style={{ padding: "4px 14px" }}>
-            {vendor.services.map((s, i) => (
-              <label className="svc" key={s.id}>
-                <span><input type="radio" name="serviceId" value={s.id} defaultChecked={i === 0} /> <b>{s.name}</b><br /><span className="small muted">{s.durationMins} min</span></span>
-                <span className="p">{rand(s.priceCents)}</span>
-              </label>
-            ))}
-          </div>
-          {vendor.level === "BASIC" && <p className="small muted">This shop isn&apos;t verified yet, so there&apos;s no deposit. Pay the shop directly.</p>}
-          {vendor.level === "VERIFIED" && vendor.depositCents > 0 && (
+          <ServicePicker services={vendor.services} businessType={vendor.businessType} />
+          {info.free && <p className="small muted">Free. No deposit and no booking fee. You get a ticket number like A027.</p>}
+          {!info.free && vendor.level === "BASIC" && <p className="small muted">This shop isn&apos;t verified yet, so there&apos;s no deposit. Pay the shop directly.</p>}
+          {!info.free && vendor.level === "VERIFIED" && vendor.depositCents > 0 && (
             <p className="small muted">A {rand(vendor.depositCents)} deposit holds your spot and comes off the final price.</p>
           )}
-          {vendor.level === "VERIFIED" && feeCents > 0 && (
+          {!info.free && vendor.level === "VERIFIED" && feeCents > 0 && (
             <p className="small muted">Qless adds a {rand(feeCents)} booking fee, paid with {vendor.depositCents > 0 ? "the deposit" : "your booking"}. It isn&apos;t refunded.</p>
           )}
-          <Submit>Join the queue</Submit>
+          <Submit>{info.free ? "Get a ticket" : "Join the queue"}</Submit>
+          <Link className="btn alt" href={`/v/${vendor.slug}/book`}>Book a later day instead</Link>
         </form>
       )}
 
@@ -164,12 +165,18 @@ export default async function VendorPage({ params, searchParams }: { params: { s
   );
 }
 
-function ServiceList({ services }: { services: { id: string; name: string; durationMins: number; priceCents: number }[] }) {
+function ServiceList({ services, free }: { services: Service[]; free: boolean }) {
   return (
     <div className="card" style={{ padding: "4px 14px" }}>
-      {services.map((s) => (
-        <div className="svc" key={s.id}><span><b>{s.name}</b><br /><span className="small muted">{s.durationMins} min</span></span><span className="p">{rand(s.priceCents)}</span></div>
-      ))}
+      {services.map((s) => {
+        const p = priceFrom(s);
+        return (
+          <div className="svc" key={s.id}>
+            <span><b>{s.isExtra ? `+ ${s.name}` : s.name}</b><br /><span className="small muted">{s.isExtra ? "Extra" : `${s.durationMins} min`}{s.bring ? ` · Bring: ${s.bring}` : ""}</span></span>
+            <span className="p">{free && p.cents === 0 ? "Free" : `${p.from ? "from " : ""}${rand(p.cents)}`}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }

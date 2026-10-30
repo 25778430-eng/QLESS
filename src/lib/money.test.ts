@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { depositsByVendor, lastDays, lastMonths, monthKey, dayKey, sumTotals, totalsBy } from "./money";
+import { depositsByVendor, lastDays, lastMonths, monthKey, dayKey, sumTotals, totalsBy, vendorBalance } from "./money";
 
 describe("totalsBy", () => {
   it("groups income by South African day, including late-night UTC payments", () => {
@@ -36,5 +36,18 @@ describe("depositsByVendor", () => {
     ]);
     expect(m.get("a")).toEqual({ owed: 10000, held: 5000, refunded: 5000 });
     expect(m.has("b")).toBe(false);
+  });
+});
+
+describe("vendor balance", () => {
+  it("takes payouts off what is owed", () => {
+    const rows = [
+      { vendorId: "v", depositCents: 5000, depositStatus: "APPLIED" },
+      { vendorId: "v", depositCents: 5000, depositStatus: "FORFEITED" },
+      { vendorId: "v", depositCents: 5000, depositStatus: "PAID" },
+      { vendorId: "v", depositCents: 5000, depositStatus: "REFUNDED" },
+    ];
+    expect(vendorBalance(rows, [3000])).toEqual({ owed: 10000, held: 5000, refunded: 5000, paidOut: 3000, due: 7000 });
+    expect(vendorBalance([], [])).toEqual({ owed: 0, held: 0, refunded: 0, paidOut: 0, due: 0 });
   });
 });

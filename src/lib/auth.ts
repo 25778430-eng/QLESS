@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Role, User } from "@prisma/client";
 import { db } from "./db";
+import { back } from "./http";
 
 const COOKIE = "qless_session";
 const SESSION_DAYS = 60;
@@ -103,6 +104,17 @@ export async function requireVendor() {
 export async function requireAdmin(): Promise<User> {
   const user = await requireUser();
   if (user.role !== "ADMIN") redirect("/");
+  return user;
+}
+
+/** Super admins manage other admins, fees, plans, featured listings and Money. ADMIN_PHONES numbers always are one. */
+export function isSuperAdmin(user: Pick<User, "role" | "superAdmin" | "phone">): boolean {
+  return user.role === "ADMIN" && (user.superAdmin || isAdminPhone(user.phone));
+}
+
+export async function requireSuperAdmin(): Promise<User> {
+  const user = await requireAdmin();
+  if (!isSuperAdmin(user)) back("/admin", { error: "Only a super admin can do that." });
   return user;
 }
 

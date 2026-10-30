@@ -1,4 +1,5 @@
 "use server";
+import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser, requireVendor } from "@/lib/auth";
@@ -10,19 +11,24 @@ import {
   closeQueue,
   completeBooking,
   markNoShow,
+  markReady,
   openQueue,
+  setJobStage,
   pauseQueue,
   resumeQueue,
   startService,
 } from "@/lib/bookings";
 import { geocode } from "@/lib/geocode";
+import { ensureShopCode } from "@/lib/discover";
+import { JOB_STAGES, TYPES, type JobStage, typeInfo, typeOfCategory } from "@/lib/business-types";
+import { parseOptionLines } from "@/lib/pricing";
+import { newShopCode } from "@/lib/shop-code";
 import { normalisePhone, slugify, validCipc } from "@/lib/format";
 import { back, str } from "@/lib/http";
+import { walkInFromForm } from "@/lib/walk-in";
 import { getSettings } from "@/lib/settings";
 import { DOC_LABEL, DOC_TYPES, MAX_DOC_BYTES, requiredDocs } from "@/lib/verification";
 import type { DocKind, VendorLevel } from "@prisma/client";
-
-const CATEGORIES = ["Barber", "Nail technician", "Hair salon", "Other"];
 
 async function guard<T>(path: string, fn: () => Promise<T>): Promise<T> {
   try {
@@ -40,13 +46,16 @@ export async function registerVendor(form: FormData) {
   const here = "/vendor/register";
   const level: VendorLevel = str(form, "level") === "BASIC" ? "BASIC" : "VERIFIED";
   if (level === "BASIC" && !rules.allowBasic) back(here, { error: "Basic listings are switched off right now. Choose Verified." });
+  if (!form.get("agree")) back(here, { error: "Please agree to the terms and the vendor data agreement." });
   const name = str(form, "name");
   const category = str(form, "category");
   const cipc = level === "VERIFIED" ? str(form, "cipc") : "";
   const address = str(form, "address");
   const phone = normalisePhone(str(form, "phone")) ?? user.phone;
   if (!name || !address) back(here, { error: "Fill in your business name and address." });
-  if (!CATEGORIES.includes(category)) back(here, { error: "Pick a type of business." });
+  const businessType = typeOfCategory(category);
+  if (!businessType) back(here, { error: "Pick a type of business." });
+  if (rules.disabledTypes.includes(businessType)) back(here, { error: `${TYPES[businessType].label} businesses can't sign up on Qless yet.` });
   if (level === "VERIFIED" && (rules.requireCipc || cipc)) {
     if (!validCipc(cipc)) back(here, { error: "Enter your CIPC registration number, like 2021/483920/07." });
     if (await db.vendor.findFirst({ where: { cipc, status: { not: "REJECTED" } } })) {
@@ -64,11 +73,18 @@ export async function registerVendor(form: FormData) {
   const where = lat && lng ? { lat, lng } : await geocode(address);
   await db.$transaction([
     db.vendor.create({
-      data: { ownerId: user.id, name, slug, category, cipc: cipc || null, level, address, phone, lat: where?.lat, lng: where?.lng, ...(bank ?? {}) },
+      data: { ownerId: user.id, name, slug, code: await freeShopCode(), category, businessType, cipc: cipc || null, level, address, phone, lat: where?.lat, lng: where?.lng, ...(bank ?? {}) },
     }),
     db.user.update({ where: { id: user.id }, data: { role: user.role === "ADMIN" ? "ADMIN" : "VENDOR" } }),
   ]);
   back("/vendor/documents", { notice: "Business saved. Now upload your documents." });
+}
+
+async function freeShopCode(): Promise<string> {
+  for (;;) {
+    const code = newShopCode();
+    if (!(await db.vendor.findUnique({ where: { code } }))) return code;
+  }
 }
 
 function bankFields(form: FormData) {
@@ -152,48 +168,91 @@ export async function saveShop(form: FormData) {
   back("/vendor/setup", { notice: "Shop details saved." });
 }
 
+/** Reads and checks the service form shared by Add and Edit. */
+function serviceFromForm(form: FormData, free: boolean) {
+  const name = str(form, "name").slice(0, 60);
+  const isExtra = form.get("isExtra") === "on";
+  const durationMins = Math.round(Number(str(form, "duration") || (isExtra ? "0" : "")));
+  const priceCents = Math.round(Number(str(form, "price") || "0") * 100);
+  const minMins = isExtra ? 0 : 5;
+  if (!name || !(durationMins >= minMins && durationMins <= 480)) return `Give it a name and a time between ${minMins} and 480 minutes.`;
+  // Government and other free queues can list free services; everyone else needs a price.
+  if (!(priceCents > 0 || (free && priceCents === 0)) || priceCents > 10_000_000) return "Enter a price.";
+  const options = isExtra ? [] : parseOptionLines(str(form, "options"), durationMins);
+  if (typeof options === "string") return options;
+  const letter = str(form, "ticketLetter").toUpperCase();
+  if (letter && !/^[A-Z]$/.test(letter)) return "The ticket letter must be one letter, like A.";
+  return { name, isExtra, durationMins, priceCents, options, ticketLetter: letter || null, bring: str(form, "bring").slice(0, 200) };
+}
+
 export async function addService(form: FormData) {
   const { vendor } = await requireVendor();
-  const name = str(form, "name");
-  const durationMins = Math.round(Number(str(form, "duration")));
-  const priceCents = Math.round(Number(str(form, "price")) * 100);
-  if (!name || !(durationMins >= 5 && durationMins <= 480) || !(priceCents > 0)) {
-    back("/vendor/setup", { error: "A service needs a name, a time between 5 and 480 minutes, and a price." });
-  }
-  await db.service.create({ data: { vendorId: vendor.id, name, durationMins, priceCents } });
-  back("/vendor/setup", { notice: `Added ${name}.` });
+  const data = serviceFromForm(form, typeInfo(vendor.businessType).free);
+  if (typeof data === "string") back("/vendor/setup#services", { error: data });
+  await db.service.create({ data: { vendorId: vendor.id, ...data } });
+  back("/vendor/setup#services", { notice: `Added ${data.name}.` });
+}
+
+export async function saveService(form: FormData) {
+  const { vendor } = await requireVendor();
+  const id = str(form, "id");
+  const here = `/vendor/services/${id}`;
+  const data = serviceFromForm(form, typeInfo(vendor.businessType).free);
+  if (typeof data === "string") back(here, { error: data });
+  const res = await db.service.updateMany({ where: { id, vendorId: vendor.id, active: true }, data });
+  if (!res.count) back("/vendor/setup", { error: "Service not found." });
+  back("/vendor/setup#services", { notice: `Saved ${data.name}. New bookings use the new price; booked clients keep theirs.` });
 }
 
 export async function removeService(form: FormData) {
   const { vendor } = await requireVendor();
   await db.service.updateMany({ where: { id: str(form, "id"), vendorId: vendor.id }, data: { active: false } });
-  back("/vendor/setup", { notice: "Service removed." });
+  back("/vendor/setup#services", { notice: "Service removed." });
 }
 
 export async function addStaff(form: FormData) {
   const { vendor } = await requireVendor();
   const name = str(form, "name");
-  if (!name) back("/vendor/setup", { error: "Enter the staff member's name." });
+  if (!name) back("/vendor/team", { error: "Enter the staff member's name." });
   const raw = str(form, "phone");
   const phone = raw ? normalisePhone(raw) : null;
-  if (raw && !phone) back("/vendor/setup", { error: "Enter a valid South African cellphone number for the staff member." });
+  if (raw && !phone) back("/vendor/team", { error: "Enter a valid South African cellphone number for the staff member." });
   await db.staff.create({ data: { vendorId: vendor.id, name, phone } });
-  back("/vendor/setup", { notice: phone ? `Added ${name}. They can sign in with ${raw} to see their chair.` : `Added ${name}.` });
+  back("/vendor/team", { notice: phone ? `Added ${name}. They can sign in with ${raw} to see their chair.` : `Added ${name}.` });
 }
 
 export async function setStaffPhone(form: FormData) {
   const { vendor } = await requireVendor();
   const raw = str(form, "phone");
   const phone = raw ? normalisePhone(raw) : null;
-  if (raw && !phone) back("/vendor/setup", { error: "Enter a valid South African cellphone number." });
+  if (raw && !phone) back("/vendor/team", { error: "Enter a valid South African cellphone number." });
   await db.staff.updateMany({ where: { id: str(form, "id"), vendorId: vendor.id }, data: { phone } });
-  back("/vendor/setup", { notice: phone ? "Saved. They can now sign in to their own chair screen." : "Staff login removed." });
+  back("/vendor/team", { notice: phone ? "Saved. They can now sign in to their own chair screen." : "Staff login removed." });
 }
 
 export async function removeStaff(form: FormData) {
   const { vendor } = await requireVendor();
   await db.staff.updateMany({ where: { id: str(form, "id"), vendorId: vendor.id }, data: { active: false } });
-  back("/vendor/setup", { notice: "Staff member removed." });
+  back("/vendor/team", { notice: "Staff member removed." });
+}
+
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** The owner sets one staff member's working days, hours and lunch. Blank times mean the shop's hours. */
+export async function saveStaffHours(form: FormData) {
+  const { vendor } = await requireVendor();
+  const here = "/vendor/team";
+  const workDays = [0, 1, 2, 3, 4, 5, 6].map((i) => (form.get(`day${i}`) === "on" ? "1" : "0")).join("");
+  const t = (k: string) => str(form, k) || null;
+  const [startTime, endTime, lunchStart, lunchEnd] = [t("startTime"), t("endTime"), t("lunchStart"), t("lunchEnd")];
+  if ([startTime, endTime, lunchStart, lunchEnd].some((v) => v && !HHMM.test(v))) back(here, { error: "Use times like 09:00." });
+  if (!startTime !== !endTime) back(here, { error: "Fill in both the start and finish time, or leave both blank." });
+  if (startTime && endTime && startTime >= endTime) back(here, { error: "The finish time must be after the start time." });
+  if (!lunchStart !== !lunchEnd) back(here, { error: "Fill in both lunch times, or leave both blank." });
+  if (lunchStart && lunchEnd && lunchStart >= lunchEnd) back(here, { error: "Lunch must end after it starts." });
+  const res = await db.staff.updateMany({ where: { id: str(form, "id"), vendorId: vendor.id }, data: { workDays, startTime, endTime, lunchStart, lunchEnd } });
+  if (!res.count) back(here, { error: "Staff member not found." });
+  back(here, { notice: "Hours saved." });
 }
 
 const MAX_PHOTO_BYTES = 1_500_000;
@@ -262,8 +321,11 @@ export async function noShowAction(form: FormData) {
 export async function walkInAction(form: FormData) {
   const { vendor } = await requireVendor();
   const staffId = str(form, "staffId");
-  await guard("/vendor", () => addWalkIn(vendor, str(form, "name"), str(form, "serviceId"), staffId && staffId !== "any" ? staffId : null));
-  back("/vendor", { notice: "Walk-in added to the end of the queue." });
+  const req = walkInFromForm(form, staffId && staffId !== "any" ? staffId : null);
+  if (typeof req === "string") back("/vendor/walk-in", { error: req });
+  const b = await guard("/vendor/walk-in", () => addWalkIn(vendor, req));
+  if (form.get("print")) redirect(`/t/${b.ref}?print=1`);
+  back("/vendor", { notice: `Walk-in added to the end of the queue as ticket ${b.ticketNo}.${b.walkInPhone ? " Ticket sent by SMS." : ""}` });
 }
 
 export async function checkInAction(form: FormData) {
@@ -285,4 +347,28 @@ export async function resumeAction() {
   const { vendor } = await requireVendor();
   await resumeQueue(vendor);
   back("/vendor", { notice: "Queue resumed. Customers notified." });
+}
+
+/** Makes a fresh secret for the waiting-room TV link. Old links stop working. */
+export async function resetTvLink() {
+  const { vendor } = await requireVendor();
+  await ensureShopCode(vendor);
+  await db.vendor.update({ where: { id: vendor.id }, data: { tvKey: randomBytes(12).toString("base64url") } });
+  back("/vendor/tv", { notice: "New TV link ready." });
+}
+
+export async function readyAction(form: FormData) {
+  const { vendor } = await requireVendor();
+  await guard("/vendor", () => markReady(vendor, str(form, "id")));
+  back("/vendor", { notice: "Customer told it's ready." });
+}
+
+/** Moves a repair job on, or sends a quote. */
+export async function jobStageAction(form: FormData) {
+  const { vendor } = await requireVendor();
+  const stage = str(form, "stage");
+  if (!(JOB_STAGES as readonly string[]).includes(stage)) back("/vendor/jobs", { error: "Pick a stage." });
+  const quote = Math.round(Number(str(form, "quote")) * 100);
+  await guard("/vendor/jobs", () => setJobStage(vendor, str(form, "id"), stage as JobStage, quote || undefined, str(form, "note")));
+  back("/vendor/jobs", { notice: stage === "QUOTE" ? "Quote sent. You'll see here when the customer answers." : "Job updated. The customer was told." });
 }

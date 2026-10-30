@@ -1,5 +1,5 @@
 "use server";
-import { requireAdmin } from "@/lib/auth";
+import { isAdminPhone, isSuperAdmin, requireAdmin, requireSuperAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sendSms } from "@/lib/notify";
 import { appUrl, back, str } from "@/lib/http";
@@ -8,6 +8,7 @@ import { MAX_PLAN_CENTS } from "@/lib/plans";
 import { getSettings } from "@/lib/settings";
 import { rand } from "@/lib/format";
 import { DOC_LABEL } from "@/lib/verification";
+import { TYPES, isBusinessType } from "@/lib/business-types";
 
 export async function approveVendor(form: FormData) {
   await requireAdmin();
@@ -66,7 +67,7 @@ export async function rejectDocument(form: FormData) {
 }
 
 export async function saveSignupRules(form: FormData) {
-  await requireAdmin();
+  await requireSuperAdmin();
   const data = {
     allowBasic: form.get("allowBasic") === "on",
     requireCipc: form.get("requireCipc") === "on",
@@ -79,7 +80,7 @@ export async function saveSignupRules(form: FormData) {
 }
 
 export async function saveBookingFee(form: FormData) {
-  await requireAdmin();
+  await requireSuperAdmin();
   const cents = parseFeeRand(str(form, "fee"));
   if (cents === null) back("/admin", { error: "Enter a booking fee between R0 and R50." });
   const on = form.get("on") === "on";
@@ -92,7 +93,7 @@ export async function saveBookingFee(form: FormData) {
 }
 
 export async function savePlan(form: FormData) {
-  await requireAdmin();
+  await requireSuperAdmin();
   const cents = parseFeeRand(str(form, "price"), MAX_PLAN_CENTS);
   if (cents === null || cents === 0) back("/admin", { error: `Enter a monthly price between R1 and ${rand(MAX_PLAN_CENTS)}.` });
   const trialDays = Math.round(Number(str(form, "trial")));
@@ -108,14 +109,14 @@ export async function savePlan(form: FormData) {
 }
 
 export async function setPlanWaived(form: FormData) {
-  await requireAdmin();
+  await requireSuperAdmin();
   const waived = str(form, "waived") === "1";
   const v = await db.vendor.update({ where: { id: str(form, "id") }, data: { planWaived: waived } });
   back("/admin?show=all", { notice: waived ? `${v.name} no longer needs a monthly plan.` : `${v.name} needs a monthly plan again.` });
 }
 
 export async function saveFeatured(form: FormData) {
-  await requireAdmin();
+  await requireSuperAdmin();
   const featured = form.get("featured") === "on";
   const rank = Math.round(Number(str(form, "rank") || "0"));
   if (!(rank >= 0 && rank <= 100)) back("/admin?show=all", { error: "Rank must be 0 to 100." });
@@ -139,12 +140,45 @@ export async function banUser(form: FormData) {
   const id = str(form, "id");
   const target = await db.user.findUnique({ where: { id } });
   if (!target) back("/admin/users", { error: "User not found." });
-  if (target.id === admin.id || target.role === "ADMIN") back(`/admin/users/${id}`, { error: "Admins can't be blocked here." });
+  // Only a super admin can block another admin, and super admins can't be blocked at all.
+  if (target.id === admin.id || isSuperAdmin(target) || (target.role === "ADMIN" && !isSuperAdmin(admin))) {
+    back(`/admin/users/${id}`, { error: "You can't block this admin." });
+  }
   await db.$transaction([
     db.user.update({ where: { id }, data: { banned: true, bannedReason: str(form, "reason").slice(0, 200) || null } }),
     db.session.deleteMany({ where: { userId: id } }),
   ]);
   back(`/admin/users/${id}`, { notice: `${target.name} is blocked and signed out.` });
+}
+
+/**
+ * Super admins only: removes a user for good. Their name, number and email are wiped, they can never sign in
+ * again, and a shop they own is taken off Qless. Booking and payment records stay, without their details.
+ */
+export async function removeUser(form: FormData) {
+  const admin = await requireSuperAdmin();
+  const id = str(form, "id");
+  const here = `/admin/users/${id}`;
+  if (str(form, "confirm").toUpperCase() !== "REMOVE") back(here, { error: "Type REMOVE to confirm." });
+  const target = await db.user.findUnique({ where: { id }, include: { vendor: { select: { id: true } } } });
+  if (!target) back("/admin/users", { error: "User not found." });
+  if (target.id === admin.id) back(here, { error: "You can't remove yourself." });
+  if (isAdminPhone(target.phone)) back(here, { error: "This number is in ADMIN_PHONES on Vercel. Remove it there first." });
+  const active = await db.booking.count({ where: { customerId: id, status: { in: ["PENDING_PAYMENT", "WAITING", "CALLED", "IN_SERVICE"] } } });
+  if (active) back(here, { error: "They're in a queue right now. Wait until the booking is finished or cancelled." });
+  await db.$transaction([
+    db.session.deleteMany({ where: { userId: id } }),
+    db.pushSubscription.deleteMany({ where: { userId: id } }),
+    ...(target.vendor ? [db.vendor.update({ where: { id: target.vendor.id }, data: { status: "REJECTED", rejectReason: "Removed by Qless" } })] : []),
+    db.user.update({
+      where: { id },
+      data: {
+        name: "Removed user", email: null, phone: `removed:${id}`, role: target.vendor ? "VENDOR" : "CUSTOMER", superAdmin: false,
+        banned: true, bannedReason: "Removed by a super admin", consentReminders: false, consentOffers: false, notifySms: false, notifyWhatsapp: false,
+      },
+    }),
+  ]);
+  back("/admin/users", { notice: `${target.name} has been removed${target.vendor ? " and their shop taken off Qless" : ""}.` });
 }
 
 export async function unbanUser(form: FormData) {
@@ -159,4 +193,29 @@ export async function liftNoShowBlock(form: FormData) {
   const id = str(form, "id");
   const u = await db.user.update({ where: { id }, data: { blockedUntil: null } });
   back(`/admin/users/${id}`, { notice: `${u.name} can book again.` });
+}
+
+export async function setTypeEnabled(form: FormData) {
+  await requireSuperAdmin();
+  const type = str(form, "type");
+  if (!isBusinessType(type)) back("/admin/types", { error: "Unknown business type." });
+  const on = str(form, "on") === "1";
+  const current = await getSettings();
+  const disabledTypes = on ? current.disabledTypes.filter((t) => t !== type) : [...new Set([...current.disabledTypes, type])];
+  await db.setting.update({ where: { id: "global" }, data: { disabledTypes } });
+  back("/admin/types", { notice: `${TYPES[type].label} is ${on ? "on. Those shops show in search and can sign up" : "off. Those shops are hidden and can't sign up"}.` });
+}
+
+/** Records money Qless paid into a vendor's bank for the deposits it collected. */
+export async function recordPayout(form: FormData) {
+  const me = await requireSuperAdmin();
+  const vendorId = str(form, "vendorId");
+  const back_ = `/admin/money?month=${encodeURIComponent(str(form, "month"))}`;
+  const cents = parseFeeRand(str(form, "amount"), 100_000_000);
+  if (!cents) back(back_, { error: "Enter the amount you paid." });
+  const v = await db.vendor.findUnique({ where: { id: vendorId } });
+  if (!v) back(back_, { error: "Shop not found." });
+  await db.payout.create({ data: { vendorId, amountCents: cents, reference: str(form, "reference").slice(0, 60), createdBy: me.id } });
+  await sendSms(v.phone, `Qless: we've paid ${rand(cents)} into your bank account for deposits. See ${appUrl()}/vendor/payouts`);
+  back(back_, { notice: `Payout of ${rand(cents)} to ${v.name} recorded. They were told by SMS.` });
 }

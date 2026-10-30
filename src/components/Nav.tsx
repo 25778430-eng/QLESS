@@ -2,9 +2,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export type NavItem = { href: string; label: string; icon: keyof typeof ICONS; fab?: boolean };
+import type { NavItem } from "./nav-items";
 
-const ICONS = {
+export type { NavItem };
+
+const ICONS: Record<NavItem["icon"], React.ReactNode> = {
   home: <path d="M3 11 12 4l9 7v9H3z" />,
   map: <><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z" /><path d="M9 4v14M15 6v14" /></>,
   scan: <path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4M4 12h16" />,
@@ -35,27 +37,3 @@ export function Nav({ items }: { items: NavItem[] }) {
     </nav>
   );
 }
-
-export const CUSTOMER_NAV: NavItem[] = [
-  { href: "/discover", label: "Home", icon: "home" },
-  { href: "/map", label: "Map", icon: "map" },
-  { href: "/scan", label: "Scan", icon: "scan", fab: true },
-  { href: "/bookings", label: "Bookings", icon: "bookings" },
-  { href: "/account", label: "Account", icon: "person" },
-];
-
-export const VENDOR_NAV: NavItem[] = [
-  { href: "/vendor", label: "Queue", icon: "queue" },
-  { href: "/vendor/summary", label: "Summary", icon: "summary" },
-  { href: "/vendor/walk-in", label: "Walk-in", icon: "plus", fab: true },
-  { href: "/vendor/qr", label: "QR", icon: "qr" },
-  { href: "/vendor/account", label: "Account", icon: "shop" },
-];
-
-export const STAFF_NAV: NavItem[] = [
-  { href: "/staff", label: "My chair", icon: "chair" },
-  { href: "/discover", label: "Home", icon: "home" },
-  { href: "/staff/walk-in", label: "Walk-in", icon: "plus", fab: true },
-  { href: "/bookings", label: "Bookings", icon: "bookings" },
-  { href: "/account", label: "Account", icon: "person" },
-];

@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth";
+import { currentUser, isSuperAdmin, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { prettyPhone, rand, shortDate } from "@/lib/format";
 import { MAX_FEE_CENTS } from "@/lib/fees";
@@ -31,6 +31,9 @@ export default async function Admin({ searchParams }: { searchParams: { error?: 
   await requireAdmin();
   const showAll = searchParams.show === "all";
   const settings = await getSettings();
+  // Regular admins only review vendors; the money switches are for super admins.
+  const me = await currentUser();
+  const superAdmin = !!me && isSuperAdmin(me);
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const fees = await db.booking.aggregate({
     where: { feeCents: { gt: 0 }, createdAt: { gte: since }, payfastPaymentId: { not: null } },
@@ -54,45 +57,51 @@ export default async function Admin({ searchParams }: { searchParams: { error?: 
           <span className="pill sig">{vendors.filter((v) => v.status === "PENDING" || v.upgradeRequested).length} waiting</span>
         </div>
         <Messages searchParams={searchParams} />
-        <form action={saveSignupRules} className="card stack">
-          <b>Vendor sign-up rules</b>
-          <span className="small muted">Changes apply to new sign-ups and upgrades. Approved shops keep their status.</span>
-          <label className="check"><input type="checkbox" name="requireCipc" defaultChecked={settings.requireCipc} /> <span><b>Require CIPC registration</b><br />Number and certificate. Switch off to let unregistered businesses become Verified.</span></label>
-          <label className="check"><input type="checkbox" name="requireAddress" defaultChecked={settings.requireAddress} /> <span><b>Require proof of business address</b></span></label>
-          <label className="check"><input type="checkbox" name="requireBank" defaultChecked={settings.requireBank} /> <span><b>Require bank details and letter</b></span></label>
-          <label className="check"><input type="checkbox" name="allowBasic" defaultChecked={settings.allowBasic} /> <span><b>Allow Basic listings</b><br />No documents, no deposits or payouts, shown as &quot;Not verified&quot;.</span></label>
-          <span className="small muted">An owner ID (SA ID, passport, asylum seeker or refugee permit) is always required for Verified.</span>
-          <Submit className="btn sm">Save rules</Submit>
-        </form>
-        <form action={saveBookingFee} className="card stack">
-          <div className="row between">
-            <b>Customer booking fee</b>
-            <span className={`pill ${settings.bookingFeeOn ? "ok" : ""}`}>{settings.bookingFeeOn ? "On" : "Off"}</span>
-          </div>
-          <span className="small muted">A fixed fee customers pay on top of the deposit when they book. Qless keeps it and it isn&apos;t refunded. Changes apply to new bookings only.</span>
-          <div className="row">
-            <label className="f grow">Fee (R)<input className="i mono" type="number" min="0" max={MAX_FEE_CENTS / 100} step="0.01" name="fee" defaultValue={settings.bookingFeeCents / 100} /></label>
-            <label className="row small"><input type="checkbox" name="on" defaultChecked={settings.bookingFeeOn} /> Charge it</label>
-          </div>
-          <span className="small muted">Last 30 days: {rand(fees._sum.feeCents ?? 0)} from {fees._count} paid bookings.</span>
-          <Submit className="btn sm">Save</Submit>
-        </form>
-        <form action={savePlan} className="card stack">
-          <div className="row between">
-            <b>Vendor monthly plan</b>
-            <span className={`pill ${settings.planOn ? "ok" : ""}`}>{settings.planOn ? "On" : "Off"}</span>
-          </div>
-          <span className="small muted">Vendors pay monthly through a PayFast subscription. Shops without a plan are hidden from customers once their free trial ends. Switching it on starts every shop&apos;s free trial from today; new shops get theirs from approval.</span>
-          <div className="row">
-            <label className="f grow">Price a month (R)<input className="i mono" type="number" min="1" max={MAX_PLAN_CENTS / 100} step="0.01" name="price" defaultValue={settings.planPriceCents / 100} /></label>
-            <label className="f grow">Free trial (days)<input className="i mono" type="number" min="0" max="90" step="1" name="trial" defaultValue={settings.planTrialDays} /></label>
-          </div>
-          <label className="row small"><input type="checkbox" name="on" defaultChecked={settings.planOn} /> Require the plan</label>
-          <span className="small muted">{subscribed} shops subscribed.</span>
-          <Submit className="btn sm">Save</Submit>
-        </form>
+        {superAdmin ? (
+          <>
+            <form action={saveSignupRules} className="card stack">
+              <b>Vendor sign-up rules</b>
+              <span className="small muted">Changes apply to new sign-ups and upgrades. Approved shops keep their status.</span>
+              <label className="check"><input type="checkbox" name="requireCipc" defaultChecked={settings.requireCipc} /> <span><b>Require CIPC registration</b><br />Number and certificate. Switch off to let unregistered businesses become Verified.</span></label>
+              <label className="check"><input type="checkbox" name="requireAddress" defaultChecked={settings.requireAddress} /> <span><b>Require proof of business address</b></span></label>
+              <label className="check"><input type="checkbox" name="requireBank" defaultChecked={settings.requireBank} /> <span><b>Require bank details and letter</b></span></label>
+              <label className="check"><input type="checkbox" name="allowBasic" defaultChecked={settings.allowBasic} /> <span><b>Allow Basic listings</b><br />No documents, no deposits or payouts, shown as &quot;Not verified&quot;.</span></label>
+              <span className="small muted">An owner ID (SA ID, passport, asylum seeker or refugee permit) is always required for Verified.</span>
+              <Submit className="btn sm">Save rules</Submit>
+            </form>
+            <form action={saveBookingFee} className="card stack">
+              <div className="row between">
+                <b>Customer booking fee</b>
+                <span className={`pill ${settings.bookingFeeOn ? "ok" : ""}`}>{settings.bookingFeeOn ? "On" : "Off"}</span>
+              </div>
+              <span className="small muted">A fixed fee customers pay on top of the deposit when they book. Qless keeps it and it isn&apos;t refunded. Changes apply to new bookings only.</span>
+              <div className="row">
+                <label className="f grow">Fee (R)<input className="i mono" type="number" min="0" max={MAX_FEE_CENTS / 100} step="0.01" name="fee" defaultValue={settings.bookingFeeCents / 100} /></label>
+                <label className="row small"><input type="checkbox" name="on" defaultChecked={settings.bookingFeeOn} /> Charge it</label>
+              </div>
+              <span className="small muted">Last 30 days: {rand(fees._sum.feeCents ?? 0)} from {fees._count} paid bookings.</span>
+              <Submit className="btn sm">Save</Submit>
+            </form>
+            <form action={savePlan} className="card stack">
+              <div className="row between">
+                <b>Vendor monthly plan</b>
+                <span className={`pill ${settings.planOn ? "ok" : ""}`}>{settings.planOn ? "On" : "Off"}</span>
+              </div>
+              <span className="small muted">Vendors pay monthly through a PayFast subscription. Shops without a plan are hidden from customers once their free trial ends. Switching it on starts every shop&apos;s free trial from today; new shops get theirs from approval.</span>
+              <div className="row">
+                <label className="f grow">Price a month (R)<input className="i mono" type="number" min="1" max={MAX_PLAN_CENTS / 100} step="0.01" name="price" defaultValue={settings.planPriceCents / 100} /></label>
+                <label className="f grow">Free trial (days)<input className="i mono" type="number" min="0" max="90" step="1" name="trial" defaultValue={settings.planTrialDays} /></label>
+              </div>
+              <label className="row small"><input type="checkbox" name="on" defaultChecked={settings.planOn} /> Require the plan</label>
+              <span className="small muted">{subscribed} shops subscribed.</span>
+              <Submit className="btn sm">Save</Submit>
+            </form>
+          </>
+        ) : (
+          <p className="small muted">Fees, the monthly plan, sign-up rules and featured listings are set by a super admin.</p>
+        )}
         <h2>Vendors</h2>
-        <a className="small" href={showAll ? "/admin" : "/admin?show=all"}>{showAll ? "Show pending only" : "Show all vendors (plan and featured settings)"}</a>
+        <a className="small" href={showAll ? "/admin" : "/admin?show=all"}>{showAll ? "Show pending only" : superAdmin ? "Show all vendors (plan and featured settings)" : "Show all vendors"}</a>
         <p className="small muted">Open each document before approving. Check CIPC numbers on the CIPC BizPortal (bizportal.gov.za).</p>
         {vendors.length === 0 && <p className="muted">Nothing waiting.</p>}
         {vendors.map((v) => (
@@ -139,7 +148,7 @@ export default async function Admin({ searchParams }: { searchParams: { error?: 
             ) : (
               <span className={`pill ${v.status === "APPROVED" ? "ok" : "bad"}`} style={{ alignSelf: "flex-start" }}>{v.status === "APPROVED" ? "Approved" : `Rejected: ${v.rejectReason}`}</span>
             )}
-            {v.status === "APPROVED" && (
+            {v.status === "APPROVED" && superAdmin && (
               <>
                 <form action={setPlanWaived} className="row between">
                   <input type="hidden" name="id" value={v.id} />

@@ -17,11 +17,33 @@ export default async function MapPage({ searchParams }: { searchParams: { q?: st
   return (
     <main className="main">
       <h1>Map</h1>
+      <form className="row" action="/map">
+        {query.here && <><input type="hidden" name="lat" value={query.here.lat} /><input type="hidden" name="lng" value={query.here.lng} /></>}
+        {query.cat !== "All" && <input type="hidden" name="cat" value={query.cat} />}
+        <input className="i grow" name="q" defaultValue={query.q} placeholder="Search a shop, area or service" aria-label="Search shops on the map" />
+        <button className="btn sm">Search</button>
+      </form>
+      {query.q && (
+        <p className="small muted">
+          {rows.length ? `${rows.length} shop${rows.length === 1 ? "" : "s"} for "${query.q}"` : `No shops found for "${query.q}"`} ·{" "}
+          <Link href="/map">Clear</Link>
+        </p>
+      )}
       {!query.here && <LocateMe />}
       {lowData ? (
         <p className="muted">The map is off because low-data mode is on. Switch it off in Account to see the map.</p>
       ) : (
         <VendorMap here={query.here} pins={mapPins(rows)} height={420} />
+      )}
+      {query.q && rows.length > 1 && (
+        <div className="stack" style={{ gap: 0 }}>
+          {rows.slice(0, 6).map(({ v, km, state }) => (
+            <Link key={v.id} className="listrow" href={`/v/${v.slug}`}>
+              <span className="grow"><b>{v.name}</b><br /><span className="small muted">{v.category}{km != null ? ` · ${distance(km)}` : ""} · {state.label}</span></span>
+              <span className="chev">›</span>
+            </Link>
+          ))}
+        </div>
       )}
       {nearest && (
         <div className="card stack">

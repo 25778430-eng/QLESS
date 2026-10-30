@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { LEGAL_UPDATED, operatorName, supportEmail } from "@/lib/legal";
+import { LEGAL_UPDATED, infoOfficer, operatorName, supportEmail } from "@/lib/legal";
 
 export const metadata: Metadata = { title: "Privacy policy · Qless" };
 
 export default function Privacy() {
   const email = supportEmail();
+  const officer = infoOfficer();
   return (
     <>
       <h1>Privacy policy</h1>
@@ -18,7 +19,9 @@ export default function Privacy() {
       <h2>What we collect</h2>
       <ul>
         <li><b>Account details:</b> your name, email address and cellphone number.</li>
-        <li><b>Bookings:</b> the shop, service, staff member, time, queue position, booking status and arrival check-in.</li>
+        <li><b>Bookings:</b> the shop, service, staff member, time, queue position, ticket number, booking status and arrival check-in. For car washes, your number plate. For repairs, what&apos;s being fixed and any quote.</li>
+        <li><b>Walk-ins without an account:</b> a name and, if they choose, a cellphone number so we can SMS their ticket.</li>
+        <li><b>Preferences:</b> your language, appearance and low-data setting.</li>
         <li><b>Payments:</b> deposit amounts and payment status. Card and bank details are entered on PayFast and never reach us.</li>
         <li><b>Reviews</b> you write after a completed booking.</li>
         <li><b>Location:</b> only when you tap &quot;near me&quot;, to show nearby shops. We do not store it or track you in the background.</li>
@@ -54,8 +57,10 @@ export default function Privacy() {
 
       <h2>How long we keep it</h2>
       <p>
-        We keep your account while you use Qless. Sign-in codes expire after a few minutes. Booking and payment records are
-        kept for up to 5 years for accounting and dispute purposes, then deleted or anonymised. Vendor verification documents
+        We keep your account while you use Qless. Sign-in codes expire after a few minutes and are deleted after 30 days. Booking and payment records are
+        kept for up to 5 years for accounting and dispute purposes, then anonymised automatically: names, cellphone numbers,
+        number plates and review text are removed and only the amounts stay. Customer accounts with no sign-in and no booking
+        for 5 years are deleted automatically. Vendor verification documents
         are deleted 90 days after we&apos;ve reviewed them; we keep only a note of what was checked and when.
       </p>
 
@@ -79,7 +84,9 @@ export default function Privacy() {
 
       <h2>Contact</h2>
       <p>
-        Information Officer, {operatorName()}: <a href={`mailto:${email}`}>{email}</a>
+        Information Officer: {officer.name}, <a href={`mailto:${officer.email}`}>{officer.email}</a>
+        {officer.phone && <>, <span className="mono">{officer.phone}</span></>}. To ask for records we hold, see our{" "}
+        <a href="/paia">PAIA manual</a>. Shops that see your details are bound by our <a href="/vendor-agreement">vendor data agreement</a>.
       </p>
     </>
   );

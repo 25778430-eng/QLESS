@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { ACTIVE_STATUSES } from "@/lib/bookings";
-import { initials, rand, shortDate } from "@/lib/format";
+import { initials, rand, shortDate, time } from "@/lib/format";
 import { Messages } from "@/components/Messages";
 
 export const dynamic = "force-dynamic";
@@ -32,8 +32,8 @@ export default async function MyBookings({ searchParams }: { searchParams: { err
       {upcoming.map((b) => (
         <Link key={b.id} href={`/bookings/${b.id}`} className="listrow card" style={{ padding: 12 }}>
           <span className="avatar">{initials(b.vendor.name)}</span>
-          <span className="grow"><b>{b.vendor.name}</b><br /><span className="small muted">{b.service.name}{b.staff ? ` with ${b.staff.name}` : ""}</span></span>
-          {b.status === "PENDING_PAYMENT" ? <span className="pill sig">Pay deposit</span> : b.status === "CALLED" ? <span className="pill sig">Your turn</span> : <span className="pill ok">In queue</span>}
+          <span className="grow"><b>{b.vendor.name}</b><br /><span className="small muted">{b.ticketNo ? `Ticket ${b.ticketNo} · ` : ""}{b.service.name}{b.staff ? ` with ${b.staff.name}` : ""}{b.scheduledAt ? ` · ${shortDate(b.scheduledAt)} ${time(b.scheduledAt)}` : ""}</span></span>
+          {b.readyAt ? <span className="pill sig">Ready</span> : b.jobStage === "QUOTE" && b.quoteApproved == null ? <span className="pill sig">Quote</span> : b.status === "PENDING_PAYMENT" ? <span className="pill sig">Pay deposit</span> : b.status === "CALLED" ? <span className="pill sig">Your turn</span> : b.scheduledAt ? <span className="pill ok">Booked</span> : <span className="pill ok">In queue</span>}
         </Link>
       ))}
       <h3>Past visits</h3>

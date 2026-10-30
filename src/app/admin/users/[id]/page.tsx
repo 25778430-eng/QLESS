@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
+import { isAdminPhone, isSuperAdmin, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { depositLine } from "@/lib/bookings";
 import { prettyPhone, rand, shortDate, time } from "@/lib/format";
 import { AdminHeader } from "@/components/AdminHeader";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
-import { banUser, liftNoShowBlock, unbanUser } from "../../actions";
+import { banUser, liftNoShowBlock, removeUser, unbanUser } from "../../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +50,7 @@ export default async function UserDetail({ params, searchParams }: { params: { i
         <Messages searchParams={searchParams} />
         <div className="card stack">
           <span className="mono">{prettyPhone(u.phone)}</span>
-          <span className="small muted">Joined {shortDate(u.createdAt)} · {u.role === "ADMIN" ? "Admin" : u.vendor ? "Vendor" : "Customer"}</span>
+          <span className="small muted">Joined {shortDate(u.createdAt)} · {u.role === "ADMIN" ? (isSuperAdmin(u) ? "Super admin" : "Admin") : u.vendor ? "Vendor" : "Customer"}</span>
           {u.vendor && <span className="small">Shop: <Link href={`/v/${u.vendor.slug}`}>{u.vendor.name}</Link> ({u.vendor.status.toLowerCase()})</span>}
           <div className="stat">
             <div><b>{total}</b><span>bookings</span></div>
@@ -67,8 +67,8 @@ export default async function UserDetail({ params, searchParams }: { params: { i
             <span className="small muted">They can&apos;t sign in{u.vendor ? " and their shop is hidden" : ""}.</span>
             <Submit className="btn sm">Unblock</Submit>
           </form>
-        ) : self || u.role === "ADMIN" ? (
-          <p className="small muted">Admins can&apos;t be blocked here. Remove their number from ADMIN_PHONES first.</p>
+        ) : self || isSuperAdmin(u) || (u.role === "ADMIN" && !isSuperAdmin(admin)) ? (
+          <p className="small muted">{self ? "You can't block yourself." : isSuperAdmin(u) ? "Super admins can't be blocked." : "Only a super admin can block another admin."}</p>
         ) : (
           <form action={banUser} className="card stack">
             <input type="hidden" name="id" value={u.id} />
@@ -77,6 +77,20 @@ export default async function UserDetail({ params, searchParams }: { params: { i
             <input className="i" name="reason" placeholder="Reason (only admins see this)" />
             <Submit className="btn sm warn">Block</Submit>
           </form>
+        )}
+
+        {isSuperAdmin(admin) && !self && !isAdminPhone(u.phone) && !u.phone.startsWith("removed:") && (
+          <details className="card">
+            <summary>Remove this user for good</summary>
+            <form action={removeUser} className="stack" style={{ marginTop: 10 }}>
+              <input type="hidden" name="id" value={u.id} />
+              <span className="small muted">
+                Wipes their name, number and email and stops them signing in{u.vendor ? ". Their shop is taken off Qless" : ""}. Past bookings and payments stay, without their details. This can&apos;t be undone.
+              </span>
+              <input className="i" name="confirm" placeholder="Type REMOVE" autoComplete="off" />
+              <Submit className="btn sm warn">Remove user</Submit>
+            </form>
+          </details>
         )}
 
         {autoBlocked && (

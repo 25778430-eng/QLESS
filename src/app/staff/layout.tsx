@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
-import { Nav, STAFF_NAV } from "@/components/Nav";
+import { Nav } from "@/components/Nav";
+import { STAFF_NAV } from "@/components/nav-items";
 import { requireStaff } from "@/lib/auth";
 import { initials } from "@/lib/format";
 

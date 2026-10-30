@@ -1,5 +1,6 @@
 import { Logo } from "@/components/Logo";
-import { Nav, VENDOR_NAV } from "@/components/Nav";
+import { Nav } from "@/components/Nav";
+import { VENDOR_NAV } from "@/components/nav-items";
 import { requireUser } from "@/lib/auth";
 import Link from "next/link";
 import { db } from "@/lib/db";

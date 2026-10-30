@@ -1,7 +1,7 @@
 "use server";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { BookingError, cancelBooking, markPaid, moveBack } from "@/lib/bookings";
+import { BookingError, answerQuote, cancelBooking, markPaid, moveBack } from "@/lib/bookings";
 import { db } from "@/lib/db";
 import { payfastConfigured } from "@/lib/payfast";
 import { back, str } from "@/lib/http";
@@ -54,4 +54,17 @@ export async function reviewAction(form: FormData) {
     data: { bookingId: b.id, vendorId: b.vendorId, customerId: user.id, rating, text: str(form, "text").slice(0, 500) },
   });
   back(`/bookings/${id}`, { notice: "Thanks! Your review is posted." });
+}
+
+export async function quoteAction(form: FormData) {
+  const user = await requireUser();
+  const id = str(form, "bookingId");
+  const yes = str(form, "answer") === "yes";
+  try {
+    await answerQuote(user, id, yes);
+  } catch (e) {
+    if (e instanceof BookingError) back(`/bookings/${id}`, { error: e.message });
+    throw e;
+  }
+  back(`/bookings/${id}`, { notice: yes ? "Quote approved. The shop will start the work." : "Quote declined. The shop will have your item ready to collect." });
 }
