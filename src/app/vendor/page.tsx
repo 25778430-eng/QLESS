@@ -150,11 +150,13 @@ export default async function VendorHome({ searchParams }: { searchParams: SP })
         </form>
       )}
 
+      <div className="qcols">
       <div className={compact ? "bays" : "stack"} style={compact ? undefined : { gap: 14 }}>
         {staff.map((s) => bayCard(inBay(s.id), s, s.id))}
         {unassigned.map((b) => bayCard(b, null, b.id))}
       </div>
 
+      <div className="qwait stack" style={{ gap: 14 }}>
       <div className="row between"><b>Waiting</b><span className="small muted">{waiting.length} · {done.length} done · {rand(takings)} today</span></div>
       <div>
         {waiting.length === 0 && <p className="muted">Nobody waiting.</p>}
@@ -186,6 +188,8 @@ export default async function VendorHome({ searchParams }: { searchParams: SP })
             <form action={closeToday}><button>Close the queue for today</button></form>
           </div>
         </details>
+      </div>
+      </div>
       </div>
     </main>
   );

@@ -347,10 +347,11 @@ form:has(input[name="level"][value="VERIFIED"]:checked) .level-basic { display: 
   .nav a.fab svg { stroke: currentColor; }
   .nav a.fab { background: var(--brand); color: var(--brand-ink); }
   .nav a.fab[aria-current="page"] { background: var(--brand); }
-  .main { width: 100%; max-width: 760px; margin: 24px auto 48px; background: var(--panel); border: 1px solid var(--line); border-radius: 24px; padding: 28px 32px 40px; flex: 0 0 auto; }
-  .main.narrow { max-width: 480px; }
-  .main.legal { max-width: 820px; }
+  .main { width: 100%; max-width: none; margin: 0; background: var(--panel); border: 0; border-radius: 0; padding: 32px max(32px, calc((100vw - 1240px) / 2)) 56px; flex: 1 0 auto; min-height: calc(100dvh - 64px); }
+  .main.narrow, .main.oops { max-width: 480px; margin: 48px auto; border: 1px solid var(--line); border-radius: 24px; padding: 28px 32px 40px; min-height: 0; flex: 0 0 auto; }
   .main.oops { max-width: 560px; }
+  .main.legal > * { max-width: 820px; }
+  .main > form:not(.row):not(.banner), .main > .card, .main > details.card { max-width: 720px; }
   .main.home:has(.mapwrap) { max-width: 1240px; display: grid; grid-template-columns: 440px 1fr; gap: 24px; align-items: start; background: transparent; border: 0; padding: 0 32px; }
   .home .mapwrap { order: 2; margin: 0; position: sticky; top: 88px; border-radius: 24px; overflow: hidden; border: 1px solid var(--line); }
   .home .mapwrap .map { height: calc(100dvh - 120px) !important; max-height: none; }
@@ -443,7 +444,6 @@ details.more > summary::-webkit-details-marker { display: none; }
 /* Admin on laptops: use the screen width, tiles in one row, groups and cards side by side */
 .cols, .cardgrid { display: flex; flex-direction: column; gap: 18px; }
 @media (min-width: 960px) {
-  .main.wide { max-width: none; margin: 0; border: 0; border-radius: 0; min-height: calc(100dvh - 64px); padding: 32px max(32px, calc((100vw - 1240px) / 2)) 48px; }
   .wide .tiles { grid-template-columns: repeat(4, 1fr); gap: 14px; }
   .wide .tiles a { padding: 20px; }
   .wide .tiles b { font-size: 32px; }
@@ -486,5 +486,25 @@ details.who:has(input[name="staffId"]:not([value="any"]):checked) .who-any { dis
 .serve.mini .nm { font-size: 16px; }
 .serve.mini .btn { width: 100%; padding: 8px 10px; }
 .serve.mini form { width: 100%; }
-@media (min-width: 960px) { .main.app:has(.bays) { max-width: 1100px; } .bays { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
 nav.seg.two { grid-template-columns: repeat(2, 1fr); }
+
+/* Laptop layouts: account tabs on the left, shop page in two columns, queue bays beside the waiting list, places in a grid */
+.acct-side, .acct-body, .qcols { display: flex; flex-direction: column; gap: 18px; }
+@media (min-width: 960px) {
+  .main.acct { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 48px; align-items: start; }
+  .acct-side { position: sticky; top: 96px; }
+  .acct-side nav.seg { grid-template-columns: 1fr; padding: 6px; }
+  .acct-side nav.seg a { text-align: left; padding: 12px 14px; }
+  .acct-side nav.seg a[aria-current="page"] { box-shadow: inset 3px 0 0 var(--signal); }
+  .acct-body { max-width: 860px; }
+  .main.shop { display: grid; grid-template-columns: minmax(0, 1fr) 420px; grid-template-areas: "info book" "rev book"; column-gap: 48px; row-gap: 28px; align-items: start; }
+  .shop-info { grid-area: info; }
+  .shop .book { grid-area: book; position: sticky; top: 96px; }
+  .shop-rev { grid-area: rev; }
+  .qcols { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 40px; align-items: start; }
+  .qcols .bays { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  .qwait { position: sticky; top: 96px; }
+  .main.app .stack:has(> .stub) { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+  .main.app > .msearch, .main.app > form:has(.msearch) { max-width: 720px; }
+}

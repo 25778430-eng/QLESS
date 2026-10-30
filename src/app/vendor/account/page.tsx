@@ -44,7 +44,8 @@ export default async function VendorAccount({ searchParams }: { searchParams: { 
     plan.kind === "TRIAL" ? `Free trial to ${shortDate(plan.until)}` : "Trial ended · subscribe to stay listed";
 
   return (
-    <main className="main app">
+    <main className="main app acct">
+      <aside className="acct-side">
       <div className="idbar">
         <span className="sq">{(vendor.name.trim()[0] ?? "Q").toUpperCase()}</span>
         <div className="grow" style={{ minWidth: 0 }}>
@@ -59,6 +60,8 @@ export default async function VendorAccount({ searchParams }: { searchParams: { 
       <nav className="seg two" aria-label="Account sections">
         {TABS.map(([t, label]) => <Link key={t} href={`/vendor/account?tab=${t}`} aria-current={tab === t ? "page" : undefined}>{label}</Link>)}
       </nav>
+      </aside>
+      <div className="acct-body">
       <Messages searchParams={searchParams} />
 
       {tab === "work" && (
@@ -118,6 +121,7 @@ export default async function VendorAccount({ searchParams }: { searchParams: { 
         </div>
       )}
       <form action={signOutAction}><Submit className="btn alt">Sign out</Submit></form>
+      </div>
     </main>
   );
 }
