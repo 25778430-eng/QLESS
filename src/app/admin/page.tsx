@@ -40,7 +40,7 @@ export default async function Admin({ searchParams }: { searchParams: { error?: 
   return (
     <>
       <AdminHeader />
-      <main className="main app">
+      <main className="main app wide">
         <div className="hello"><small>{superAdmin ? "Super admin" : "Admin"}</small>Qless HQ</div>
         <Messages searchParams={searchParams} />
         <div className="tiles">
@@ -50,6 +50,7 @@ export default async function Admin({ searchParams }: { searchParams: { error?: 
           {superAdmin ? <a href="/admin/money"><b>{rand(dueTotal)}</b><span>payouts due</span></a> : null}
         </div>
 
+        <div className="cols">
         <SetGroup title="Needs you">
           <SetRow icon="doc" title="Approve shops" sub={waiting.length ? waiting.slice(0, 3).map((v) => v.name).join(", ") : "Nothing waiting"} href="/admin/approvals" badge={waiting.length ? <span className="pill sig">{waiting.length}</span> : undefined} />
           {superAdmin && <SetRow icon="bank" title="Pay out shops" sub={dues.length ? `${dues.length} shops · ${rand(dueTotal)}` : "Nothing due"} href="/admin/money" />}
@@ -74,7 +75,7 @@ export default async function Admin({ searchParams }: { searchParams: { error?: 
           <SetRow icon="person" title="Users" sub={`${users} people · block or remove`} href="/admin/users" />
           {superAdmin && <SetRow icon="admin" title="Admin team" sub="Who can use this page" href="/admin/team" />}
         </SetGroup>
-        {!superAdmin && <p className="small muted">Fees, the monthly plan, sign-up rules and featured listings are set by a super admin.</p>}
+        </div>
       </main>
     </>
   );

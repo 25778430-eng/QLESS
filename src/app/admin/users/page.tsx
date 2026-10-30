@@ -50,7 +50,7 @@ export default async function Users({ searchParams }: { searchParams: SP }) {
   return (
     <>
       <AdminHeader current="/admin/users" />
-      <main className="main">
+      <main className="main wide">
         <h1>Users</h1>
         <form className="row" action="/admin/users">
           {role && <input type="hidden" name="role" value={role} />}

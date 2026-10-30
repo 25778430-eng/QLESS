@@ -124,27 +124,29 @@ export default async function VendorPage({ params, searchParams }: { params: { s
       ) : (
         <form action={joinQueue} className="stack" style={{ gap: 12 }}>
           <input type="hidden" name="vendorId" value={vendor.id} />
-          <h3>{info.free ? "Which counter" : "Choose who serves you"}</h3>
-          <label className="opt">
-            <input type="radio" name="staffId" value="any" defaultChecked />
-            <span className="grow"><b>Anyone available</b><br /><span className="small muted">Fastest · {waitingFor(null)} waiting</span></span>
-          </label>
-          {working.map((s) => (
-            <label className="opt" key={s.id}>
-              <input type="radio" name="staffId" value={s.id} />
-              <span className="avatar sm">{initials(s.name)}</span>
-              <span className="grow"><b>{s.name}</b><br /><span className="small muted">{s.breakUntil && s.breakUntil > new Date() ? `On a break until ${time(s.breakUntil)} · ` : ""}{waitingFor(s.id)} waiting for {s.name}{s.endTime ? ` · until ${s.endTime}` : ""}</span></span>
-            </label>
-          ))}
           <ServicePicker services={vendor.services} businessType={vendor.businessType} />
-          {info.free && <p className="small muted">Free. No deposit and no booking fee. You get a ticket number like A027.</p>}
-          {!info.free && vendor.level === "BASIC" && <p className="small muted">This shop isn&apos;t verified yet, so there&apos;s no deposit. Pay the shop directly.</p>}
-          {!info.free && vendor.level === "VERIFIED" && vendor.depositCents > 0 && (
-            <p className="small muted">A {rand(vendor.depositCents)} deposit holds your spot and comes off the final price.</p>
-          )}
-          {!info.free && vendor.level === "VERIFIED" && feeCents > 0 && (
-            <p className="small muted">Qless adds a {rand(feeCents)} booking fee, paid with {vendor.depositCents > 0 ? "the deposit" : "your booking"}. It isn&apos;t refunded.</p>
-          )}
+          <details className="who">
+            <summary className="btn alt"><span className="grow">{info.free ? "Which counter" : "Who serves you"}</span><span className="muted"><span className="who-any">Anyone available</span><span className="who-pick">Your pick</span> ›</span></summary>
+            <div className="stack" style={{ gap: 8, marginTop: 8 }}>
+              <label className="opt">
+                <input type="radio" name="staffId" value="any" defaultChecked />
+                <span className="grow"><b>Anyone available</b><br /><span className="small muted">Fastest · {waitingFor(null)} waiting</span></span>
+              </label>
+              {working.map((s) => (
+                <label className="opt" key={s.id}>
+                  <input type="radio" name="staffId" value={s.id} />
+                  <span className="avatar sm">{initials(s.name)}</span>
+                  <span className="grow"><b>{s.name}</b><br /><span className="small muted">{s.breakUntil && s.breakUntil > new Date() ? `On a break until ${time(s.breakUntil)} · ` : ""}{waitingFor(s.id)} waiting</span></span>
+                </label>
+              ))}
+            </div>
+          </details>
+          {(() => {
+            const costs = info.free
+              ? ["Free"]
+              : [vendor.level === "VERIFIED" && vendor.depositCents > 0 && `Deposit ${rand(vendor.depositCents)}`, vendor.level === "VERIFIED" && feeCents > 0 && `Booking fee ${rand(feeCents)}`].filter(Boolean);
+            return costs.length > 0 && <div className="row between small"><span className="muted">To pay now</span><b>{costs.join(" · ")}</b></div>;
+          })()}
           <Submit>{info.free ? "Get a ticket" : "Join the queue"}</Submit>
           <Link className="btn alt" href={`/v/${vendor.slug}/book`}>Book a later day instead</Link>
         </form>

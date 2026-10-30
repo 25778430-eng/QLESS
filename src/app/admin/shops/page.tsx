@@ -36,7 +36,7 @@ export default async function Shops({ searchParams }: { searchParams: { error?: 
   return (
     <>
       <AdminHeader />
-      <main className="main app">
+      <main className="main app wide">
         <SubHead back="/admin" backLabel="Admin" title="Shops" />
         <Messages searchParams={searchParams} />
         {vendors.length === 0 && <p className="muted">No live shops yet.</p>}

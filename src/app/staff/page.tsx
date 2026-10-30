@@ -94,13 +94,10 @@ export default async function MyBay({ searchParams }: { searchParams: { error?: 
                   </form>
                 ))}
               </div>
-              <p className="small muted" style={{ marginTop: 8 }}>Your waiting clients get a new time and keep their spot and deposit.</p>
             </details>
           )}
         </div>
       )}
-      {next.length > 1 && onShift && <p className="small muted">Tap Call next to someone to take them out of order, for example a walk-in who is already here.</p>}
-      <p className="small muted">You only see your own clients. The owner sees the whole shop.</p>
     </main>
   );
 }

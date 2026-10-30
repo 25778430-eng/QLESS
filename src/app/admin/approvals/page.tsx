@@ -24,14 +24,14 @@ export default async function Approvals({ searchParams }: { searchParams: { erro
   return (
     <>
       <AdminHeader />
-      <main className="main app">
+      <main className="main app wide">
         <div className="row between" style={{ alignItems: "flex-end" }}>
           <div className="hello"><small>Qless HQ</small>Approvals</div>
           <span className={`pill ${vendors.length ? "sig" : "ok"}`}>{vendors.length} waiting</span>
         </div>
         <Messages searchParams={searchParams} />
-        <p className="small muted">Open each document before approving. Check CIPC numbers on bizportal.gov.za.</p>
         {vendors.length === 0 && <p className="muted">Nothing waiting. Nice.</p>}
+        <div className="cardgrid">
         {vendors.map((v) => {
           const missing = requiredDocs(v.upgradeRequested ? "VERIFIED" : v.level, settings).filter((k) => !v.documents.some((d) => d.kind === k));
           return (
@@ -78,6 +78,7 @@ export default async function Approvals({ searchParams }: { searchParams: { erro
             </div>
           );
         })}
+        </div>
       </main>
     </>
   );
