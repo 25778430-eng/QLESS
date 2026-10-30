@@ -13,7 +13,7 @@ export default async function EditService({ params, searchParams }: { params: { 
   if (!s) notFound();
   return (
     <main className="main">
-      <Link className="small" href="/vendor/setup#services">‹ Services and prices</Link>
+      <Link className="small" href="/vendor/services">‹ Services and prices</Link>
       <h1>Edit {s.name}</h1>
       <Messages searchParams={searchParams} />
       <form action={saveService} className="stack" style={{ gap: 12 }}>

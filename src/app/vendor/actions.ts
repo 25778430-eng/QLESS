@@ -99,10 +99,10 @@ export async function saveBank(form: FormData) {
   const { vendor } = await requireVendor();
   const bank = bankFields(form);
   if (!bank.bankName || !bank.bankAccountName || !bank.bankAccountNo || bank.bankAccountNo.length < 6) {
-    back("/vendor/account", { error: "Fill in the bank, account holder and account number." });
+    back("/vendor/money", { error: "Fill in the bank, account holder and account number." });
   }
   await db.vendor.update({ where: { id: vendor.id }, data: bank });
-  back("/vendor/account", { notice: "Bank details saved. Upload a new bank letter if the account changed." });
+  back("/vendor/money", { notice: "Bank details saved. Upload a new bank letter if the account changed." });
 }
 
 export async function uploadDocument(form: FormData) {
@@ -133,11 +133,12 @@ export async function upgradeToVerified() {
   const missing = requiredDocs("VERIFIED", rules).filter((k) => !docs.some((d) => d.kind === k));
   if (missing.length) back("/vendor/documents?level=VERIFIED", { error: `Upload these first: ${missing.map((k) => DOC_LABEL[k]).join(", ")}.` });
   if (rules.requireCipc && !vendor.cipc) back("/vendor/account", { error: "Add your CIPC number in Business details first." });
-  if (rules.requireBank && !vendor.bankAccountNo) back("/vendor/account", { error: "Add your bank details first." });
+  if (rules.requireBank && !vendor.bankAccountNo) back("/vendor/money", { error: "Add your bank details first." });
   await db.vendor.update({ where: { id: vendor.id }, data: { upgradeRequested: true } });
   back("/vendor/account", { notice: "Sent to Qless. We'll check your documents and let you know by SMS." });
 }
 
+/** Shop profile: where the shop is and when it's open. */
 export async function saveShop(form: FormData) {
   const { vendor } = await requireVendor();
   const days = [0, 1, 2, 3, 4, 5, 6].map((i) => (form.get(`day${i}`) === "on" ? "1" : "0")).join("");
@@ -145,27 +146,27 @@ export async function saveShop(form: FormData) {
   const closeTime = str(form, "closeTime");
   const hhmm = /^([01]\d|2[0-3]):[0-5]\d$/;
   if (!hhmm.test(openTime) || !hhmm.test(closeTime) || openTime >= closeTime) back("/vendor/setup", { error: "Check your opening and closing times." });
-  const deposit = Math.round(Number(str(form, "deposit")) * 100);
-  const refundHours = Number(str(form, "refundHours"));
-  if (!(deposit >= 0 && deposit <= 100_000)) back("/vendor/setup", { error: "Deposit must be between R0 and R1,000." });
-  if (!(refundHours >= 0 && refundHours <= 48)) back("/vendor/setup", { error: "Refund window must be between 0 and 48 hours." });
   const address = str(form, "address") || vendor.address;
   const lat = Number(str(form, "lat"));
   const lng = Number(str(form, "lng"));
   const where = lat && lng ? { lat, lng } : address !== vendor.address ? await geocode(address) : null;
   await db.vendor.update({
     where: { id: vendor.id },
-    data: {
-      openDays: days,
-      openTime,
-      closeTime,
-      depositCents: deposit,
-      refundWindowMins: Math.round(refundHours * 60),
-      address,
-      ...(where ? { lat: where.lat, lng: where.lng } : {}),
-    },
+    data: { openDays: days, openTime, closeTime, address, ...(where ? { lat: where.lat, lng: where.lng } : {}) },
   });
-  back("/vendor/setup", { notice: "Shop details saved." });
+  back("/vendor/setup", { notice: "Shop profile saved." });
+}
+
+/** Deposit rules, on the Money page. Only Verified shops take deposits. */
+export async function saveDeposit(form: FormData) {
+  const { vendor } = await requireVendor();
+  if (vendor.level !== "VERIFIED") back("/vendor/money", { error: "Only Verified shops take deposits." });
+  const deposit = Math.round(Number(str(form, "deposit")) * 100);
+  const refundHours = Number(str(form, "refundHours"));
+  if (!(deposit >= 0 && deposit <= 100_000)) back("/vendor/money", { error: "Deposit must be between R0 and R1,000." });
+  if (!(refundHours >= 0 && refundHours <= 48)) back("/vendor/money", { error: "Refund window must be between 0 and 48 hours." });
+  await db.vendor.update({ where: { id: vendor.id }, data: { depositCents: deposit, refundWindowMins: Math.round(refundHours * 60) } });
+  back("/vendor/money", { notice: "Deposit saved." });
 }
 
 /** Reads and checks the service form shared by Add and Edit. */
@@ -188,9 +189,9 @@ function serviceFromForm(form: FormData, free: boolean) {
 export async function addService(form: FormData) {
   const { vendor } = await requireVendor();
   const data = serviceFromForm(form, typeInfo(vendor.businessType).free);
-  if (typeof data === "string") back("/vendor/setup#services", { error: data });
+  if (typeof data === "string") back("/vendor/services", { error: data });
   await db.service.create({ data: { vendorId: vendor.id, ...data } });
-  back("/vendor/setup#services", { notice: `Added ${data.name}.` });
+  back("/vendor/services", { notice: `Added ${data.name}.` });
 }
 
 export async function saveService(form: FormData) {
@@ -200,14 +201,14 @@ export async function saveService(form: FormData) {
   const data = serviceFromForm(form, typeInfo(vendor.businessType).free);
   if (typeof data === "string") back(here, { error: data });
   const res = await db.service.updateMany({ where: { id, vendorId: vendor.id, active: true }, data });
-  if (!res.count) back("/vendor/setup", { error: "Service not found." });
-  back("/vendor/setup#services", { notice: `Saved ${data.name}. New bookings use the new price; booked clients keep theirs.` });
+  if (!res.count) back("/vendor/services", { error: "Service not found." });
+  back("/vendor/services", { notice: `Saved ${data.name}. New bookings use the new price; booked clients keep theirs.` });
 }
 
 export async function removeService(form: FormData) {
   const { vendor } = await requireVendor();
   await db.service.updateMany({ where: { id: str(form, "id"), vendorId: vendor.id }, data: { active: false } });
-  back("/vendor/setup#services", { notice: "Service removed." });
+  back("/vendor/services", { notice: "Service removed." });
 }
 
 export async function addStaff(form: FormData) {
@@ -261,20 +262,20 @@ const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 export async function addPhoto(form: FormData) {
   const { vendor } = await requireVendor();
   const file = form.get("photo");
-  if (!(file instanceof File) || file.size === 0) back("/vendor/setup", { error: "Choose a photo." });
-  if (!PHOTO_TYPES.includes(file.type)) back("/vendor/setup", { error: "Photos must be JPG, PNG or WebP." });
-  if (file.size > MAX_PHOTO_BYTES) back("/vendor/setup", { error: "That photo is too big. Keep it under 1.5 MB." });
-  if ((await db.photo.count({ where: { vendorId: vendor.id } })) >= 12) back("/vendor/setup", { error: "You can have up to 12 photos. Remove one first." });
+  if (!(file instanceof File) || file.size === 0) back("/vendor/photos", { error: "Choose a photo." });
+  if (!PHOTO_TYPES.includes(file.type)) back("/vendor/photos", { error: "Photos must be JPG, PNG or WebP." });
+  if (file.size > MAX_PHOTO_BYTES) back("/vendor/photos", { error: "That photo is too big. Keep it under 1.5 MB." });
+  if ((await db.photo.count({ where: { vendorId: vendor.id } })) >= 12) back("/vendor/photos", { error: "You can have up to 12 photos. Remove one first." });
   await db.photo.create({
     data: { vendorId: vendor.id, caption: str(form, "caption").slice(0, 40), mime: file.type, data: Buffer.from(await file.arrayBuffer()) },
   });
-  back("/vendor/setup", { notice: "Photo added." });
+  back("/vendor/photos", { notice: "Photo added." });
 }
 
 export async function removePhoto(form: FormData) {
   const { vendor } = await requireVendor();
   await db.photo.deleteMany({ where: { id: str(form, "id"), vendorId: vendor.id } });
-  back("/vendor/setup", { notice: "Photo removed." });
+  back("/vendor/photos", { notice: "Photo removed." });
 }
 
 export async function openToday(form: FormData) {

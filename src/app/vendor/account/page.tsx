@@ -1,21 +1,21 @@
 import Link from "next/link";
 import { requireVendor } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { initials, prettyPhone, rand, shortDate } from "@/lib/format";
+import { prettyPhone, rand, shortDate } from "@/lib/format";
+import { ProfileHead, SetGroup, SetRow } from "@/components/SetRow";
 import { getSettings } from "@/lib/settings";
 import { planState } from "@/lib/plans";
 import { requiredDocs } from "@/lib/verification";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { signOutAction } from "@/app/(customer)/account/actions";
-import { saveBank, upgradeToVerified } from "../actions";
+import { upgradeToVerified } from "../actions";
 import { typeInfo } from "@/lib/business-types";
+import { ThemeButton } from "@/components/ThemeButton";
+import { cookies } from "next/headers";
+import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 
 export const dynamic = "force-dynamic";
-
-function Row({ href, title, sub }: { href: string; title: string; sub: string }) {
-  return <Link className="li" href={href}><span className="grow"><b>{title}</b><span>{sub}</span></span><span className="chev">›</span></Link>;
-}
 
 /** The vendor's business hub: shop, money, documents and their own profile in one place. */
 export default async function VendorAccount({ searchParams }: { searchParams: { error?: string; notice?: string } }) {
@@ -37,22 +37,21 @@ export default async function VendorAccount({ searchParams }: { searchParams: { 
     plan.kind === "TRIAL" ? `Free trial to ${shortDate(plan.until)}` : "Trial ended · subscribe to stay listed";
 
   return (
-    <main className="main">
-      <div className="prof">
-        <span className="avatar">{initials(vendor.name)}</span>
-        <div className="stack" style={{ gap: 4 }}>
-          <h2>{vendor.name}</h2>
-          <div className="row wrap" style={{ gap: 6 }}>
-            {vendor.status === "APPROVED" ? (
-              <span className={`pill ${vendor.level === "VERIFIED" ? "ok" : ""}`}><span className="dot" />{vendor.level === "VERIFIED" ? "Verified" : "Basic · not verified"}</span>
-            ) : (
-              <span className={`pill ${vendor.status === "PENDING" ? "sig" : "bad"}`}>{vendor.status === "PENDING" ? "Waiting for approval" : "Not approved"}</span>
-            )}
-            <span className="pill">{typeInfo(vendor.businessType).label}</span>
-            {plan.kind !== "OFF" && <span className="pill">{plan.kind === "ACTIVE" ? `Plan paid to ${shortDate(plan.until)}` : plan.kind === "TRIAL" ? "Free trial" : plan.kind === "WAIVED" ? "Plan waived" : "Plan needed"}</span>}
-          </div>
-        </div>
-      </div>
+    <main className="main app">
+      <ProfileHead
+        letter={(vendor.name.trim()[0] ?? "Q").toUpperCase()}
+        name={vendor.name}
+        lines={[vendor.address, `${user.name} · ${prettyPhone(user.phone)}`]}
+        corner={<ThemeButton initial={parseTheme(cookies().get(THEME_COOKIE)?.value)} />}
+        pills={<>
+          {vendor.status === "APPROVED" ? (
+            <span className={`pill ${vendor.level === "VERIFIED" ? "ok" : ""}`}>{vendor.level === "VERIFIED" ? "Verified" : "Basic"}</span>
+          ) : (
+            <span className={`pill ${vendor.status === "PENDING" ? "sig" : "bad"}`}>{vendor.status === "PENDING" ? "Waiting for approval" : "Not approved"}</span>
+          )}
+          <span className="pill">{typeInfo(vendor.businessType).label}</span>
+        </>}
+      />
       <Messages searchParams={searchParams} />
 
       {vendor.level === "BASIC" && (
@@ -70,49 +69,36 @@ export default async function VendorAccount({ searchParams }: { searchParams: { 
         </div>
       )}
 
-      <div className="lbl">Your business</div>
-      <div className="list">
-        <Row href="/vendor/setup" title="Shop profile and hours" sub={`${vendor.address} · ${vendor.openTime} to ${vendor.closeTime}`} />
-        <Row href="/vendor/setup#services" title="Services and prices" sub={services.length ? `${services.length} services · from ${rand(cheapest)}` : "Add your first service"} />
-        <Row href="/vendor/team" title="My team" sub={staff.length ? `${staff.length} staff · ${staff.filter((s) => s.phone).length} with their own login` : "Add your team"} />
-        <Row href="/vendor/qr" title="QR code and poster" sub="Customers scan it to join your queue" />
-        <Row href="/vendor/tv" title="Waiting-room TV screen" sub="Show who's being served and who's next" />
-        {typeInfo(vendor.businessType).jobs && <Row href="/vendor/jobs" title="Job cards" sub="Repairs in progress, quotes and collections" />}
-      </div>
+      <SetGroup title="Shop">
+        <SetRow icon="chart" title="Summary" sub="Served, no-shows and takings" href="/vendor/summary" />
+        <SetRow icon="team" title="My team" sub={staff.length ? `${staff.length} staff` : "Add your staff"} href="/vendor/team" />
+        <SetRow icon="tag" title="Services and prices" sub={services.length ? `${services.length} services · from ${rand(cheapest)}` : "Add your first service"} href="/vendor/services" />
+        <SetRow icon="pin" title="Shop profile" sub={`${vendor.openTime} to ${vendor.closeTime} · ${vendor.address}`} href="/vendor/setup" />
+        <SetRow icon="photo" title="Photos" sub="Show customers your work" href="/vendor/photos" />
+        <SetRow icon="qr" title="QR code and poster" sub="Customers scan it to join" href="/vendor/qr" />
+        <SetRow icon="tv" title="Waiting-room TV" sub="Who's being served and who's next" href="/vendor/tv" />
+        {typeInfo(vendor.businessType).jobs && <SetRow icon="wrench" title="Job cards" sub="Repairs, quotes and collections" href="/vendor/jobs" />}
+      </SetGroup>
 
-      <div className="lbl">Money</div>
-      <div className="list">
-        {vendor.level === "VERIFIED" && (
-          <details className="li" style={{ display: "block" }}>
-            <summary className="row between" style={{ listStyle: "none" }}>
-              <span className="grow"><b>Payouts and bank</b><span>{vendor.bankAccountNo ? `${vendor.bankName} ····${vendor.bankAccountNo.slice(-4)}` : "Add your bank account"}</span></span>
-              <span className="chev">›</span>
-            </summary>
-            <form action={saveBank} className="stack" style={{ marginTop: 10 }}>
-              <label className="f">Bank<input className="i" name="bankName" defaultValue={vendor.bankName ?? ""} /></label>
-              <label className="f">Account holder<input className="i" name="bankAccountName" defaultValue={vendor.bankAccountName ?? ""} /></label>
-              <label className="f">Account number<input className="i mono" name="bankAccountNo" inputMode="numeric" defaultValue={vendor.bankAccountNo ?? ""} /></label>
-              <Submit className="btn sm">Save bank details</Submit>
-            </form>
-          </details>
-        )}
-        {vendor.level === "VERIFIED" && <Row href="/vendor/payouts" title="Payouts" sub="Deposits earned, paid out and still due" />}
-        <Row href="/vendor/plan" title="Qless plan" sub={planText} />
-        <Row href="/vendor/documents" title="Documents" sub={`${approvedDocs} of ${needed.length} approved`} />
-        <Row href="/vendor/summary" title="Daily summary" sub="Served, no-shows, deposits and takings" />
-      </div>
+      <SetGroup title="Money">
+        <SetRow icon="bank" title="Bank account" sub={vendor.level !== "VERIFIED" ? "For Verified shops" : vendor.bankAccountNo ? `${vendor.bankName} ····${vendor.bankAccountNo.slice(-4)}` : "Add your bank account"} href="/vendor/money" />
+        {vendor.level === "VERIFIED" && <SetRow icon="card" title="Payouts" sub="Earned, paid out and due" href="/vendor/payouts" />}
+        <SetRow icon="calendar" title="Qless plan" sub={planText} href="/vendor/plan" />
+      </SetGroup>
 
-      <div className="lbl">You</div>
-      <div className="list">
-        <Row href="/account" title={user.name} sub={user.email ?? prettyPhone(user.phone)} />
-        <Row href="/discover" title="Switch to customer view" sub="Book at other shops" />
-      </div>
+      <SetGroup title="Documents">
+        <SetRow icon="doc" title="My documents" sub={`${approvedDocs} of ${needed.length} approved · view or replace`} href="/vendor/documents" />
+      </SetGroup>
 
-      <div className="lbl">Help</div>
-      <div className="list">
-        <Row href="/help" title="Help and contact" sub="Payouts, staff logins and listings" />
-        <Row href="/vendor-agreement" title="Vendor data agreement" sub="How to handle your customers' details" />
-      </div>
+      <SetGroup title="You">
+        <SetRow icon="person" title="My settings" sub="Profile, notifications, language, look" href="/account" />
+        <SetRow icon="switch" title="Switch to client mode" sub="Find and book other places" href="/discover" />
+      </SetGroup>
+
+      <SetGroup title="More">
+        <SetRow icon="help" title="Help" href="/help" external />
+        <SetRow icon="shield" title="Vendor data agreement" href="/vendor-agreement" external />
+      </SetGroup>
       <form action={signOutAction}><Submit className="btn alt">Sign out</Submit></form>
     </main>
   );

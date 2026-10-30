@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SubHead } from "@/components/SetRow";
 import { requireVendor } from "@/lib/auth";
 import { openJobs } from "@/lib/bookings";
 import { nextStage, JOB_LABEL, JOB_STAGES, type JobStage } from "@/lib/business-types";
@@ -17,7 +18,7 @@ export default async function Jobs({ searchParams }: { searchParams: { error?: s
   return (
     <main className="main">
       <AutoRefresh seconds={30} />
-      <h1>Job cards</h1>
+      <SubHead back="/vendor/account" backLabel="Account" title="Job cards" />
       <Messages searchParams={searchParams} />
       {jobs.length === 0 && <p className="muted">No open jobs. Start a client from the queue and their job card appears here.</p>}
       {jobs.map((b) => {

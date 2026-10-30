@@ -1,82 +1,74 @@
-import Link from "next/link";
 import { cookies } from "next/headers";
 import { requireUser, staffFor } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { initials, prettyPhone } from "@/lib/format";
+import { prettyPhone } from "@/lib/format";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
-import { PushToggle } from "@/components/PushToggle";
-import { ThemeSwitch } from "@/components/ThemeSwitch";
+import { ThemeButton } from "@/components/ThemeButton";
+import { ProfileHead, SetGroup, SetRow, Icon } from "@/components/SetRow";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
-import { deleteAccount, signOutAction, updateAccount } from "./actions";
-import { LanguagePicker } from "@/components/LanguagePicker";
+import { LANGS } from "@/lib/i18n";
 import { langFor } from "@/lib/lang";
+import { inClientMode } from "@/lib/mode";
+import { signOutAction, switchMode } from "./actions";
+
+export const dynamic = "force-dynamic";
 
 export default async function Account({ searchParams }: { searchParams: { error?: string; notice?: string } }) {
   const user = await requireUser();
-  const vendor = await db.vendor.findUnique({ where: { ownerId: user.id } });
-  const staff = await staffFor(user);
-  return (
-    <main className="main">
-      <div className="prof">
-        <span className="avatar">{initials(user.name)}</span>
-        <div className="stack" style={{ gap: 2 }}>
-          <h2>{user.name}</h2>
-          {user.email && <span className="small muted">{user.email}</span>}
-          <span className="small muted mono">{prettyPhone(user.phone)}</span>
-        </div>
-      </div>
-      <Messages searchParams={searchParams} />
-      {!user.email && <div className="banner">Add your email so we can send receipts and help you get back into your account.</div>}
+  const [vendor, staff] = await Promise.all([db.vendor.findUnique({ where: { ownerId: user.id } }), staffFor(user)]);
+  const isStaff = staff.length > 0;
+  const clientMode = inClientMode();
+  const role = vendor ? "Shop owner" : isStaff ? (clientMode ? "Client" : "Staff") : user.role === "ADMIN" ? "Admin" : "Customer";
+  const lang = langFor(user);
 
-      {(vendor || staff.length > 0 || user.role === "ADMIN") && (
-        <>
-          <div className="lbl">Work</div>
-          <div className="list">
-            {vendor && <Link className="li" href="/vendor/account"><span className="grow"><b>{vendor.name}</b><span>Your business hub</span></span><span className="chev">›</span></Link>}
-            {staff.map((s) => <Link key={s.id} className="li" href="/staff"><span className="grow"><b>My chair at {s.vendor.name}</b><span>Call your next client</span></span><span className="chev">›</span></Link>)}
-            {user.role === "ADMIN" && <Link className="li" href="/admin"><span className="grow"><b>Admin</b><span>Vendor approvals and settings</span></span><span className="chev">›</span></Link>}
-          </div>
-        </>
+  return (
+    <main className="main app">
+      <ProfileHead
+        letter={(user.name.trim()[0] ?? "Q").toUpperCase()}
+        name={user.name}
+        lines={[prettyPhone(user.phone), user.email ?? "No email yet"]}
+        corner={<ThemeButton initial={parseTheme(cookies().get(THEME_COOKIE)?.value)} />}
+        pills={<><span className="pill">{role}</span><span className="pill ok">Active</span></>}
+      />
+      <Messages searchParams={searchParams} />
+
+      {(vendor || isStaff || user.role === "ADMIN") && (
+        <SetGroup title="Work">
+          {vendor && <SetRow icon="shop" title={vendor.name} sub="Your shop" href="/vendor/account" />}
+          {isStaff && (
+            <form action={switchMode}>
+              <input type="hidden" name="mode" value={clientMode ? "staff" : "client"} />
+              <button className="setrow">
+                <span className="ico"><Icon name="switch" /></span>
+                <span className="grow"><b>{clientMode ? "Switch to staff mode" : "Switch to client mode"}</b><span>{clientMode ? `My bay at ${staff[0].vendor.name}` : "Find and book other places"}</span></span>
+                <span className="chev" aria-hidden>›</span>
+              </button>
+            </form>
+          )}
+          {user.role === "ADMIN" && <SetRow icon="admin" title="Admin" sub="Approvals and settings" href="/admin" />}
+        </SetGroup>
+      )}
+      {!vendor && !isStaff && (
+        <SetGroup title="Business">
+          <SetRow icon="plus" title="List your business" sub="Let customers join your queue" href="/vendor/register" />
+        </SetGroup>
       )}
 
-      <form action={updateAccount} className="stack" style={{ gap: 12 }}>
-        <div className="lbl">Personal details</div>
-        <label className="f">Full name<input className="i" name="name" defaultValue={user.name} autoComplete="name" /></label>
-        <label className="f">Email<input className="i" type="email" name="email" defaultValue={user.email ?? ""} autoComplete="email" placeholder="you@example.com" /></label>
-        <div className="small muted">Cellphone <span className="mono">{prettyPhone(user.phone)}</span> is how you sign in.</div>
-        <div className="lbl">Notifications</div>
-        <div className="card stack">
-          <label className="check"><input type="checkbox" name="consentReminders" defaultChecked={user.consentReminders} /> Booking updates and reminders by SMS and WhatsApp</label>
-          <label className="check"><input type="checkbox" name="notifySms" defaultChecked={user.notifySms} /> Use SMS</label>
-          <label className="check"><input type="checkbox" name="notifyWhatsapp" defaultChecked={user.notifyWhatsapp} /> Use WhatsApp</label>
-          <label className="check"><input type="checkbox" name="consentOffers" defaultChecked={user.consentOffers} /> Offers from shops I&apos;ve visited</label>
-          <label className="check"><input type="checkbox" name="lowData" defaultChecked={user.lowData} /> Low-data mode (hides map and photos)</label>
-        </div>
-        <Submit>Save</Submit>
-      </form>
-      <PushToggle publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ""} />
-      <LanguagePicker lang={langFor(user)} />
-      <div className="lbl">Appearance</div>
-      <ThemeSwitch initial={parseTheme(cookies().get(THEME_COOKIE)?.value)} />
+      <SetGroup title="Settings">
+        <SetRow icon="person" title="Profile" sub="Name, email and cellphone" href="/account/profile" />
+        <SetRow icon="bell" title="Notifications" sub="SMS, WhatsApp and data saver" href="/account/notifications" />
+        <SetRow icon="globe" title="Language" sub={LANGS[lang]} href="/account/language" />
+      </SetGroup>
 
-      <div className="lbl">More</div>
-      <div className="list">
-        {!vendor && <Link className="li" href="/vendor/register"><span className="grow"><b>List your business</b><span>Barbers, car washes, clinics, repairs and more</span></span><span className="chev">›</span></Link>}
-        <a className="li" href="/help"><span className="grow"><b>Help and contact</b><span>Questions, deposits and refunds</span></span><span className="chev">›</span></a>
-        <a className="li" href="/terms"><span className="grow"><b>Terms of use</b><span>Bookings, deposits and no-shows</span></span><span className="chev">›</span></a>
-        <a className="li" href="/privacy"><span className="grow"><b>Privacy policy</b><span>How we protect your details under POPIA</span></span><span className="chev">›</span></a>
-        <a className="li" href="/api/me/export"><span className="grow"><b>Download my data</b><span>Everything we hold about you</span></span><span className="chev">›</span></a>
-        <a className="li" href="/paia"><span className="grow"><b>PAIA manual</b><span>Information Officer and how to request records</span></span><span className="chev">›</span></a>
-      </div>
-      <details className="card">
-        <summary>Delete my account</summary>
-        <form action={deleteAccount} className="stack" style={{ marginTop: 10 }}>
-          <p className="small muted">This removes your name, email and number. Past visits stay on the shops&apos; records without your details.</p>
-          <input className="i" name="confirm" placeholder="Type DELETE" />
-          <Submit className="btn warn">Delete my account</Submit>
-        </form>
-      </details>
+      <SetGroup title="More">
+        <SetRow icon="help" title="Help" href="/help" external />
+        <SetRow icon="lock" title="Privacy policy" href="/privacy" external />
+        <SetRow icon="shield" title="POPIA and PAIA" href="/paia" external />
+        <SetRow icon="download" title="Download my data" href="/api/me/export" external />
+        <SetRow icon="doc" title="Terms of use" href="/terms" external />
+      </SetGroup>
+
       <form action={signOutAction}><Submit className="btn alt">Sign out</Submit></form>
     </main>
   );

@@ -7,6 +7,7 @@ import { DOC_HINT, DOC_LABEL, optionalDocs, requiredDocs } from "@/lib/verificat
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { PhotoInput } from "@/components/PhotoInput";
+import { SubHead } from "@/components/SetRow";
 import { uploadDocument } from "../actions";
 import type { DocKind } from "@prisma/client";
 
@@ -38,7 +39,12 @@ export default async function Documents({ searchParams }: { searchParams: { erro
           <span className="grow"><b>{DOC_LABEL[kind]}</b><br /><span className="small muted">{DOC_HINT[kind]}</span></span>
           {st ? <span className={`pill ${st.kind}`}>{st.text}</span> : <span className="small muted mono">{req ? "REQUIRED" : "OPTIONAL"}</span>}
         </div>
-        {d && <span className="small muted">{d.fileName} · {shortDate(d.createdAt)}{d.note ? ` · ${d.note}` : ""}</span>}
+        {d && (
+          <span className="row between small">
+            <span className="muted ell">{d.fileName} · {shortDate(d.createdAt)}{d.note ? ` · ${d.note}` : ""}</span>
+            <a className="btn sm alt" href={`/api/documents/${d.id}`} target="_blank" rel="noopener">View</a>
+          </span>
+        )}
         {d?.status !== "APPROVED" && (
           <div className="row">
             <PhotoInput name="file" accept="image/jpeg,image/png,image/webp,application/pdf" capture={kind === "SELFIE" ? "user" : undefined} required className="grow" />
@@ -51,7 +57,8 @@ export default async function Documents({ searchParams }: { searchParams: { erro
 
   return (
     <main className="main">
-      <div className="hello"><small>{vendor.name} · {level === "BASIC" ? "Basic" : "Verified"}</small>Your documents</div>
+      <SubHead back="/vendor/account" backLabel="Account" title="Documents" />
+      <p className="small muted">{vendor.name} · {level === "BASIC" ? "Basic" : "Verified"}</p>
       <Messages searchParams={searchParams} />
       <p className="small muted">Photos or PDFs up to 4 MB each (big phone photos are made smaller for you). Only Qless admins can see them, and we delete the files 90 days after we&apos;ve checked them.</p>
       {required.map((k) => row(k, true))}

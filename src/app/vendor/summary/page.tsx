@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SubHead } from "@/components/SetRow";
 import { requireVendor } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { rand, sastDate, TZ } from "@/lib/format";
@@ -50,7 +51,7 @@ export default async function Summary({ searchParams }: { searchParams: { date?:
 
   return (
     <main className="main">
-      <h1>Daily summary</h1>
+      <SubHead back="/vendor/account" backLabel="Account" title="Daily summary" />
       <div className="row between">
         <Link className="btn sm alt" href={`/vendor/summary?date=${prev.toISOString().slice(0, 10)}`}>‹ Prev</Link>
         <span className="muted">{label}</span>
