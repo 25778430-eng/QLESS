@@ -42,7 +42,7 @@ export function lastMonths(n: number, now = new Date()): string[] {
   });
 }
 
-export type DepositRow = { vendorId: string; depositCents: number; depositStatus: string };
+export type DepositRow = { vendorId: string; depositCents: number; depositStatus: string; restPaidCents?: number };
 export type VendorDeposits = { owed: number; held: number; refunded: number };
 
 /**
@@ -54,11 +54,17 @@ export function depositsByVendor(rows: DepositRow[]): Map<string, VendorDeposits
   const out = new Map<string, VendorDeposits>();
   for (const r of rows) {
     const v = out.get(r.vendorId) ?? { owed: 0, held: 0, refunded: 0 };
-    if (r.depositStatus === "APPLIED" || r.depositStatus === "FORFEITED") v.owed += r.depositCents;
-    else if (r.depositStatus === "PAID") v.held += r.depositCents;
-    else if (r.depositStatus === "REFUNDED" || r.depositStatus === "REFUND_PENDING") v.refunded += r.depositCents;
-    else continue;
-    out.set(r.vendorId, v);
+    let touched = false;
+    if (r.depositCents > 0) {
+      touched = true;
+      if (r.depositStatus === "APPLIED" || r.depositStatus === "FORFEITED") v.owed += r.depositCents;
+      else if (r.depositStatus === "PAID") v.held += r.depositCents;
+      else if (r.depositStatus === "REFUNDED" || r.depositStatus === "REFUND_PENDING") v.refunded += r.depositCents;
+      else touched = false;
+    }
+    // The rest of the price paid in the app is the shop's money too.
+    if (r.restPaidCents) { v.owed += r.restPaidCents; touched = true; }
+    if (touched) out.set(r.vendorId, v);
   }
   return out;
 }

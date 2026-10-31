@@ -160,6 +160,8 @@ model Vendor {
   approvedAt       DateTime?
   // Monthly plan. planPaidUntil moves forward with each PayFast subscription payment.
   planWaived       Boolean      @default(false)
+  // The shop lets clients pay the rest of the price in the app (only works when the super admin switch is on).
+  payInApp         Boolean      @default(false)
   planPaidUntil    DateTime?
   planToken        String?
   planAmountCents  Int?
@@ -307,6 +309,10 @@ model Booking {
   // Qless booking fee paid on top of the deposit. Kept by Qless, never refunded.
   feeCents         Int           @default(0)
   payfastPaymentId String?
+  // The rest of the price, paid in the app after the service. Owed to the shop with its deposits.
+  restPaidCents    Int           @default(0)
+  restPaymentId    String?
+  restPaidAt       DateTime?
   reminded60       Boolean       @default(false)
   reminded20       Boolean       @default(false)
   calledAt         DateTime?
@@ -355,6 +361,8 @@ model Setting {
   requireBank     Boolean   @default(true)
   // Business types switched off by the super admin. Their shops are hidden and can't sign up.
   disabledTypes   String[]  @default(["GOVERNMENT"])
+  // Clients can pay the rest of the price in the app (Verified shops that switch it on). Off until a super admin turns it on.
+  payInAppOn      Boolean   @default(false)
   // Last run of the daily POPIA clean-up.
   cleanupAt       DateTime?
   updatedAt       DateTime  @updatedAt

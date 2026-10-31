@@ -51,3 +51,13 @@ describe("vendor balance", () => {
     expect(vendorBalance([], [])).toEqual({ owed: 0, held: 0, refunded: 0, paidOut: 0, due: 0 });
   });
 });
+
+describe("rest paid in the app", () => {
+  it("counts as owed to the shop, on top of the deposit", () => {
+    const m = depositsByVendor([
+      { vendorId: "v", depositCents: 5000, depositStatus: "APPLIED", restPaidCents: 10000 },
+      { vendorId: "v", depositCents: 0, depositStatus: "NONE", restPaidCents: 8000 },
+    ]);
+    expect(m.get("v")?.owed).toBe(23000);
+  });
+});

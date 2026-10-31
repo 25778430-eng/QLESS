@@ -14,8 +14,8 @@ export default async function Payouts() {
   const { vendor } = await requireVendor();
   const [deposits, payouts] = await Promise.all([
     db.booking.findMany({
-      where: { vendorId: vendor.id, depositCents: { gt: 0 }, depositStatus: { not: "NONE" } },
-      select: { vendorId: true, depositCents: true, depositStatus: true, ref: true, createdAt: true, customer: { select: { name: true } } },
+      where: { vendorId: vendor.id, OR: [{ depositCents: { gt: 0 }, depositStatus: { not: "NONE" } }, { restPaidCents: { gt: 0 } }] },
+      select: { vendorId: true, depositCents: true, depositStatus: true, restPaidCents: true, ref: true, createdAt: true, customer: { select: { name: true } } },
       orderBy: { createdAt: "desc" },
     }),
     db.payout.findMany({ where: { vendorId: vendor.id }, orderBy: { createdAt: "desc" } }),
@@ -33,7 +33,7 @@ export default async function Payouts() {
             <span className="r"><span><b>{payouts.length}</b><span>payouts</span></span></span>
           </div>
           <div className="stat">
-            <div><b className="mono" style={{ fontSize: 18 }}>{rand(bal.owed)}</b><span>earned from deposits</span></div>
+            <div><b className="mono" style={{ fontSize: 18 }}>{rand(bal.owed)}</b><span>earned</span></div>
             <div><b className="mono" style={{ fontSize: 18 }}>{rand(bal.paidOut)}</b><span>paid out</span></div>
             <div><b className="mono" style={{ fontSize: 18 }}>{rand(bal.held)}</b><span>held for visits</span></div>
           </div>
@@ -46,11 +46,11 @@ export default async function Payouts() {
             ))}
           </div>
 
-          <h3>Deposits</h3>
+          <h3>Deposits and app payments</h3>
           {deposits.length === 0 && <p className="muted">No deposits yet.</p>}
           <div className="list">
             {deposits.slice(0, 50).map((d) => (
-              <div key={d.ref} className="li"><span className="grow"><b>{d.customer?.name ?? "Customer"} · <span className="mono">{rand(d.depositCents)}</span></b><span>{shortDate(d.createdAt)} · #{d.ref} · {LINE[d.depositStatus] ?? d.depositStatus}</span></span></div>
+              <div key={d.ref} className="li"><span className="grow"><b>{d.customer?.name ?? "Customer"} · <span className="mono">{rand(d.depositCents + d.restPaidCents)}</span></b><span>{shortDate(d.createdAt)} · #{d.ref} · {d.depositCents > 0 ? LINE[d.depositStatus] ?? d.depositStatus : ""}{d.restPaidCents > 0 ? `${d.depositCents > 0 ? " · " : ""}${rand(d.restPaidCents)} paid in app` : ""}</span></span></div>
             ))}
           </div>
         </>

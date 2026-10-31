@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { amountDue, bookingFee, parseFeeRand } from "./fees";
+import { amountDue, bookingFee, parseFeeRand, canPayRest, restDue } from "./fees";
 
 describe("bookingFee", () => {
   it("is zero while switched off", () => {
@@ -28,5 +28,23 @@ describe("parseFeeRand", () => {
     expect(parseFeeRand("abc")).toBeNull();
     expect(parseFeeRand("51")).toBeNull();
     expect(parseFeeRand("1.234")).toBeNull();
+  });
+});
+
+describe("pay the rest in the app", () => {
+  const b = { status: "DONE", priceCents: 15000, depositCents: 5000, depositStatus: "APPLIED", restPaidCents: 0 };
+  const on = { payInAppOn: true };
+  const shop = { payInApp: true, level: "VERIFIED" };
+  it("takes a paid deposit off the price", () => {
+    expect(restDue(b)).toBe(10000);
+    expect(restDue({ ...b, depositStatus: "NONE" })).toBe(15000);
+  });
+  it("only shows when both switches are on and nothing is paid yet", () => {
+    expect(canPayRest(on, shop, b)).toBe(true);
+    expect(canPayRest({ payInAppOn: false }, shop, b)).toBe(false);
+    expect(canPayRest(on, { ...shop, payInApp: false }, b)).toBe(false);
+    expect(canPayRest(on, { ...shop, level: "BASIC" }, b)).toBe(false);
+    expect(canPayRest(on, shop, { ...b, status: "WAITING" })).toBe(false);
+    expect(canPayRest(on, shop, { ...b, restPaidCents: 10000 })).toBe(false);
   });
 });

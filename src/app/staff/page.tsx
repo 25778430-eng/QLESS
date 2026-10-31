@@ -24,7 +24,7 @@ export default async function MyBay({ searchParams }: { searchParams: { error?: 
   const name = (b: (typeof bookings)[number]) => b.customer?.name ?? b.walkInName ?? "Walk-in";
   const onBreak = staff.breakUntil && staff.breakUntil > new Date() ? staff.breakUntil : null;
   const info = typeInfo(vendor.businessType);
-  const toCollect = (b: (typeof bookings)[number]) => b.priceCents - (b.depositStatus === "PAID" ? b.depositCents : 0);
+  const toCollect = (b: (typeof bookings)[number]) => Math.max(0, b.priceCents - (b.depositStatus === "PAID" ? b.depositCents : 0) - b.restPaidCents);
 
   return (
     <main className="main">

@@ -336,6 +336,17 @@ export async function markPaid(bookingId: string, pfPaymentId: string | null): P
   }
 }
 
+/** The client paid the rest of the price in the app. The shop gets it with its next payout. */
+export async function markRestPaid(bookingId: string, cents: number, pfPaymentId: string | null): Promise<void> {
+  const done = await db.booking.updateMany({
+    where: { id: bookingId, restPaidAt: null },
+    data: { restPaidCents: cents, restPaymentId: pfPaymentId, restPaidAt: new Date() },
+  });
+  if (done.count === 0) return;
+  const b = await db.booking.findUnique({ where: { id: bookingId }, include: { vendor: true, customer: true } });
+  if (b) await sendSms(b.vendor.phone, `Qless: ${b.customer?.name ?? "A client"} paid ${rand(cents)} in the app for booking ${b.ref}. It's added to your next payout.`);
+}
+
 async function returnDeposit(b: Booking, reason: string): Promise<"REFUNDED" | "REFUND_PENDING" | "NONE"> {
   if (b.depositStatus !== "PAID" || b.depositCents === 0) return "NONE";
   // Only the deposit goes back; the Qless booking fee is not refunded.

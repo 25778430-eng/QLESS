@@ -6,7 +6,8 @@ import { aheadOf, bookedFor, depositLine, loadQueue } from "@/lib/bookings";
 import { JOB_LABEL, JOB_STAGES, typeInfo, type JobStage } from "@/lib/business-types";
 import { ARRIVAL_WINDOW_MINS, refundOnCancel } from "@/lib/queue";
 import { rand, time } from "@/lib/format";
-import { amountDue } from "@/lib/fees";
+import { amountDue, canPayRest, restDue } from "@/lib/fees";
+import { getSettings } from "@/lib/settings";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { AutoRefresh } from "@/components/AutoRefresh";
@@ -29,12 +30,21 @@ export default async function BookingPage({ params, searchParams }: { params: { 
   const title = `${b.service.name}${b.optionLabel ? ` (${b.optionLabel})` : ""}${b.staff ? ` with ${b.staff.name}` : ""}`;
   const info = typeInfo(b.vendor.businessType);
   const stageAt = JOB_STAGES.indexOf((b.jobStage ?? "") as JobStage);
+  const payRest = canPayRest(await getSettings(), b.vendor, b);
 
   return (
     <main className="main">
       {live && <AutoRefresh seconds={b.status === "PENDING_PAYMENT" ? 5 : 15} />}
       <Messages searchParams={searchParams} />
       {searchParams.paid && b.status === "PENDING_PAYMENT" && <div className="fill small">Waiting for PayFast to confirm your payment…</div>}
+
+      {payRest && (
+        <div className="card stack">
+          <div className="row between"><b>Pay the rest in the app</b><b className="mono">{rand(restDue(b))}</b></div>
+          <Link className="btn sig" href={`/bookings/${b.id}/rest`}>Pay {rand(restDue(b))}</Link>
+        </div>
+      )}
+      {b.restPaidAt && <div className="pill ok" style={{ alignSelf: "flex-start" }}>Paid {rand(b.restPaidCents)} in the app</div>}
 
       {b.status === "PENDING_PAYMENT" && (
         <>
@@ -154,7 +164,7 @@ export default async function BookingPage({ params, searchParams }: { params: { 
             <div className="row between"><span>{b.service.name}{b.optionLabel ? ` (${b.optionLabel})` : ""}</span><b className="mono">{rand(b.priceCents - b.extrasCents)}</b></div>
             {b.extrasCents > 0 && <div className="row between"><span>+ {b.extras}</span><b className="mono">{rand(b.extrasCents)}</b></div>}
             {b.depositCents > 0 && <div className="row between"><span>Deposit applied</span><b className="mono">−{rand(b.depositCents)}</b></div>}
-            <div className="row between" style={{ borderTop: "1px solid var(--line)", paddingTop: 8 }}><span>Paid at shop</span><b className="mono">{rand(b.priceCents - b.depositCents)}</b></div>
+            <div className="row between" style={{ borderTop: "1px solid var(--line)", paddingTop: 8 }}><span>{b.restPaidAt ? "Paid in the app" : payRest ? "Still to pay" : "Paid at shop"}</span><b className="mono">{rand(b.priceCents - b.depositCents)}</b></div>
           </div>
           {b.review ? (
             <div className="card small"><b>Your review: {"★".repeat(b.review.rating)}</b>{b.review.text && <><br />{b.review.text}</>}</div>

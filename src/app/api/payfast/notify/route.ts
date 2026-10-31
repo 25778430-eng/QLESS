@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
-import { markPaid } from "@/lib/bookings";
-import { amountDue } from "@/lib/fees";
-import { PLAN_PREFIX, payfastConfigured, verifyItn } from "@/lib/payfast";
+import { markPaid, markRestPaid } from "@/lib/bookings";
+import { amountDue, restDue } from "@/lib/fees";
+import { PLAN_PREFIX, REST_PREFIX, payfastConfigured, verifyItn } from "@/lib/payfast";
 import { recordPlanPayment } from "@/lib/plan-billing";
 
 /** PayFast ITN: confirms a deposit (plus any booking fee) or a vendor plan payment, server-to-server. */
@@ -20,6 +20,18 @@ export async function POST(req: Request) {
   if (id.startsWith(PLAN_PREFIX)) {
     const result = await recordPlanPayment(id.slice(PLAN_PREFIX.length), data.payment_status ?? "", paidCents, data.token ?? "");
     return result === "OK" ? new Response("OK") : new Response(result, { status: 400 });
+  }
+
+  if (id.startsWith(REST_PREFIX)) {
+    const b = await db.booking.findUnique({ where: { id: id.slice(REST_PREFIX.length) } });
+    if (!b) return new Response("Unknown booking", { status: 404 });
+    if (b.restPaidAt) return new Response("OK");
+    if (paidCents !== restDue(b)) {
+      console.error("[payfast] rest amount mismatch", b.id, paidCents, restDue(b));
+      return new Response("Amount mismatch", { status: 400 });
+    }
+    if (data.payment_status === "COMPLETE") await markRestPaid(b.id, paidCents, data.pf_payment_id ?? null);
+    return new Response("OK");
   }
 
   const booking = await db.booking.findUnique({ where: { id } });
