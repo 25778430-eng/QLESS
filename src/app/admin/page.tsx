@@ -21,14 +21,15 @@ export default async function Admin({ searchParams }: { searchParams: { error?: 
   const superAdmin = !!me && isSuperAdmin(me);
   const settings = await getSettings();
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const [waiting, live, users, fees, featured, deposits, payouts] = await Promise.all([
+  const [waiting, live, users, fees, featured, deposits, payouts, payInAppShops] = await Promise.all([
     db.vendor.findMany({ where: { OR: [{ status: "PENDING" }, { upgradeRequested: true }] }, select: { name: true }, orderBy: { createdAt: "asc" } }),
     db.vendor.count({ where: { status: "APPROVED" } }),
     db.user.count(),
     db.booking.aggregate({ where: { feeCents: { gt: 0 }, createdAt: { gte: since }, payfastPaymentId: { not: null } }, _sum: { feeCents: true } }),
     db.vendor.count({ where: { featured: true } }),
-    superAdmin ? db.booking.findMany({ where: { depositCents: { gt: 0 }, depositStatus: { in: ["APPLIED", "FORFEITED"] } }, select: { vendorId: true, depositCents: true, depositStatus: true } }) : [],
+    superAdmin ? db.booking.findMany({ where: { OR: [{ depositCents: { gt: 0 }, depositStatus: { in: ["APPLIED", "FORFEITED"] } }, { restPaidCents: { gt: 0 } }] }, select: { vendorId: true, depositCents: true, depositStatus: true, restPaidCents: true } }) : [],
     superAdmin ? db.payout.groupBy({ by: ["vendorId"], _sum: { amountCents: true } }) : [],
+    db.vendor.count({ where: { payInApp: true, level: "VERIFIED", status: "APPROVED" } }),
   ]);
   const byShop = new Map<string, typeof deposits>();
   for (const d of deposits) byShop.set(d.vendorId, [...(byShop.get(d.vendorId) ?? []), d]);
@@ -61,6 +62,7 @@ export default async function Admin({ searchParams }: { searchParams: { error?: 
             <SetGroup title="Money">
               <SetRow icon="card" title="Booking fee" sub={`${rand(settings.bookingFeeCents)} per booking`} href="/admin/fee" badge={<OnOff on={settings.bookingFeeOn} />} />
               <SetRow icon="calendar" title="Monthly plan" sub={`${rand(settings.planPriceCents)} · ${settings.planTrialDays}-day trial`} href="/admin/plan" badge={<OnOff on={settings.planOn} />} />
+              <SetRow icon="card" title="Pay the rest in the app" sub={settings.payInAppOn ? `${payInAppShops} shops using it` : "Clients pay the rest at the shop"} href="/admin/pay-in-app" badge={<OnOff on={settings.payInAppOn} />} />
               <SetRow icon="chart" title="Money and payouts" href="/admin/money" />
             </SetGroup>
             <SetGroup title="Rules">

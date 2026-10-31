@@ -1,7 +1,8 @@
 "use server";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { BookingError, answerQuote, cancelBooking, markPaid, moveBack } from "@/lib/bookings";
+import { BookingError, answerQuote, cancelBooking, markPaid, markRestPaid, moveBack } from "@/lib/bookings";
+import { restDue } from "@/lib/fees";
 import { db } from "@/lib/db";
 import { payfastConfigured } from "@/lib/payfast";
 import { back, str } from "@/lib/http";
@@ -38,6 +39,15 @@ export async function testPayAction(form: FormData) {
   const id = str(form, "bookingId");
   const b = await db.booking.findFirst({ where: { id, customerId: user.id } });
   if (b) await markPaid(b.id, `test-${b.id}`);
+  back(`/bookings/${id}`, { notice: "Test payment approved." });
+}
+
+export async function testRestPayAction(form: FormData) {
+  const user = await requireUser();
+  if (payfastConfigured() || process.env.NODE_ENV === "production") redirect("/bookings");
+  const id = str(form, "bookingId");
+  const b = await db.booking.findFirst({ where: { id, customerId: user.id } });
+  if (b && restDue(b) > 0) await markRestPaid(b.id, restDue(b), `test-rest-${b.id}`);
   back(`/bookings/${id}`, { notice: "Test payment approved." });
 }
 

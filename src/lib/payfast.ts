@@ -35,7 +35,13 @@ export type PaymentRequest = {
   itemName: string;
   customerPhone: string;
   appUrl: string;
+  /** Sent back to us in the ITN. Defaults to the booking id (a deposit payment). */
+  paymentId?: string;
+  description?: string;
 };
+
+/** m_payment_id prefix for paying the rest of the price in the app. */
+export const REST_PREFIX = "rest-";
 
 /** Fields for the auto-submitting form that sends the customer to PayFast. */
 export function paymentForm(p: PaymentRequest): { action: string; fields: Array<[string, string]> } {
@@ -46,10 +52,10 @@ export function paymentForm(p: PaymentRequest): { action: string; fields: Array<
     ["cancel_url", `${p.appUrl}/bookings/${p.bookingId}?cancelled=1`],
     ["notify_url", `${p.appUrl}/api/payfast/notify`],
     ["cell_number", p.customerPhone.replace("+27", "0")],
-    ["m_payment_id", p.bookingId],
+    ["m_payment_id", p.paymentId ?? p.bookingId],
     ["amount", (p.amountCents / 100).toFixed(2)],
     ["item_name", p.itemName.slice(0, 100)],
-    ["item_description", `Qless deposit ${p.ref}`],
+    ["item_description", p.description ?? `Qless deposit ${p.ref}`],
   ];
   fields.push(["signature", pfSignature(fields, process.env.PAYFAST_PASSPHRASE || undefined)]);
   return { action: `${payfastHost()}/eng/process`, fields };

@@ -77,8 +77,8 @@ export default async function Money({ searchParams }: { searchParams: { month?: 
   const start = new Date(`${month}-01T00:00:00+02:00`);
   const end = new Date(`${new Date(Date.UTC(y!, m!, 1)).toISOString().slice(0, 7)}-01T00:00:00+02:00`);
   const deposits = await db.booking.findMany({
-    where: { depositCents: { gt: 0 }, createdAt: { gte: start, lt: end } },
-    select: { vendorId: true, depositCents: true, depositStatus: true },
+    where: { OR: [{ depositCents: { gt: 0 } }, { restPaidCents: { gt: 0 } }], createdAt: { gte: start, lt: end } },
+    select: { vendorId: true, depositCents: true, depositStatus: true, restPaidCents: true },
   });
   const perVendor = depositsByVendor(deposits);
   const vendors = await db.vendor.findMany({ where: { id: { in: [...perVendor.keys()] } }, select: { id: true, name: true } });
@@ -89,7 +89,7 @@ export default async function Money({ searchParams }: { searchParams: { month?: 
 
   // All-time balance per shop for payouts.
   const [allDeposits, allPayouts] = await Promise.all([
-    db.booking.findMany({ where: { depositCents: { gt: 0 }, depositStatus: { in: ["APPLIED", "FORFEITED"] } }, select: { vendorId: true, depositCents: true, depositStatus: true } }),
+    db.booking.findMany({ where: { OR: [{ depositCents: { gt: 0 }, depositStatus: { in: ["APPLIED", "FORFEITED"] } }, { restPaidCents: { gt: 0 } }] }, select: { vendorId: true, depositCents: true, depositStatus: true, restPaidCents: true } }),
     db.payout.groupBy({ by: ["vendorId"], _sum: { amountCents: true } }),
   ]);
   const paidBy = new Map(allPayouts.map((p) => [p.vendorId, p._sum.amountCents ?? 0]));

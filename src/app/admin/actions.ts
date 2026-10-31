@@ -108,6 +108,13 @@ export async function savePlan(form: FormData) {
   });
 }
 
+export async function savePayInApp(form: FormData) {
+  await requireSuperAdmin();
+  const on = form.get("on") === "on";
+  await db.setting.update({ where: { id: "global" }, data: { payInAppOn: on } });
+  back("/admin/pay-in-app", { notice: on ? "Pay in the app is on. Verified shops can switch it on for their clients." : "Pay in the app is off." });
+}
+
 export async function setPlanWaived(form: FormData) {
   await requireSuperAdmin();
   const waived = str(form, "waived") === "1";

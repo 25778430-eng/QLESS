@@ -123,6 +123,7 @@ export default async function VendorHome({ searchParams }: { searchParams: SP })
           <span className="lab">{b.readyAt ? `ready ${time(b.readyAt)}` : b.status === "IN_SERVICE" ? `since ${time(b.startedAt)}` : b.arrived ? "called · here" : `called ${time(b.calledAt)}`}</span>
         </div>
         {b.ticketNo ? <><div className="tk">{b.ticketNo}</div><div className="nm">{name(b)} · {what(b)}</div></> : <><div className="nm big">{name(b)}</div><div className="lab">{what(b)}</div></>}
+        {b.restPaidCents > 0 && <span className="pill ok" style={{ alignSelf: "flex-start" }}>Paid {rand(b.restPaidCents)} in the app</span>}
         <div className="row wrap">
           {b.status === "CALLED" && <form action={startAction} className="grow"><input type="hidden" name="id" value={b.id} /><Submit className="btn ghost">Start</Submit></form>}
           {info.plates && b.status === "IN_SERVICE" && !b.readyAt && <form action={readyAction} className="grow"><input type="hidden" name="id" value={b.id} /><Submit className="btn ghost">Car ready</Submit></form>}

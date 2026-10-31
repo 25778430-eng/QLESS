@@ -169,6 +169,14 @@ export async function saveDeposit(form: FormData) {
   back("/vendor/money", { notice: "Deposit saved." });
 }
 
+/** The shop lets its clients pay the rest of the price in the app. */
+export async function togglePayInApp() {
+  const { vendor } = await requireVendor();
+  if (vendor.level !== "VERIFIED") back("/vendor/money", { error: "Only Verified shops can take payments in the app." });
+  await db.vendor.update({ where: { id: vendor.id }, data: { payInApp: !vendor.payInApp } });
+  back("/vendor/money", { notice: vendor.payInApp ? "Clients pay the rest at the shop." : "Clients can now pay the rest in the app." });
+}
+
 /** Reads and checks the service form shared by Add and Edit. */
 function serviceFromForm(form: FormData, free: boolean) {
   const name = str(form, "name").slice(0, 60);

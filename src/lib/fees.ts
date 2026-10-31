@@ -22,3 +22,19 @@ export function parseFeeRand(input: string, maxCents = MAX_FEE_CENTS): number | 
   const cents = Math.round(Number(input) * 100);
   return cents >= 0 && cents <= maxCents ? cents : null;
 }
+
+/** What the client still owes the shop: the price, less a deposit that was paid, less anything already paid in the app. */
+export function restDue(b: { priceCents: number; depositCents: number; depositStatus: string; restPaidCents: number }): number {
+  const deposit = b.depositStatus === "PAID" || b.depositStatus === "APPLIED" ? b.depositCents : 0;
+  return Math.max(0, b.priceCents - deposit - b.restPaidCents);
+}
+
+/** Whether the client sees "Pay the rest in the app": super admin switch on, Verified shop that switched it on, service started or done. */
+export function canPayRest(
+  setting: { payInAppOn: boolean },
+  vendor: { payInApp: boolean; level: string },
+  b: { status: string; priceCents: number; depositCents: number; depositStatus: string; restPaidCents: number },
+): boolean {
+  return setting.payInAppOn && vendor.payInApp && vendor.level === "VERIFIED"
+    && (b.status === "IN_SERVICE" || b.status === "DONE") && b.restPaidCents === 0 && restDue(b) > 0;
+}

@@ -3,7 +3,8 @@ import { requireVendor } from "@/lib/auth";
 import { Messages } from "@/components/Messages";
 import { Submit } from "@/components/Submit";
 import { SetGroup, SetRow, SubHead } from "@/components/SetRow";
-import { saveBank, saveDeposit } from "../actions";
+import { getSettings } from "@/lib/settings";
+import { saveBank, saveDeposit, togglePayInApp } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,14 @@ export default async function Money({ searchParams }: { searchParams: { error?: 
         </div>
         <Submit className="btn alt">Save deposit</Submit>
       </form>
+      {(await getSettings()).payInAppOn && (
+        <form action={togglePayInApp} className="block">
+          <button className="setrow" aria-pressed={vendor.payInApp}>
+            <span className="grow"><b>Clients can pay the rest in the app</b><span>Paid out to you with your deposits</span></span>
+            <span className={`sw ${vendor.payInApp ? "on" : ""}`} aria-hidden />
+          </button>
+        </form>
+      )}
       <SetGroup>
         <SetRow icon="card" title="Payouts" sub="Deposits earned, paid out and still due" href="/vendor/payouts" />
       </SetGroup>
